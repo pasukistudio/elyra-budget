@@ -1,31 +1,41 @@
-//
-//  ElyraBudgetApp.swift
-//  ElyraBudget
-//
-//  Created by Pascal Smigielski on 04.08.26.
-//
-
 import SwiftUI
 import SwiftData
 
 @main
 struct ElyraBudgetApp: App {
-    var sharedModelContainer: ModelContainer = {
+    @State private var proAccess = ProAccessManager()
+
+    private let sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            UserSettings.self,
+            Budget.self
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+
+        let configuration = ModelConfiguration(
+            "ElyraBudget",
+            schema: schema,
+            isStoredInMemoryOnly: false,
+            cloudKitDatabase: .private(
+                "iCloud.de.pascal.ElyraBudgetNew"
+            )
+        )
 
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try ModelContainer(
+                for: schema,
+                configurations: [configuration]
+            )
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            fatalError(
+                "ModelContainer konnte nicht erstellt werden: \(error)"
+            )
         }
     }()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(proAccess)
         }
         .modelContainer(sharedModelContainer)
     }

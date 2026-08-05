@@ -1,0 +1,26 @@
+--swiftversion 6.0
+
+# Nur Formatierung
+--indent 4
+--indentcase false
+--commas inline
+--semicolons never
+--trimwhitespace always
+--wraparguments preserve
+--wrapparameters preserve
+--wrapcollections preserve
+--closingparen balanced
+
+# Diese Regeln deaktivieren wir bewusst
+--disable redundantReturn
+--disable redundantSelf
+--disable redundantSwiftUIGroup
+--disable redundantViewBuilder
+--disable opaqueGenericParameters
+--disable redundantAsync
+--disable redundantThrows
+--disable numberFormatting
+--disable sortImports
+
+# Ordner ausschließen
+--exclude Pods,.build,build,DerivedData,Packages,ElyraBudgetTests,ElyraBudgetUITests

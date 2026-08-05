@@ -1,0 +1,283 @@
+{
+  "sourceLanguage" : "de",
+  "strings" : {
+    "2.228,25 € verwendet" : {
+
+    },
+    "Abbrechen" : {
+
+    },
+    "Akzentfarbe" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accentcolor"
+          }
+        }
+      }
+    },
+    "Allgemein" : {
+
+    },
+    "Ausgaben" : {
+
+    },
+    "Ausgaben: 0,00 €" : {
+
+    },
+    "Benachrichtigungen" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications"
+          }
+        }
+      }
+    },
+    "Blau" : {
+
+    },
+    "Buchungen" : {
+
+    },
+    "Budget" : {
+
+    },
+    "Budget erstellen" : {
+
+    },
+    "Budgetname" : {
+
+    },
+    "Budgets" : {
+
+    },
+    "Darstellung" : {
+
+    },
+    "Das Limit ist optional. Ohne Limit dient das Budget nur als Kategorie für deine Buchungen." : {
+
+    },
+    "Dein Name" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Name"
+          }
+        }
+      }
+    },
+    "Deine Einnahmen und Ausgaben erscheinen hier." : {
+
+    },
+    "Deine Sparziele erscheinen später hier." : {
+
+    },
+    "Dunkel" : {
+
+    },
+    "Eigene Farbe" : {
+
+    },
+    "Eine eigene Akzentfarbe ist Bestandteil von Elyra Budget Pro." : {
+
+    },
+    "Einstellungen" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
+          }
+        }
+      }
+    },
+    "Erscheinungsbild" : {
+
+    },
+    "Erstelle Budgets für Lebensmittel, Wohnen, Mobilität und weitere Bereiche." : {
+
+    },
+    "Farbe auswählen" : {
+
+    },
+    "Fertig" : {
+
+    },
+    "Fixkosten" : {
+
+    },
+    "Fixkosten anrechnen" : {
+
+    },
+    "Grün" : {
+
+    },
+    "Gute Nacht" : {
+
+    },
+    "Gute Nacht," : {
+
+    },
+    "Guten Abend" : {
+
+    },
+    "Guten Abend," : {
+
+    },
+    "Guten Mittag" : {
+
+    },
+    "Guten Mittag," : {
+
+    },
+    "Guten Morgen" : {
+
+    },
+    "Guten Morgen," : {
+
+    },
+    "Guten Nachmittag" : {
+
+    },
+    "Guten Nachmittag," : {
+
+    },
+    "Hell" : {
+
+    },
+    "Icon" : {
+
+    },
+    "Icon auswählen" : {
+
+    },
+    "Icon-Farbe" : {
+
+    },
+    "Ist diese Option aktiviert, werden später auch Fixkosten berücksichtigt, die diesem Budget zugeordnet sind." : {
+
+    },
+    "Jahr" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Year"
+          }
+        }
+      }
+    },
+    "Kein Limit" : {
+
+    },
+    "Lila" : {
+
+    },
+    "Limit" : {
+
+    },
+    "Limit 2.635,82 €" : {
+
+    },
+    "Monat" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Month"
+          }
+        }
+      }
+    },
+    "Monat auswählen" : {
+
+    },
+    "Nächster Monat" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "next month"
+          }
+        }
+      }
+    },
+    "Name" : {
+
+    },
+    "Neues Budget" : {
+
+    },
+    "Neues Budget erstellen" : {
+
+    },
+    "Neues Element" : {
+
+    },
+    "Neues Element erstellen" : {
+
+    },
+    "Noch keine Buchungen" : {
+
+    },
+    "Noch keine Budgets" : {
+
+    },
+    "Noch keine Fixkosten" : {
+
+    },
+    "Noch keine Sparziele" : {
+
+    },
+    "Orange" : {
+
+    },
+    "PRO" : {
+
+    },
+    "Profil" : {
+
+    },
+    "Profil und Einstellungen" : {
+
+    },
+    "Regelmäßige Ausgaben erscheinen später hier." : {
+
+    },
+    "Rosa" : {
+
+    },
+    "Rot" : {
+
+    },
+    "Sparen" : {
+
+    },
+    "Speichern" : {
+
+    },
+    "System" : {
+
+    },
+    "Türkis" : {
+
+    },
+    "Übersicht" : {
+
+    },
+    "Verfügbar in diesem Monat" : {
+
+    },
+    "Vorheriger Monat" : {
+
+    },
+    "Vorschau" : {
+
+    }
+  },
+  "version" : "1.2"
+}

@@ -1,0 +1,85 @@
+# SwiftLint-Konfiguration für ElyraBudget
+
+# Ordner, die SwiftLint nicht prüfen soll
+excluded:
+  - Pods
+  - DerivedData
+  - .build
+  - build
+  - Packages
+  - ElyraBudgetTests
+  - ElyraBudgetUITests
+
+# Regeln, die für unser SwiftUI-Projekt aktuell eher stören
+disabled_rules:
+  - large_tuple
+  - trailing_whitespace
+  - todo
+
+# Zusätzliche sinnvolle Regeln
+opt_in_rules:
+  - empty_count
+  - empty_string
+  - first_where
+  - force_unwrapping
+  - implicit_return
+  - last_where
+  - overridden_super_call
+  - sorted_imports
+  - unneeded_parentheses_in_closure_argument
+  - vertical_parameter_alignment_on_call
+
+# Maximale Zeilenlänge
+line_length:
+  warning: 140
+  error: 200
+  ignores_comments: true
+  ignores_urls: true
+  ignores_function_declarations: true
+
+# Dateilänge
+file_length:
+  warning: 550
+  error: 900
+  ignore_comment_only_lines: true
+
+# Länge eines Structs, einer Klasse oder eines Enums
+type_body_length:
+  warning: 400
+  error: 650
+
+# Länge einer Funktion
+function_body_length:
+  warning: 80
+  error: 140
+
+# Komplexität einer Funktion
+cyclomatic_complexity:
+  warning: 12
+  error: 20
+
+# Verschachtelung
+nesting:
+  type_level:
+    warning: 3
+  function_level:
+    warning: 5
+
+# Namenslängen
+identifier_name:
+  min_length:
+    warning: 2
+  max_length:
+    warning: 50
+    error: 70
+  excluded:
+    - id
+    - x
+    - y
+    - i
+    - j
+
+# Warnungen sollen zunächst nicht den Build blockieren
+strict: false
+
+reporter: xcode

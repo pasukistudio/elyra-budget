@@ -1,0 +1,19 @@
+# SwiftFormat-Konfiguration für ElyraBudget
+
+--swiftversion 6.0
+--indent 4
+--indentcase false
+--trimwhitespace always
+--commas inline
+--semicolons never
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--closingparen balanced
+--elseposition same-line
+--guardelse same-line
+--ifdef no-indent
+--self remove
+--stripunusedargs closure-only
+--disable redundantSelf
+--exclude .build,build,DerivedData,Packages
