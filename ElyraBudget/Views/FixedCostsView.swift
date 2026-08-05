@@ -5,7 +5,6 @@
 //  Created by Pascal Smigielski on 04.08.26.
 //
 
-
 import SwiftUI
 
 struct FixedCostsView: View {

@@ -8,7 +8,6 @@
 import SwiftUI
 
 enum AppAppearance: String, CaseIterable, Identifiable {
-
     // MARK: - Erscheinungsbilder
 
     case system

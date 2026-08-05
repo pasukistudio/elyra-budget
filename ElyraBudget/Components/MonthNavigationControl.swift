@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct MonthNavigationControl: View {
-
     // MARK: - Anzeige
 
     let title: String

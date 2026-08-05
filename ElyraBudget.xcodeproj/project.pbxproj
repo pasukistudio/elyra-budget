@@ -115,11 +115,11 @@
 				50A48CA93022049E00A33848 /* Sources */,
 				50A48CAA3022049E00A33848 /* Frameworks */,
 				50A48CAB3022049E00A33848 /* Resources */,
-				50A48D6C302390B400A33848 /* SwiftLint */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				50A48D6F3023B0D300A33848 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				50A48CAF3022049E00A33848 /* ElyraBudget */,
@@ -210,6 +210,10 @@
 			);
 			mainGroup = 50A48CA43022049E00A33848;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				50A48D6D3023B07B00A33848 /* XCRemoteSwiftPackageReference "SwiftLint" */,
+				50A48D703023B28700A33848 /* XCRemoteSwiftPackageReference "SwiftFormat" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 50A48CAE3022049E00A33848 /* Products */;
 			projectDirPath = "";
@@ -246,27 +250,6 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
-/* Begin PBXShellScriptBuildPhase section */
-		50A48D6C302390B400A33848 /* SwiftLint */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = SwiftLint;
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "SWIFTLINT=\"/opt/homebrew/bin/swiftlint\"\nCONFIG_FILE=\"${SRCROOT}/.swiftlint.yml\"\n\nif test -f \"$SWIFTLINT\"; then\n    \"$SWIFTLINT\" lint --config \"$CONFIG_FILE\" || true\nelse\n    echo \"warning: SwiftLint ist nicht installiert.\"\nfi\n";
-		};
-/* End PBXShellScriptBuildPhase section */
-
 /* Begin PBXSourcesBuildPhase section */
 		50A48CA93022049E00A33848 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -301,6 +284,10 @@
 			isa = PBXTargetDependency;
 			target = 50A48CAC3022049E00A33848 /* ElyraBudget */;
 			targetProxy = 50A48CC9302204A000A33848 /* PBXContainerItemProxy */;
+		};
+		50A48D6F3023B0D300A33848 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 50A48D6E3023B0D300A33848 /* SwiftLintBuildToolPlugin */;
 		};
 /* End PBXTargetDependency section */
 
@@ -679,6 +666,33 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		50A48D6D3023B07B00A33848 /* XCRemoteSwiftPackageReference "SwiftLint" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/realm/SwiftLint.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.65.0;
+			};
+		};
+		50A48D703023B28700A33848 /* XCRemoteSwiftPackageReference "SwiftFormat" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/nicklockwood/SwiftFormat";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.62.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		50A48D6E3023B0D300A33848 /* SwiftLintBuildToolPlugin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 50A48D6D3023B07B00A33848 /* XCRemoteSwiftPackageReference "SwiftLint" */;
+			productName = "plugin:SwiftLintBuildToolPlugin";
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 50A48CA53022049E00A33848 /* Project object */;
 }

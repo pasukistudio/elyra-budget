@@ -10,7 +10,6 @@ import Observation
 
 @Observable
 final class ProAccessManager {
-
     // MARK: - Pro-Status
 
     /// Gibt an, ob Elyra Budget Pro freigeschaltet ist.

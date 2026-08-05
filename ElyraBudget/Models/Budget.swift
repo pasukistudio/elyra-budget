@@ -3,7 +3,6 @@ import SwiftData
 
 @Model
 final class Budget {
-
     // MARK: - Grunddaten
 
     var name: String = ""

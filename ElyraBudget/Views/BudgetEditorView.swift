@@ -1,5 +1,5 @@
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct BudgetEditorView: View {
     @Environment(\.dismiss) private var dismiss
@@ -67,28 +67,28 @@ struct BudgetEditorView: View {
             }
             .navigationTitle("Neues Budget")
 
-#if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-#endif
+            #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+            #endif
 
-            .toolbar {
-                ToolbarItem(
-                    placement: .cancellationAction
-                ) {
-                    Button("Abbrechen") {
-                        dismiss()
+                .toolbar {
+                    ToolbarItem(
+                        placement: .cancellationAction
+                    ) {
+                        Button("Abbrechen") {
+                            dismiss()
+                        }
+                    }
+
+                    ToolbarItem(
+                        placement: .confirmationAction
+                    ) {
+                        Button("Speichern") {
+                            saveBudget()
+                        }
+                        .disabled(!canSave)
                     }
                 }
-
-                ToolbarItem(
-                    placement: .confirmationAction
-                ) {
-                    Button("Speichern") {
-                        saveBudget()
-                    }
-                    .disabled(!canSave)
-                }
-            }
         }
     }
 
@@ -152,22 +152,22 @@ struct BudgetEditorView: View {
                 text: $name
             )
 
-#if os(iOS)
+            #if os(iOS)
             .textInputAutocapitalization(.words)
-#endif
+            #endif
 
             TextField(
                 "Kein Limit",
                 value: $limit,
                 format: .number
                     .precision(
-                        .fractionLength(0...2)
+                        .fractionLength(0 ... 2)
                     )
             )
 
-#if os(iOS)
+            #if os(iOS)
             .keyboardType(.decimalPad)
-#endif
+            #endif
         } header: {
             Text("Budget")
         } footer: {
@@ -375,8 +375,8 @@ struct BudgetEditorView: View {
 
     private var canSave: Bool {
         !cleanedName.isEmpty &&
-        !selectedIcon.isEmpty &&
-        !selectedColorHex.isEmpty
+            !selectedIcon.isEmpty &&
+            !selectedColorHex.isEmpty
     }
 
     private var currencyCode: String {

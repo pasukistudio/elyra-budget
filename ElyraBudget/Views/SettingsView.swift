@@ -1,5 +1,5 @@
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct SettingsView: View {
     @Environment(ProAccessManager.self) private var proAccess
@@ -24,28 +24,28 @@ struct SettingsView: View {
             accentColorSection
             generalSection
 
-#if DEBUG
-            developerSection
-#endif
+            #if DEBUG
+                developerSection
+            #endif
         }
         .navigationTitle("Einstellungen")
 
-#if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-#endif
+        #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+        #endif
 
-        .task {
-            createProfileIfNeeded()
-        }
-        .onChange(
-            of: profiles.first?.updatedAt,
-            initial: true
-        ) {
-            loadDraftName()
-        }
-        .onDisappear {
-            saveName()
-        }
+            .task {
+                createProfileIfNeeded()
+            }
+            .onChange(
+                of: profiles.first?.updatedAt,
+                initial: true
+            ) {
+                loadDraftName()
+            }
+            .onDisappear {
+                saveName()
+            }
     }
 
     // MARK: - Profil
@@ -60,13 +60,13 @@ struct SettingsView: View {
                 )
                 .textContentType(.name)
 
-#if os(iOS)
-                .submitLabel(.done)
-#endif
+                #if os(iOS)
+                    .submitLabel(.done)
+                #endif
 
-                .onSubmit {
-                    saveName()
-                }
+                    .onSubmit {
+                        saveName()
+                    }
             } else {
                 ProgressView()
             }
@@ -286,23 +286,23 @@ struct SettingsView: View {
 
     // MARK: - Entwicklung
 
-#if DEBUG
-    private var developerSection: some View {
-        Section("Entwicklung") {
-            Toggle(
-                "Pro zum Testen aktivieren",
-                isOn: Binding(
-                    get: {
-                        proAccess.hasPro
-                    },
-                    set: { newValue in
-                        proAccess.hasPro = newValue
-                    }
+    #if DEBUG
+        private var developerSection: some View {
+            Section("Entwicklung") {
+                Toggle(
+                    "Pro zum Testen aktivieren",
+                    isOn: Binding(
+                        get: {
+                            proAccess.hasPro
+                        },
+                        set: { newValue in
+                            proAccess.hasPro = newValue
+                        }
+                    )
                 )
-            )
+            }
         }
-    }
-#endif
+    #endif
 
     // MARK: - Namensverwaltung
 

@@ -1,8 +1,7 @@
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct ContentView: View {
-
     // MARK: - SwiftData
 
     @Query private var userSettings: [UserSettings]
@@ -22,13 +21,13 @@ struct ContentView: View {
         @ViewBuilder content: () -> Content
     ) -> some View {
         ZStack {
-#if os(iOS)
-            Color(.systemGroupedBackground)
-                .ignoresSafeArea()
-#else
-            Color(nsColor: .windowBackgroundColor)
-                .ignoresSafeArea()
-#endif
+            #if os(iOS)
+                Color(.systemGroupedBackground)
+                    .ignoresSafeArea()
+            #else
+                Color(nsColor: .windowBackgroundColor)
+                    .ignoresSafeArea()
+            #endif
 
             content()
         }
@@ -64,9 +63,9 @@ struct ContentView: View {
     private var preferredColorScheme: ColorScheme? {
         guard
             let rawValue =
-                userSettings.first?.appearanceRawValue,
+            userSettings.first?.appearanceRawValue,
             let appearance =
-                AppAppearance(rawValue: rawValue)
+            AppAppearance(rawValue: rawValue)
         else {
             return nil
         }
@@ -77,212 +76,212 @@ struct ContentView: View {
     // MARK: - Hauptansicht
 
     var body: some View {
-#if os(macOS)
+        #if os(macOS)
 
-        macLayout
+            macLayout
 
-#else
+        #else
 
-        iOSLayout
+            iOSLayout
 
-#endif
+        #endif
     }
 
     // MARK: - iOS Layout
 
-#if os(iOS)
-    private var iOSLayout: some View {
-        NavigationStack {
-            TabView(selection: $selectedSection) {
-                overviewTab
-                transactionsTab
-                budgetsTab
-                savingsTab
-                fixedCostsTab
+    #if os(iOS)
+        private var iOSLayout: some View {
+            NavigationStack {
+                TabView(selection: $selectedSection) {
+                    overviewTab
+                    transactionsTab
+                    budgetsTab
+                    savingsTab
+                    fixedCostsTab
+                }
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    sharedToolbar
+                }
+                .sheet(
+                    isPresented: $showingMonthPicker
+                ) {
+                    MonthPickerSheet(
+                        selectedDate: $selectedDate
+                    )
+                }
+                .sheet(
+                    isPresented: $showingBudgetEditor
+                ) {
+                    BudgetEditorView()
+                }
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                sharedToolbar
-            }
-            .sheet(
-                isPresented: $showingMonthPicker
-            ) {
-                MonthPickerSheet(
-                    selectedDate: $selectedDate
-                )
-            }
-            .sheet(
-                isPresented: $showingBudgetEditor
-            ) {
-                BudgetEditorView()
-            }
+            .tint(selectedAccentColor)
+            .preferredColorScheme(
+                preferredColorScheme
+            )
         }
-        .tint(selectedAccentColor)
-        .preferredColorScheme(
-            preferredColorScheme
-        )
-    }
-#endif
+    #endif
 
     // MARK: - iOS Tabs
 
-#if os(iOS)
-    private var overviewTab: some View {
-        appBackground {
-            OverviewView()
-        }
-        .tabItem {
-            Label(
-                SidebarSection.overview.title,
-                systemImage:
+    #if os(iOS)
+        private var overviewTab: some View {
+            appBackground {
+                OverviewView()
+            }
+            .tabItem {
+                Label(
+                    SidebarSection.overview.title,
+                    systemImage:
                     SidebarSection.overview.icon
-            )
+                )
+            }
+            .tag(SidebarSection.overview)
         }
-        .tag(SidebarSection.overview)
-    }
 
-    private var transactionsTab: some View {
-        appBackground {
-            TransactionsView()
-        }
-        .tabItem {
-            Label(
-                SidebarSection.transactions.title,
-                systemImage:
+        private var transactionsTab: some View {
+            appBackground {
+                TransactionsView()
+            }
+            .tabItem {
+                Label(
+                    SidebarSection.transactions.title,
+                    systemImage:
                     SidebarSection.transactions.icon
-            )
+                )
+            }
+            .tag(SidebarSection.transactions)
         }
-        .tag(SidebarSection.transactions)
-    }
 
-    private var budgetsTab: some View {
-        appBackground {
-            BudgetsView(
-                showingBudgetEditor:
+        private var budgetsTab: some View {
+            appBackground {
+                BudgetsView(
+                    showingBudgetEditor:
                     $showingBudgetEditor
-            )
-        }
-        .tabItem {
-            Label(
-                SidebarSection.budgets.title,
-                systemImage:
+                )
+            }
+            .tabItem {
+                Label(
+                    SidebarSection.budgets.title,
+                    systemImage:
                     SidebarSection.budgets.icon
-            )
+                )
+            }
+            .tag(SidebarSection.budgets)
         }
-        .tag(SidebarSection.budgets)
-    }
 
-    private var savingsTab: some View {
-        appBackground {
-            SavingsView()
-        }
-        .tabItem {
-            Label(
-                SidebarSection.savings.title,
-                systemImage:
+        private var savingsTab: some View {
+            appBackground {
+                SavingsView()
+            }
+            .tabItem {
+                Label(
+                    SidebarSection.savings.title,
+                    systemImage:
                     SidebarSection.savings.icon
-            )
+                )
+            }
+            .tag(SidebarSection.savings)
         }
-        .tag(SidebarSection.savings)
-    }
 
-    private var fixedCostsTab: some View {
-        appBackground {
-            FixedCostsView()
-        }
-        .tabItem {
-            Label(
-                SidebarSection.fixcosts.title,
-                systemImage:
+        private var fixedCostsTab: some View {
+            appBackground {
+                FixedCostsView()
+            }
+            .tabItem {
+                Label(
+                    SidebarSection.fixcosts.title,
+                    systemImage:
                     SidebarSection.fixcosts.icon
-            )
+                )
+            }
+            .tag(SidebarSection.fixcosts)
         }
-        .tag(SidebarSection.fixcosts)
-    }
-#endif
+    #endif
 
     // MARK: - macOS Layout
 
-#if os(macOS)
-    private var macLayout: some View {
-        NavigationSplitView {
-            sidebar
-        } detail: {
-            NavigationStack {
-                selectedSectionView
-                    .navigationTitle(
-                        selectedSection.title
-                    )
-                    .toolbar {
-                        sharedToolbar
-                    }
-                    .sheet(
-                        isPresented:
-                            $showingMonthPicker
-                    ) {
-                        MonthPickerSheet(
-                            selectedDate:
-                                $selectedDate
+    #if os(macOS)
+        private var macLayout: some View {
+            NavigationSplitView {
+                sidebar
+            } detail: {
+                NavigationStack {
+                    selectedSectionView
+                        .navigationTitle(
+                            selectedSection.title
                         )
-                    }
-                    .sheet(
-                        isPresented:
+                        .toolbar {
+                            sharedToolbar
+                        }
+                        .sheet(
+                            isPresented:
+                            $showingMonthPicker
+                        ) {
+                            MonthPickerSheet(
+                                selectedDate:
+                                $selectedDate
+                            )
+                        }
+                        .sheet(
+                            isPresented:
                             $showingBudgetEditor
-                    ) {
-                        BudgetEditorView()
-                    }
+                        ) {
+                            BudgetEditorView()
+                        }
+                }
             }
+            .tint(selectedAccentColor)
+            .preferredColorScheme(
+                preferredColorScheme
+            )
         }
-        .tint(selectedAccentColor)
-        .preferredColorScheme(
-            preferredColorScheme
-        )
-    }
-#endif
+    #endif
 
     // MARK: - macOS Seitenleiste
 
-#if os(macOS)
-    private var sidebar: some View {
-        List(
-            SidebarSection.allCases,
-            selection: $selectedSection
-        ) { section in
-            Label(
-                section.title,
-                systemImage: section.icon
+    #if os(macOS)
+        private var sidebar: some View {
+            List(
+                SidebarSection.allCases,
+                selection: $selectedSection
+            ) { section in
+                Label(
+                    section.title,
+                    systemImage: section.icon
+                )
+                .tag(section)
+            }
+            .navigationTitle("Elyra Budget")
+            .navigationSplitViewColumnWidth(
+                min: 180,
+                ideal: 220
             )
-            .tag(section)
         }
-        .navigationTitle("Elyra Budget")
-        .navigationSplitViewColumnWidth(
-            min: 180,
-            ideal: 220
-        )
-    }
-#endif
+    #endif
 
     // MARK: - Gemeinsame Toolbar
 
     @ToolbarContentBuilder
     private var sharedToolbar: some ToolbarContent {
-#if os(iOS)
-        ToolbarItem(
-            placement: .topBarLeading
-        ) {
-            NavigationLink {
-                SettingsView()
-            } label: {
-                Image(
-                    systemName:
+        #if os(iOS)
+            ToolbarItem(
+                placement: .topBarLeading
+            ) {
+                NavigationLink {
+                    SettingsView()
+                } label: {
+                    Image(
+                        systemName:
                         "person.crop.circle.fill"
+                    )
+                }
+                .accessibilityLabel(
+                    "Profil und Einstellungen"
                 )
             }
-            .accessibilityLabel(
-                "Profil und Einstellungen"
-            )
-        }
-#endif
+        #endif
 
         ToolbarItem(placement: .principal) {
             MonthNavigationControl(
@@ -330,7 +329,8 @@ struct ContentView: View {
     }
 
     private var addButtonHelpText:
-        LocalizedStringResource {
+        LocalizedStringResource
+    {
         switch selectedSection {
         case .budgets:
             return "Neues Budget"
@@ -341,7 +341,8 @@ struct ContentView: View {
     }
 
     private var addButtonAccessibilityLabel:
-        LocalizedStringResource {
+        LocalizedStringResource
+    {
         switch selectedSection {
         case .budgets:
             return "Neues Budget erstellen"
@@ -365,7 +366,7 @@ struct ContentView: View {
         case .budgets:
             BudgetsView(
                 showingBudgetEditor:
-                    $showingBudgetEditor
+                $showingBudgetEditor
             )
 
         case .savings:

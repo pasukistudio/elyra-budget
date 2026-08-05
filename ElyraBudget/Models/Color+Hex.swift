@@ -1,14 +1,13 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 #if os(iOS)
-import UIKit
+    import UIKit
 #elseif os(macOS)
-import AppKit
+    import AppKit
 #endif
 
 extension Color {
-
     // MARK: - Initialisierung aus Hex
 
     init(hexString: String) {
@@ -68,45 +67,45 @@ extension Color {
         green: CGFloat,
         blue: CGFloat
     )? {
-#if os(iOS)
-        let nativeColor = UIColor(self)
-            .resolvedColor(
-                with: UITraitCollection.current
+        #if os(iOS)
+            let nativeColor = UIColor(self)
+                .resolvedColor(
+                    with: UITraitCollection.current
+                )
+
+            var red: CGFloat = 0
+            var green: CGFloat = 0
+            var blue: CGFloat = 0
+            var alpha: CGFloat = 0
+
+            guard nativeColor.getRed(
+                &red,
+                green: &green,
+                blue: &blue,
+                alpha: &alpha
+            ) else {
+                return nil
+            }
+
+            return (
+                red: red,
+                green: green,
+                blue: blue
             )
 
-        var red: CGFloat = 0
-        var green: CGFloat = 0
-        var blue: CGFloat = 0
-        var alpha: CGFloat = 0
+        #elseif os(macOS)
+            guard let nativeColor = NSColor(self)
+                .usingColorSpace(.sRGB)
+            else {
+                return nil
+            }
 
-        guard nativeColor.getRed(
-            &red,
-            green: &green,
-            blue: &blue,
-            alpha: &alpha
-        ) else {
-            return nil
-        }
-
-        return (
-            red: red,
-            green: green,
-            blue: blue
-        )
-
-#elseif os(macOS)
-        guard let nativeColor = NSColor(self)
-            .usingColorSpace(.sRGB)
-        else {
-            return nil
-        }
-
-        return (
-            red: nativeColor.redComponent,
-            green: nativeColor.greenComponent,
-            blue: nativeColor.blueComponent
-        )
-#endif
+            return (
+                red: nativeColor.redComponent,
+                green: nativeColor.greenComponent,
+                blue: nativeColor.blueComponent
+            )
+        #endif
     }
 
     // MARK: - Hilfsfunktionen

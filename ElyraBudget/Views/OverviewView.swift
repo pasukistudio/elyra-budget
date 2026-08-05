@@ -1,14 +1,14 @@
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct OverviewView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 greetingSection
-#if os(iOS)
-                availableBudgetCard
-#endif
+                #if os(iOS)
+                    availableBudgetCard
+                #endif
             }
             .padding()
         }
@@ -28,13 +28,13 @@ struct OverviewView: View {
                 Text(greetingText)
                     .font(
                         displayName.isEmpty
-                        ? .title2.bold()
-                        : .subheadline
+                            ? .title2.bold()
+                            : .subheadline
                     )
                     .foregroundStyle(
                         displayName.isEmpty
-                        ? .primary
-                        : .secondary
+                            ? .primary
+                            : .secondary
                     )
 
                 if !displayName.isEmpty {
@@ -90,8 +90,8 @@ struct OverviewView: View {
 
     private var greetingText: LocalizedStringResource {
         displayName.isEmpty
-        ? currentDayPeriod.greetingWithoutComma
-        : currentDayPeriod.greeting
+            ? currentDayPeriod.greetingWithoutComma
+            : currentDayPeriod.greeting
     }
 
     private var currentDayPeriod: DayPeriod {
@@ -101,16 +101,16 @@ struct OverviewView: View {
         )
 
         switch hour {
-        case 5..<11:
+        case 5 ..< 11:
             return .morning
 
-        case 11..<14:
+        case 11 ..< 14:
             return .noon
 
-        case 14..<18:
+        case 14 ..< 18:
             return .afternoon
 
-        case 18..<23:
+        case 18 ..< 23:
             return .evening
 
         default:
@@ -163,6 +163,7 @@ struct OverviewView: View {
             }
         }
     }
+
     // MARK: - Verfügbares Budget
 
     private var availableBudgetCard: some View {

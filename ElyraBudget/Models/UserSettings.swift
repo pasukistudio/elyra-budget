@@ -3,7 +3,6 @@ import SwiftData
 
 @Model
 final class UserSettings {
-
     // MARK: - Profil
 
     var name: String = ""

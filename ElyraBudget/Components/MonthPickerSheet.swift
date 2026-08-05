@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct MonthPickerSheet: View {
-
     // MARK: - Bindings & Environment
 
     @Binding var selectedDate: Date
@@ -58,7 +57,7 @@ struct MonthPickerSheet: View {
         )
 
         return Array(
-            (currentYear - 10)...(currentYear + 10)
+            (currentYear - 10) ... (currentYear + 10)
         )
     }
 
@@ -85,7 +84,7 @@ struct MonthPickerSheet: View {
             "Monat",
             selection: selectedMonth
         ) {
-            ForEach(1...12, id: \.self) { month in
+            ForEach(1 ... 12, id: \.self) { month in
                 Text(monthName(for: month))
                     .tag(month)
             }

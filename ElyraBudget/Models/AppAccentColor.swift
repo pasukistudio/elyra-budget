@@ -1,7 +1,6 @@
 import SwiftUI
 
 enum AppAccentColor: String, CaseIterable, Identifiable {
-
     // MARK: - Farben
 
     case system

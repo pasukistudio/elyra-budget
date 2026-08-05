@@ -1,17 +1,13 @@
 --swiftversion 6.0
 
-# Nur Formatierung
+# Xcode-Stil
 --indent 4
---indentcase false
+--linebreaks lf
 --commas inline
 --semicolons never
 --trimwhitespace always
---wraparguments preserve
---wrapparameters preserve
---wrapcollections preserve
---closingparen balanced
 
-# Diese Regeln deaktivieren wir bewusst
+# Keine automatischen Refactorings
 --disable redundantReturn
 --disable redundantSelf
 --disable redundantSwiftUIGroup
@@ -21,6 +17,7 @@
 --disable redundantThrows
 --disable numberFormatting
 --disable sortImports
+--disable wrapMultilineStatementBraces
 
-# Ordner ausschließen
+# Ordner ignorieren
 --exclude Pods,.build,build,DerivedData,Packages,ElyraBudgetTests,ElyraBudgetUITests
