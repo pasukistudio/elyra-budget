@@ -4,7 +4,7 @@ import SwiftUI
 struct BudgetsView: View {
     @Binding var showingBudgetEditor: Bool
 
-    @Environment(\.modelContext) private var modelContext
+    @State private var editingBudget: Budget?
 
     @Query(
         filter: #Predicate<Budget> {
@@ -25,6 +25,30 @@ struct BudgetsView: View {
                 budgetList
             }
         }
+        .sheet(
+            isPresented: editingBudgetIsPresented
+        ) {
+            if let editingBudget {
+                BudgetEditorView(
+                    budget: editingBudget
+                )
+            }
+        }
+    }
+
+    // MARK: - Bearbeitungs-Sheet
+
+    private var editingBudgetIsPresented: Binding<Bool> {
+        Binding(
+            get: {
+                editingBudget != nil
+            },
+            set: { isPresented in
+                if !isPresented {
+                    editingBudget = nil
+                }
+            }
+        )
     }
 
     // MARK: - Budgetliste
@@ -107,6 +131,27 @@ struct BudgetsView: View {
                 lineWidth: 1
             )
         }
+        .contentShape(
+            RoundedRectangle(
+                cornerRadius: 18,
+                style: .continuous
+            )
+        )
+        .contextMenu {
+            Button {
+                editingBudget = budget
+            } label: {
+                Label(
+                    "Bearbeiten",
+                    systemImage: "pencil"
+                )
+            }
+        }
+        .accessibilityAction(
+            named: "Budget bearbeiten"
+        ) {
+            editingBudget = budget
+        }
     }
 
     // MARK: - Kartenkopf
@@ -143,7 +188,9 @@ struct BudgetsView: View {
 
                 Text(
                     spent,
-                    format: .currency(code: currencyCode)
+                    format: .currency(
+                        code: currencyCode
+                    )
                 )
                 .font(.title3.bold())
             }
@@ -158,7 +205,9 @@ struct BudgetsView: View {
                 if budget.limit > 0 {
                     Text(
                         budget.limit,
-                        format: .currency(code: currencyCode)
+                        format: .currency(
+                            code: currencyCode
+                        )
                     )
                     .font(.headline)
                 } else {
@@ -182,7 +231,10 @@ struct BudgetsView: View {
         return ZStack {
             RoundedRectangle(cornerRadius: 12)
                 .fill(color.opacity(0.15))
-                .frame(width: 46, height: 46)
+                .frame(
+                    width: 46,
+                    height: 46
+                )
 
             Image(systemName: budget.iconName)
                 .font(
@@ -214,7 +266,10 @@ struct BudgetsView: View {
         ).doubleValue
 
         return min(
-            max(spentNumber / limitNumber, 0),
+            max(
+                spentNumber / limitNumber,
+                0
+            ),
             1
         )
     }
@@ -223,21 +278,5 @@ struct BudgetsView: View {
 
     private var currencyCode: String {
         Locale.current.currency?.identifier ?? "EUR"
-    }
-
-    // MARK: - Löschen
-
-    private func deleteBudget(
-        _ budget: Budget
-    ) {
-        modelContext.delete(budget)
-
-        do {
-            try modelContext.save()
-        } catch {
-            print(
-                "Budget konnte nicht gelöscht werden: \(error)"
-            )
-        }
     }
 }

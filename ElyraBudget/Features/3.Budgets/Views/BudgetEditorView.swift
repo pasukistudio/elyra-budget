@@ -2,18 +2,56 @@ import SwiftData
 import SwiftUI
 
 struct BudgetEditorView: View {
+    let budget: Budget?
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(ProAccessManager.self) private var proAccess
 
-    @State private var name = ""
+    @State private var name: String
     @State private var limit: Decimal?
 
-    @State private var selectedIcon = "cart.fill"
-    @State private var selectedColorHex = "#FF9500"
+    @State private var selectedIcon: String
+    @State private var selectedColorHex: String
 
-    @State private var includesFixedCosts = true
+    @State private var includesFixedCosts: Bool
     @State private var showingIconPicker = false
+
+    // MARK: - Initialisierung
+
+    init(
+        budget: Budget? = nil
+    ) {
+        self.budget = budget
+
+        let initialLimit: Decimal?
+
+        if let budget, budget.limit > 0 {
+            initialLimit = budget.limit
+        } else {
+            initialLimit = nil
+        }
+
+        _name = State(
+            initialValue: budget?.name ?? ""
+        )
+
+        _limit = State(
+            initialValue: initialLimit
+        )
+
+        _selectedIcon = State(
+            initialValue: budget?.iconName ?? "cart.fill"
+        )
+
+        _selectedColorHex = State(
+            initialValue: budget?.iconColorHex ?? "#FF9500"
+        )
+
+        _includesFixedCosts = State(
+            initialValue: budget?.includesFixedCosts ?? true
+        )
+    }
 
     // MARK: - Grid-Konfiguration
 
@@ -50,7 +88,11 @@ struct BudgetEditorView: View {
                 appearanceSection
                 calculationSection
             }
-            .navigationTitle("Neues Budget")
+            .navigationTitle(
+                budget == nil
+                    ? "Neues Budget"
+                    : "Budget bearbeiten"
+            )
 
             #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
@@ -233,6 +275,7 @@ struct BudgetEditorView: View {
             .padding(.vertical, 6)
         }
     }
+
     // MARK: - Berechnung
 
     private var calculationSection: some View {
@@ -344,7 +387,7 @@ struct BudgetEditorView: View {
             isSelected ? .isSelected : []
         )
     }
-    
+
     // MARK: - Eigene Farbe
 
     @ViewBuilder
@@ -385,7 +428,7 @@ struct BudgetEditorView: View {
             .buttonStyle(.plain)
         }
     }
-    
+
     // MARK: - Eigene Farbauswahl
 
     private var customColorBinding: Binding<Color> {
@@ -402,7 +445,7 @@ struct BudgetEditorView: View {
             }
         )
     }
-    
+
     // MARK: - Budget-Icon
 
     private func budgetIcon(
@@ -467,15 +510,24 @@ struct BudgetEditorView: View {
             return
         }
 
-        let budget = Budget(
-            name: cleanedName,
-            iconName: selectedIcon,
-            iconColorHex: selectedColorHex,
-            limit: normalizedLimit,
-            includesFixedCosts: includesFixedCosts
-        )
+        if let existingBudget = budget {
+            existingBudget.name = cleanedName
+            existingBudget.iconName = selectedIcon
+            existingBudget.iconColorHex = selectedColorHex
+            existingBudget.limit = normalizedLimit
+            existingBudget.includesFixedCosts = includesFixedCosts
+            existingBudget.updatedAt = .now
+        } else {
+            let newBudget = Budget(
+                name: cleanedName,
+                iconName: selectedIcon,
+                iconColorHex: selectedColorHex,
+                limit: normalizedLimit,
+                includesFixedCosts: includesFixedCosts
+            )
 
-        modelContext.insert(budget)
+            modelContext.insert(newBudget)
+        }
 
         do {
             try modelContext.save()
