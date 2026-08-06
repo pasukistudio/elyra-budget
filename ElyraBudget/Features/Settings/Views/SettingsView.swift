@@ -23,6 +23,7 @@ struct SettingsView: View {
         Form {
             profileSection
             appearanceSection
+            currencySection
             accentColorSection
             generalSection
 
@@ -48,11 +49,34 @@ struct SettingsView: View {
             .onDisappear {
                 saveName()
             }
-            .alert("Speichern fehlgeschlagen", isPresented: saveErrorPresented) {
-                Button("OK", role: .cancel) { saveErrorMessage = nil }
-            } message: {
-                Text(saveErrorMessage ?? "Die Einstellungen konnten nicht gespeichert werden.")
+            .saveErrorAlert(message: $saveErrorMessage)
+    }
+
+    // MARK: - Währung
+
+    private var currencySection: some View {
+        Section("Währung") {
+            if let profile = profiles.first {
+                Picker(
+                    "Hauptwährung",
+                    selection: Binding(
+                        get: {
+                            AppCurrency(rawValue: profile.currencyRawValue)
+                                ?? .eur
+                        },
+                        set: { currency in
+                            profile.currencyRawValue = currency.rawValue
+                            profile.updatedAt = .now
+                            saveSettings()
+                        }
+                    )
+                ) {
+                    ForEach(AppCurrency.allCases) { currency in
+                        Text(currency.title).tag(currency)
+                    }
+                }
             }
+        }
     }
 
     // MARK: - Profil
@@ -386,12 +410,6 @@ struct SettingsView: View {
         }
     }
 
-    private var saveErrorPresented: Binding<Bool> {
-        Binding(
-            get: { saveErrorMessage != nil },
-            set: { if !$0 { saveErrorMessage = nil } }
-        )
-    }
 }
 
 #Preview("Free") {

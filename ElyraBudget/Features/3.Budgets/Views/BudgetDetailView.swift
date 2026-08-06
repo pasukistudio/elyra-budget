@@ -2,9 +2,9 @@ import SwiftData
 import OSLog
 import SwiftUI
 
-// swiftlint:disable type_body_length
 struct BudgetDetailView: View {
     let budget: Budget
+    @Environment(\.appCurrencyCode) private var currencyCode
 
     @Environment(\.dismiss)
     private var dismiss
@@ -82,7 +82,8 @@ struct BudgetDetailView: View {
         }
         .sheet(isPresented: $showingNewTransaction) {
             TransactionEditorView(
-                preselectedBudget: budget
+                preselectedBudget: budget,
+                initialDate: selectedMonth
             )
         }
         .sheet(isPresented: editingTransactionIsPresented) {
@@ -162,194 +163,16 @@ struct BudgetDetailView: View {
     // MARK: - Budgetübersicht
 
     private var budgetSummaryCard: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            budgetHeader
-            summaryValues
-
-            Divider()
-
-            occupiedAndRemainingValues
-
-            if budget.limit > 0 {
-                budgetProgress
-            }
-        }
-        .padding(.horizontal, 17)
-        .padding(.vertical, 16)
-        .background(cardBackground)
-        .clipShape(
-            RoundedRectangle(
-                cornerRadius: 27,
-                style: .continuous
-            )
+        BudgetSummaryView(
+            budget: budget,
+            budgetColor: budgetColor,
+            currencyCode: currencyCode,
+            expenseAmount: expenseAmount,
+            refundAmount: refundAmount,
+            occupiedAmount: occupiedAmount,
+            remainingAmount: remainingAmount,
+            visualProgress: visualProgress
         )
-    }
-
-    private var budgetHeader: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(
-                    cornerRadius: 12,
-                    style: .continuous
-                )
-                .fill(budgetColor.opacity(0.14))
-                .frame(
-                    width: 44,
-                    height: 44
-                )
-
-                Image(
-                    systemName: budget.iconName
-                )
-                .font(
-                    .system(
-                        size: 18,
-                        weight: .semibold
-                    )
-                )
-                .foregroundStyle(budgetColor)
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(budget.name)
-                    .font(.title3.bold())
-                    .lineLimit(1)
-
-                Text("Budgetübersicht")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-        }
-    }
-
-    // MARK: - Zusammenfassung
-
-    private var summaryValues: some View {
-        HStack(alignment: .top, spacing: 16) {
-            summaryValue(
-                title: "Variable Ausgaben",
-                amount: expenseAmount,
-                alignment: .leading,
-                color: .primary
-            )
-
-            Spacer()
-
-            summaryValue(
-                title: "Rückerstattungen",
-                amount: refundAmount,
-                alignment: .trailing,
-                color: refundAmount > 0
-                    ? .green
-                    : .primary
-            )
-        }
-    }
-
-    private func summaryValue(
-        title: String,
-        amount: Decimal,
-        alignment: HorizontalAlignment,
-        color: Color
-    ) -> some View {
-        VStack(alignment: alignment, spacing: 3) {
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-
-            Text(
-                amount,
-                format: .currency(
-                    code: currencyCode
-                )
-            )
-            .font(.headline)
-            .foregroundStyle(color)
-            .lineLimit(1)
-            .minimumScaleFactor(0.7)
-        }
-    }
-
-    private var occupiedAndRemainingValues: some View {
-        HStack(alignment: .top, spacing: 16) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Gesamt belegt")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Text(
-                    occupiedAmount,
-                    format: .currency(
-                        code: currencyCode
-                    )
-                )
-                .font(.title3.bold())
-                .foregroundStyle(
-                    occupiedAmount < 0
-                        ? Color.green
-                        : Color.primary
-                )
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            }
-
-            Spacer()
-
-            if budget.limit > 0 {
-                VStack(alignment: .trailing, spacing: 3) {
-                    Text("Verbleibend")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    Text(
-                        remainingAmount,
-                        format: .currency(
-                            code: currencyCode
-                        )
-                    )
-                    .font(.title3.bold())
-                    .foregroundStyle(
-                        remainingAmount < 0
-                            ? Color.red
-                            : budgetColor
-                    )
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                }
-            }
-        }
-    }
-
-    private var budgetProgress: some View {
-        VStack(spacing: 7) {
-            ProgressView(
-                value: visualProgress
-            )
-            .tint(
-                remainingAmount < 0
-                    ? Color.red
-                    : budgetColor
-            )
-
-            HStack {
-                Text("Limit")
-
-                Spacer()
-
-                Text(
-                    budget.limit,
-                    format: .currency(
-                        code: currencyCode
-                    )
-                )
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        }
     }
 
     // MARK: - Buchungen
@@ -423,7 +246,11 @@ struct BudgetDetailView: View {
         Button {
             editingTransaction = transaction
         } label: {
-            transactionRow(transaction)
+                    BudgetTransactionRowView(
+                        transaction: transaction,
+                        budgetColor: budgetColor,
+                        currencyCode: currencyCode
+                    )
         }
         .buttonStyle(.plain)
         .contextMenu {
@@ -446,86 +273,6 @@ struct BudgetDetailView: View {
                     systemImage: "trash"
                 )
             }
-        }
-    }
-
-    private func transactionRow(
-        _ transaction: Transaction
-    ) -> some View {
-        HStack(spacing: 13) {
-            transactionIcon
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(transaction.title)
-                    .font(.headline)
-                    .lineLimit(1)
-
-                Text(
-                    transactionTypeText(
-                        transaction
-                    )
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-            }
-
-            Spacer(minLength: 12)
-
-            VStack(alignment: .trailing, spacing: 4) {
-                Text(
-                    transaction.signedAmount,
-                    format: .currency(
-                        code: currencyCode
-                    )
-                )
-                .font(.headline)
-                .foregroundStyle(
-                    transactionAmountColor(
-                        transaction
-                    )
-                )
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-
-                Text(
-                    transaction.date,
-                    format: .dateTime
-                        .day()
-                        .month(.wide)
-                        .year()
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-            }
-        }
-        .padding(.horizontal, 17)
-        .frame(minHeight: 76)
-        .contentShape(Rectangle())
-    }
-
-    private var transactionIcon: some View {
-        ZStack {
-            Circle()
-                .fill(
-                    budgetColor.opacity(0.14)
-                )
-                .frame(
-                    width: 46,
-                    height: 46
-                )
-
-            Image(
-                systemName: budget.iconName
-            )
-            .font(
-                .system(
-                    size: 18,
-                    weight: .semibold
-                )
-            )
-            .foregroundStyle(budgetColor)
         }
     }
 
@@ -744,33 +491,6 @@ struct BudgetDetailView: View {
         )
     }
 
-    private func transactionTypeText(
-        _ transaction: Transaction
-    ) -> String {
-        switch transaction.type {
-        case .expense:
-            return "\(budget.name) • Ausgabe"
-
-        case .refund:
-            return "\(budget.name) • Rückerstattung"
-
-        case .income:
-            return "\(budget.name) • Einnahme"
-        }
-    }
-
-    private func transactionAmountColor(
-        _ transaction: Transaction
-    ) -> Color {
-        switch transaction.type {
-        case .expense:
-            return .primary
-
-        case .refund, .income:
-            return .green
-        }
-    }
-
     private var budgetColor: Color {
         Color(
             hexString: budget.iconColorHex
@@ -791,9 +511,4 @@ struct BudgetDetailView: View {
         .ignoresSafeArea()
     }
 
-    private var currencyCode: String {
-        Locale.current.currency?.identifier
-            ?? "EUR"
-    }
 }
-// swiftlint:enable type_body_length

@@ -78,6 +78,22 @@ final class Budget {
         }
     }
 
+    func transactions(in month: Date, calendar: Calendar = .current) -> [Transaction] {
+        guard let interval = calendar.dateInterval(of: .month, for: month) else {
+            return []
+        }
+
+        return (transactions ?? []).filter {
+            interval.contains($0.date)
+        }
+    }
+
+    func spentAmount(in month: Date, calendar: Calendar = .current) -> Decimal {
+        transactions(in: month, calendar: calendar).reduce(.zero) {
+            $0 + $1.budgetImpact
+        }
+    }
+
     var remainingAmount: Decimal? {
         guard limit > 0 else {
             return nil

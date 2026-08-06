@@ -7,6 +7,10 @@ struct ContentView: View {
 
     @Query private var userSettings: [UserSettings]
 
+    private var appCurrencyCode: String {
+        userSettings.first?.currencyRawValue ?? AppCurrency.eur.rawValue
+    }
+
     // MARK: - Environment
 
     @Environment(\.colorScheme)
@@ -26,11 +30,14 @@ struct ContentView: View {
     // MARK: - Hauptansicht
 
     var body: some View {
-        #if os(macOS)
-        macLayout
-        #else
-        iOSLayout
-        #endif
+        Group {
+            #if os(macOS)
+            macLayout
+            #else
+            iOSLayout
+            #endif
+        }
+        .environment(\.appCurrencyCode, appCurrencyCode)
     }
 
     // MARK: - Hintergrund
@@ -164,7 +171,7 @@ struct ContentView: View {
             .sheet(
                 isPresented: $showingTransactionEditor
             ) {
-                TransactionEditorView()
+                TransactionEditorView(initialDate: selectedDate)
             }
         }
         .tint(effectiveAccentColor)
@@ -193,7 +200,7 @@ struct ContentView: View {
 
     private var transactionsTab: some View {
         appBackground {
-            TransactionsView()
+            TransactionsView(selectedDate: $selectedDate)
         }
         .tabItem {
             Label(
@@ -209,7 +216,8 @@ struct ContentView: View {
         appBackground {
             BudgetsView(
                 showingBudgetEditor:
-                    $showingBudgetEditor
+                    $showingBudgetEditor,
+                selectedDate: $selectedDate
             )
         }
         .tabItem {
@@ -296,7 +304,7 @@ struct ContentView: View {
                     .sheet(
                         isPresented: $showingTransactionEditor
                     ) {
-                        TransactionEditorView()
+                        TransactionEditorView(initialDate: selectedDate)
                     }
             }
         }
@@ -497,12 +505,13 @@ struct ContentView: View {
             OverviewView()
 
         case .transactions:
-            TransactionsView()
+            TransactionsView(selectedDate: $selectedDate)
 
         case .budgets:
             BudgetsView(
                 showingBudgetEditor:
-                    $showingBudgetEditor
+                    $showingBudgetEditor,
+                selectedDate: $selectedDate
             )
 
         case .savings:
