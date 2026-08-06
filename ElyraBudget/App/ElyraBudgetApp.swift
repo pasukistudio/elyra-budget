@@ -36,6 +36,7 @@ struct ElyraBudgetApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .dismissKeyboardOnTap()
                 .environment(proAccess)
         }
         .modelContainer(sharedModelContainer)
