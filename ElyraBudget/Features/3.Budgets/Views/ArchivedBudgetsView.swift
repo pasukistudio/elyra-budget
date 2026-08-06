@@ -11,6 +11,7 @@ import OSLog
 import SwiftUI
 
 struct ArchivedBudgetsView: View {
+    @Environment(\.appCurrencyCode) private var currencyCode
     @Environment(\.dismiss)
     private var dismiss
 
@@ -71,11 +72,7 @@ struct ArchivedBudgetsView: View {
                     "Das Budget „\(budget.name)“ wird dauerhaft gelöscht."
                 )
             }
-            .alert("Speichern fehlgeschlagen", isPresented: saveErrorPresented) {
-                Button("OK", role: .cancel) { saveErrorMessage = nil }
-            } message: {
-                Text(saveErrorMessage ?? "Die Änderung konnte nicht gespeichert werden.")
-            }
+            .saveErrorAlert(message: $saveErrorMessage)
         }
     }
 
@@ -138,7 +135,7 @@ struct ArchivedBudgetsView: View {
         _ budget: Budget
     ) -> some View {
         HStack(spacing: 12) {
-            budgetIcon(budget)
+            BudgetIconView(budget: budget, size: 40)
 
             VStack(
                 alignment: .leading,
@@ -175,41 +172,6 @@ struct ArchivedBudgetsView: View {
         }
         .padding(.vertical, 4)
         .contentShape(Rectangle())
-    }
-
-    // MARK: - Icon
-
-    private func budgetIcon(
-        _ budget: Budget
-    ) -> some View {
-        let color = Color(
-            hexString: budget.iconColorHex
-        )
-
-        return ZStack {
-            RoundedRectangle(
-                cornerRadius: 10,
-                style: .continuous
-            )
-            .fill(
-                color.opacity(0.15)
-            )
-            .frame(
-                width: 40,
-                height: 40
-            )
-
-            Image(
-                systemName: budget.iconName
-            )
-            .font(
-                .system(
-                    size: 16,
-                    weight: .semibold
-                )
-            )
-            .foregroundStyle(color)
-        }
     }
 
     // MARK: - Buttons
@@ -300,13 +262,6 @@ struct ArchivedBudgetsView: View {
         }
     }
 
-    private var saveErrorPresented: Binding<Bool> {
-        Binding(
-            get: { saveErrorMessage != nil },
-            set: { if !$0 { saveErrorMessage = nil } }
-        )
-    }
-
     // MARK: - Löschen-Bestätigung
 
     private var deleteConfirmationIsPresented:
@@ -325,8 +280,4 @@ struct ArchivedBudgetsView: View {
 
     // MARK: - Währung
 
-    private var currencyCode: String {
-        Locale.current.currency?.identifier
-            ?? "EUR"
-    }
 }

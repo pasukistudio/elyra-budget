@@ -18,6 +18,8 @@ final class UserSettings {
 
     var customAccentHex: String = "#007AFF"
 
+    var currencyRawValue: String = AppCurrency.eur.rawValue
+
     // MARK: - Zeitstempel
 
     var createdAt: Date = Date()
@@ -31,12 +33,14 @@ final class UserSettings {
             AppAppearance.system.rawValue,
         accentColorRawValue: String =
             AppAccentColor.blue.rawValue,
-        customAccentHex: String = "#007AFF"
+        customAccentHex: String = "#007AFF",
+        currencyRawValue: String = AppCurrency.eur.rawValue
     ) {
         self.name = name
         self.appearanceRawValue = appearanceRawValue
         self.accentColorRawValue = accentColorRawValue
         self.customAccentHex = customAccentHex
+        self.currencyRawValue = currencyRawValue
         self.createdAt = Date()
         self.updatedAt = Date()
     }

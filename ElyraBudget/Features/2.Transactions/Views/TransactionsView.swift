@@ -3,6 +3,8 @@ import OSLog
 import SwiftUI
 
 struct TransactionsView: View {
+    @Binding var selectedDate: Date
+    @Environment(\.appCurrencyCode) private var currencyCode
     @Environment(\.modelContext)
     private var modelContext
 
@@ -24,9 +26,17 @@ struct TransactionsView: View {
     @State private var transactionToDelete: Transaction?
     @State private var saveErrorMessage: String?
 
+    private var displayedTransactions: [Transaction] {
+        guard let interval = Calendar.current.dateInterval(of: .month, for: selectedDate) else {
+            return []
+        }
+
+        return transactions.filter { interval.contains($0.date) }
+    }
+
     var body: some View {
         Group {
-            if transactions.isEmpty {
+            if displayedTransactions.isEmpty {
                 emptyState
             } else {
                 transactionList
@@ -64,11 +74,7 @@ struct TransactionsView: View {
                 "Die Buchung „\(transaction.title)“ wird dauerhaft gelöscht."
             )
         }
-        .alert("Speichern fehlgeschlagen", isPresented: saveErrorPresented) {
-            Button("OK", role: .cancel) { saveErrorMessage = nil }
-        } message: {
-            Text(saveErrorMessage ?? "Die Buchung konnte nicht gespeichert werden.")
-        }
+        .saveErrorAlert(message: $saveErrorMessage)
     }
 
     // MARK: - Leere Ansicht
@@ -93,12 +99,15 @@ struct TransactionsView: View {
     private var transactionList: some View {
         List {
             ForEach(
-                groupedTransactions,
+            groupedTransactions,
                 id: \.date
             ) { group in
                 Section {
                     ForEach(group.transactions) { transaction in
-                        transactionRow(transaction)
+                        TransactionRowView(
+                            transaction: transaction,
+                            currencyCode: currencyCode
+                        )
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 editingTransaction = transaction
@@ -117,147 +126,11 @@ struct TransactionsView: View {
                             }
                     }
                 } header: {
-                    Text(
-                        sectionTitle(
-                            for: group.date
-                        )
-                    )
+                    TransactionDaySectionHeader(date: group.date)
                 }
             }
         }
         .listStyle(.insetGrouped)
-    }
-
-    // MARK: - Buchungszeile
-
-    private func transactionRow(
-        _ transaction: Transaction
-    ) -> some View {
-        HStack(spacing: 12) {
-            transactionIcon(transaction)
-
-            VStack(
-                alignment: .leading,
-                spacing: 4
-            ) {
-                Text(transaction.title)
-                    .font(.headline)
-                    .lineLimit(1)
-
-                HStack(spacing: 6) {
-                    Text(
-                        transaction.date,
-                        format: .dateTime
-                            .hour()
-                            .minute()
-                    )
-
-                    if let budget = transaction.budget {
-                        Text("•")
-
-                        HStack(spacing: 4) {
-                            Image(
-                                systemName: budget.iconName
-                            )
-                            .foregroundStyle(
-                                Color(
-                                    hexString:
-                                        budget.iconColorHex
-                                )
-                            )
-
-                            Text(budget.name)
-                                .foregroundStyle(
-                                    Color(
-                                        hexString:
-                                            budget.iconColorHex
-                                    )
-                                )
-                        }
-                        .lineLimit(1)
-                    }
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-
-            Spacer(minLength: 8)
-
-            Text(
-                displayedAmount(
-                    for: transaction
-                ),
-                format: .currency(
-                    code: currencyCode
-                )
-            )
-            .font(.headline)
-            .foregroundStyle(
-                amountColor(
-                    for: transaction
-                )
-            )
-        }
-        .padding(.vertical, 4)
-    }
-
-    // MARK: - Buchungs-Icon
-
-    private func transactionIcon(
-        _ transaction: Transaction
-    ) -> some View {
-        let color = amountColor(
-            for: transaction
-        )
-
-        return ZStack {
-            RoundedRectangle(
-                cornerRadius: 11,
-                style: .continuous
-            )
-            .fill(
-                color.opacity(0.14)
-            )
-            .frame(
-                width: 44,
-                height: 44
-            )
-
-            Image(
-                systemName:
-                    transaction.type.systemImage
-            )
-            .font(
-                .system(
-                    size: 17,
-                    weight: .semibold
-                )
-            )
-            .foregroundStyle(color)
-        }
-    }
-
-    // MARK: - Beträge
-
-    private func displayedAmount(
-        for transaction: Transaction
-    ) -> Decimal {
-        transaction.signedAmount
-    }
-
-    private func amountColor(
-        for transaction: Transaction
-    ) -> Color {
-        switch transaction.type {
-        case .expense:
-            return .red
-
-        case .income:
-            return .green
-
-        case .refund:
-            return .blue
-        }
     }
 
     // MARK: - Gruppierung
@@ -267,7 +140,7 @@ struct TransactionsView: View {
         let calendar = Calendar.current
 
         let grouped = Dictionary(
-            grouping: transactions
+            grouping: displayedTransactions
         ) { transaction in
             calendar.startOfDay(
                 for: transaction.date
@@ -292,27 +165,6 @@ struct TransactionsView: View {
             .sorted {
                 $0.date > $1.date
             }
-    }
-
-    private func sectionTitle(
-        for date: Date
-    ) -> String {
-        let calendar = Calendar.current
-
-        if calendar.isDateInToday(date) {
-            return "Heute"
-        }
-
-        if calendar.isDateInYesterday(date) {
-            return "Gestern"
-        }
-
-        return date.formatted(
-            .dateTime
-                .weekday(.wide)
-                .day()
-                .month(.wide)
-        )
     }
 
     // MARK: - Kontextmenü
@@ -375,13 +227,6 @@ struct TransactionsView: View {
         }
     }
 
-    private var saveErrorPresented: Binding<Bool> {
-        Binding(
-            get: { saveErrorMessage != nil },
-            set: { if !$0 { saveErrorMessage = nil } }
-        )
-    }
-
     // MARK: - Bindings
 
     private var editingTransactionIsPresented:
@@ -414,10 +259,6 @@ struct TransactionsView: View {
 
     // MARK: - Währung
 
-    private var currencyCode: String {
-        Locale.current.currency?.identifier
-            ?? "EUR"
-    }
 }
 
 // MARK: - Tagesgruppe

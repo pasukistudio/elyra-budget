@@ -4,6 +4,7 @@ import SwiftUI
 
 struct BudgetEditorView: View {
     let budget: Budget?
+    @Environment(\.appCurrencyCode) private var currencyCode
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -125,11 +126,7 @@ struct BudgetEditorView: View {
                         .disabled(!canSave)
                     }
                 }
-                .alert("Speichern fehlgeschlagen", isPresented: saveErrorPresented) {
-                    Button("OK", role: .cancel) { saveErrorMessage = nil }
-                } message: {
-                    Text(saveErrorMessage ?? "Das Budget konnte nicht gespeichert werden.")
-                }
+                .saveErrorAlert(message: $saveErrorMessage)
         }
     }
 
@@ -138,9 +135,9 @@ struct BudgetEditorView: View {
     private var previewSection: some View {
         Section("Vorschau") {
             HStack(spacing: 14) {
-                budgetIcon(
+                IconBadgeView(
                     iconName: selectedIcon,
-                    colorHex: selectedColorHex,
+                    color: Color(hexString: selectedColorHex),
                     size: 48
                 )
 
@@ -453,33 +450,6 @@ struct BudgetEditorView: View {
         )
     }
 
-    // MARK: - Budget-Icon
-
-    private func budgetIcon(
-        iconName: String,
-        colorHex: String,
-        size: CGFloat
-    ) -> some View {
-        let color = Color(hexString: colorHex)
-
-        return ZStack {
-            RoundedRectangle(
-                cornerRadius: size * 0.26
-            )
-            .fill(color.opacity(0.16))
-            .frame(width: size, height: size)
-
-            Image(systemName: iconName)
-                .font(
-                    .system(
-                        size: size * 0.4,
-                        weight: .semibold
-                    )
-                )
-                .foregroundStyle(color)
-        }
-    }
-
     // MARK: - Werte
 
     private var cleanedName: String {
@@ -506,9 +476,6 @@ struct BudgetEditorView: View {
             !selectedColorHex.isEmpty
     }
 
-    private var currencyCode: String {
-        Locale.current.currency?.identifier ?? "EUR"
-    }
 
     // MARK: - Speichern
 
@@ -547,10 +514,4 @@ struct BudgetEditorView: View {
         }
     }
 
-    private var saveErrorPresented: Binding<Bool> {
-        Binding(
-            get: { saveErrorMessage != nil },
-            set: { if !$0 { saveErrorMessage = nil } }
-        )
-    }
 }

@@ -3,6 +3,7 @@ import OSLog
 import SwiftUI
 
 struct BudgetManagementView: View {
+    @Environment(\.appCurrencyCode) private var currencyCode
     @Environment(\.dismiss)
     private var dismiss
 
@@ -22,6 +23,7 @@ struct BudgetManagementView: View {
 
     @State private var editingBudget: Budget?
     @State private var budgetToDelete: Budget?
+    @State private var saveErrorMessage: String?
 
     @State private var draggedBudgetID: PersistentIdentifier?
     @State private var finishingBudgetID: PersistentIdentifier?
@@ -86,6 +88,7 @@ struct BudgetManagementView: View {
                     "Das Budget „\(budget.name)“ wird dauerhaft gelöscht."
                 )
             }
+            .saveErrorAlert(message: $saveErrorMessage)
         }
     }
 
@@ -172,7 +175,7 @@ struct BudgetManagementView: View {
                 index: index
             )
 
-            budgetIcon(budget)
+            BudgetIconView(budget: budget, size: 42)
 
             VStack(
                 alignment: .leading,
@@ -506,41 +509,6 @@ struct BudgetManagementView: View {
         )
     }
 
-    // MARK: - Budget-Icon
-
-    private func budgetIcon(
-        _ budget: Budget
-    ) -> some View {
-        let color = Color(
-            hexString: budget.iconColorHex
-        )
-
-        return ZStack {
-            RoundedRectangle(
-                cornerRadius: 10,
-                style: .continuous
-            )
-            .fill(
-                color.opacity(0.15)
-            )
-            .frame(
-                width: 42,
-                height: 42
-            )
-
-            Image(
-                systemName: budget.iconName
-            )
-            .font(
-                .system(
-                    size: 17,
-                    weight: .semibold
-                )
-            )
-            .foregroundStyle(color)
-        }
-    }
-
     // MARK: - Reihenfolge speichern
 
     private func updateSortOrder(
@@ -647,13 +615,10 @@ struct BudgetManagementView: View {
             AppLogger.persistence.error(
                 "\(errorMessage): \(error)"
             )
+            saveErrorMessage = errorMessage
         }
     }
 
     // MARK: - Währung
 
-    private var currencyCode: String {
-        Locale.current.currency?.identifier
-            ?? "EUR"
-    }
 }

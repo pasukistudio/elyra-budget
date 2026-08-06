@@ -97,7 +97,7 @@ struct BudgetSelectionView: View {
             dismiss()
         } label: {
             HStack(spacing: 12) {
-                budgetIcon(budget)
+                BudgetIconView(budget: budget, size: 38)
 
                 Text(budget.name)
                     .foregroundStyle(.primary)
@@ -119,38 +119,4 @@ struct BudgetSelectionView: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Budget-Icon
-
-    private func budgetIcon(
-        _ budget: Budget
-    ) -> some View {
-        let color = Color(
-            hexString: budget.iconColorHex
-        )
-
-        return ZStack {
-            RoundedRectangle(
-                cornerRadius: 9,
-                style: .continuous
-            )
-            .fill(
-                color.opacity(0.15)
-            )
-            .frame(
-                width: 38,
-                height: 38
-            )
-
-            Image(
-                systemName: budget.iconName
-            )
-            .font(
-                .system(
-                    size: 16,
-                    weight: .semibold
-                )
-            )
-            .foregroundStyle(color)
-        }
-    }
 }

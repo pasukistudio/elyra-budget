@@ -4,6 +4,8 @@ import SwiftUI
 
 struct BudgetsView: View {
     @Binding var showingBudgetEditor: Bool
+    @Binding var selectedDate: Date
+    @Environment(\.appCurrencyCode) private var currencyCode
 
     @Environment(\.modelContext)
     private var modelContext
@@ -63,14 +65,7 @@ struct BudgetsView: View {
                 "Das Budget „\(budget.name)“ wird dauerhaft gelöscht."
             )
         }
-        .alert(
-            "Speichern fehlgeschlagen",
-            isPresented: saveErrorPresented
-        ) {
-            Button("OK", role: .cancel) { saveErrorMessage = nil }
-        } message: {
-            Text(saveErrorMessage ?? "Die Änderung konnte nicht gespeichert werden.")
-        }
+        .saveErrorAlert(message: $saveErrorMessage)
     }
 
     // MARK: - Bearbeitungs-Sheet
@@ -114,7 +109,11 @@ struct BudgetsView: View {
                             budget: budget
                         )
                     } label: {
-                        budgetCard(budget)
+                        BudgetCardView(
+                            budget: budget,
+                            currencyCode: currencyCode,
+                            selectedMonth: selectedDate
+                        )
                     }
                     .buttonStyle(.plain)
                     .contextMenu {
@@ -166,61 +165,6 @@ struct BudgetsView: View {
         }
     }
 
-    // MARK: - Budgetkarte
-
-    private func budgetCard(
-        _ budget: Budget
-    ) -> some View {
-        let spent = budget.spentAmount
-        let progress = budget.visualProgress
-
-        return VStack(
-            alignment: .leading,
-            spacing: 12
-        ) {
-            budgetHeader(budget)
-
-            budgetValues(
-                budget: budget,
-                spent: spent
-            )
-
-            if budget.limit > 0 {
-                ProgressView(value: progress)
-                    .tint(
-                        Color(
-                            hexString:
-                                budget.iconColorHex
-                        )
-                    )
-            }
-        }
-        .padding(16)
-        .background(
-            .regularMaterial,
-            in: RoundedRectangle(
-                cornerRadius: 18,
-                style: .continuous
-            )
-        )
-        .overlay {
-            RoundedRectangle(
-                cornerRadius: 18,
-                style: .continuous
-            )
-            .stroke(
-                .primary.opacity(0.08),
-                lineWidth: 1
-            )
-        }
-        .contentShape(
-            RoundedRectangle(
-                cornerRadius: 18,
-                style: .continuous
-            )
-        )
-    }
-
     // MARK: - Kontextmenü
 
     @ViewBuilder
@@ -256,111 +200,6 @@ struct BudgetsView: View {
                 "Löschen",
                 systemImage: "trash"
             )
-        }
-    }
-
-    // MARK: - Kartenkopf
-
-    private func budgetHeader(
-        _ budget: Budget
-    ) -> some View {
-        HStack(spacing: 12) {
-            budgetIcon(budget)
-
-            Text(budget.name)
-                .font(.headline)
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(.caption.bold())
-                .foregroundStyle(.tertiary)
-        }
-    }
-
-    // MARK: - Budgetwerte
-
-    private func budgetValues(
-        budget: Budget,
-        spent: Decimal
-    ) -> some View {
-        HStack(alignment: .firstTextBaseline) {
-            VStack(
-                alignment: .leading,
-                spacing: 2
-            ) {
-                Text("Ausgaben")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Text(
-                    spent,
-                    format: .currency(
-                        code: currencyCode
-                    )
-                )
-                .font(.title3.bold())
-                .foregroundStyle(.primary)
-            }
-
-            Spacer()
-
-            VStack(
-                alignment: .trailing,
-                spacing: 2
-            ) {
-                Text("Limit")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if budget.limit > 0 {
-                    Text(
-                        budget.limit,
-                        format: .currency(
-                            code: currencyCode
-                        )
-                    )
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                } else {
-                    Text("Kein Limit")
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-    }
-
-    // MARK: - Budget-Icon
-
-    private func budgetIcon(
-        _ budget: Budget
-    ) -> some View {
-        let color = Color(
-            hexString: budget.iconColorHex
-        )
-
-        return ZStack {
-            RoundedRectangle(
-                cornerRadius: 12,
-                style: .continuous
-            )
-            .fill(color.opacity(0.15))
-            .frame(
-                width: 46,
-                height: 46
-            )
-
-            Image(systemName: budget.iconName)
-                .font(
-                    .system(
-                        size: 18,
-                        weight: .semibold
-                    )
-                )
-                .foregroundStyle(color)
         }
     }
 
@@ -400,17 +239,6 @@ struct BudgetsView: View {
         }
     }
 
-    private var saveErrorPresented: Binding<Bool> {
-        Binding(
-            get: { saveErrorMessage != nil },
-            set: { if !$0 { saveErrorMessage = nil } }
-        )
-    }
-
     // MARK: - Währung
 
-    private var currencyCode: String {
-        Locale.current.currency?.identifier
-            ?? "EUR"
-    }
 }
