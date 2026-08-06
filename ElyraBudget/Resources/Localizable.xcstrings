@@ -7,6 +7,12 @@
     "%@ verschieben" : {
 
     },
+    "•" : {
+
+    },
+    "0,00 €" : {
+
+    },
     "2.228,25 € verwendet" : {
 
     },
@@ -57,16 +63,31 @@
         }
       }
     },
+    "Beschreibung" : {
+
+    },
     "Blau" : {
 
     },
+    "Buchung bearbeiten" : {
+
+    },
+    "Buchung löschen?" : {
+
+    },
     "Buchungen" : {
+
+    },
+    "Buchungstyp" : {
 
     },
     "Budget" : {
 
     },
     "Budget archivieren" : {
+
+    },
+    "Budget auswählen" : {
 
     },
     "Budget bearbeiten" : {
@@ -108,6 +129,9 @@
     "Das Limit ist optional. Ohne Limit dient das Budget nur als Kategorie für deine Buchungen." : {
 
     },
+    "Datum" : {
+
+    },
     "Dein Name" : {
       "localizations" : {
         "en" : {
@@ -122,6 +146,12 @@
 
     },
     "Deine Sparziele erscheinen später hier." : {
+
+    },
+    "Details" : {
+
+    },
+    "Die Buchung „%@“ wird dauerhaft gelöscht." : {
 
     },
     "Dunkel" : {
@@ -231,6 +261,9 @@
         }
       }
     },
+    "Kein Budget" : {
+
+    },
     "Kein Limit" : {
 
     },
@@ -281,6 +314,12 @@
     "Name" : {
 
     },
+    "Neue Buchung" : {
+
+    },
+    "Neue Buchung erstellen" : {
+
+    },
     "Neues Budget" : {
 
     },
@@ -303,6 +342,12 @@
 
     },
     "Noch keine Sparziele" : {
+
+    },
+    "Notiz" : {
+
+    },
+    "Optional" : {
 
     },
     "Orange" : {

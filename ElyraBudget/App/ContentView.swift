@@ -21,6 +21,7 @@ struct ContentView: View {
     @State private var showingBudgetEditor = false
     @State private var showingBudgetManagement = false
     @State private var showingArchivedBudgets = false
+    @State private var showingTransactionEditor = false
 
     // MARK: - Hauptansicht
 
@@ -160,6 +161,11 @@ struct ContentView: View {
             ) {
                 ArchivedBudgetsView()
             }
+            .sheet(
+                isPresented: $showingTransactionEditor
+            ) {
+                TransactionEditorView()
+            }
         }
         .tint(effectiveAccentColor)
         .preferredColorScheme(
@@ -286,6 +292,11 @@ struct ContentView: View {
                             $showingArchivedBudgets
                     ) {
                         ArchivedBudgetsView()
+                    }
+                    .sheet(
+                        isPresented: $showingTransactionEditor
+                    ) {
+                        TransactionEditorView()
                     }
             }
         }
@@ -440,8 +451,10 @@ struct ContentView: View {
         case .budgets:
             showingBudgetEditor = true
 
+        case .transactions:
+            showingTransactionEditor = true
+            
         case .overview,
-             .transactions,
              .savings,
              .fixcosts:
             break
@@ -451,6 +464,9 @@ struct ContentView: View {
     private var addButtonHelpText:
         LocalizedStringResource {
         switch selectedSection {
+        case .transactions:
+            return "Neue Buchung"
+
         case .budgets:
             return "Neues Budget"
 
@@ -462,6 +478,9 @@ struct ContentView: View {
     private var addButtonAccessibilityLabel:
         LocalizedStringResource {
         switch selectedSection {
+        case .transactions:
+            return "Neue Buchung erstellen"
+
         case .budgets:
             return "Neues Budget erstellen"
 
@@ -469,7 +488,6 @@ struct ContentView: View {
             return "Neues Element erstellen"
         }
     }
-
     // MARK: - macOS Seitenauswahl
 
     @ViewBuilder
