@@ -25,6 +25,9 @@ Carthage/Build/
 # SwiftLint
 .swiftlint.cache
 
+# SwiftFormat
+.swiftformat.cache
+
 # Periphery
 .periphery_cache/
 
@@ -33,6 +36,13 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/
 fastlane/test_output/
+
+# Crash-Logs
+*.crash
+
+# Playground
+timeline.xctimeline
+playground.xcworkspace
 
 # Temporäre Editor-Dateien
 *.swp
