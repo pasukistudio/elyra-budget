@@ -1,4 +1,5 @@
 import SwiftData
+import OSLog
 import SwiftUI
 
 struct TransactionsView: View {
@@ -21,6 +22,7 @@ struct TransactionsView: View {
 
     @State private var editingTransaction: Transaction?
     @State private var transactionToDelete: Transaction?
+    @State private var saveErrorMessage: String?
 
     var body: some View {
         Group {
@@ -61,6 +63,11 @@ struct TransactionsView: View {
             Text(
                 "Die Buchung „\(transaction.title)“ wird dauerhaft gelöscht."
             )
+        }
+        .alert("Speichern fehlgeschlagen", isPresented: saveErrorPresented) {
+            Button("OK", role: .cancel) { saveErrorMessage = nil }
+        } message: {
+            Text(saveErrorMessage ?? "Die Buchung konnte nicht gespeichert werden.")
         }
     }
 
@@ -361,10 +368,18 @@ struct TransactionsView: View {
             try modelContext.save()
             transactionToDelete = nil
         } catch {
-            print(
+            AppLogger.persistence.error(
                 "Buchung konnte nicht gelöscht werden: \(error)"
             )
+            saveErrorMessage = "Die Buchung konnte nicht gelöscht werden."
         }
+    }
+
+    private var saveErrorPresented: Binding<Bool> {
+        Binding(
+            get: { saveErrorMessage != nil },
+            set: { if !$0 { saveErrorMessage = nil } }
+        )
     }
 
     // MARK: - Bindings

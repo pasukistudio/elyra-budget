@@ -1,4 +1,5 @@
 import SwiftData
+import OSLog
 import SwiftUI
 
 struct BudgetsView: View {
@@ -9,6 +10,7 @@ struct BudgetsView: View {
 
     @State private var editingBudget: Budget?
     @State private var budgetToDelete: Budget?
+    @State private var saveErrorMessage: String?
 
     @Query(
         filter: #Predicate<Budget> {
@@ -61,6 +63,14 @@ struct BudgetsView: View {
                 "Das Budget „\(budget.name)“ wird dauerhaft gelöscht."
             )
         }
+        .alert(
+            "Speichern fehlgeschlagen",
+            isPresented: saveErrorPresented
+        ) {
+            Button("OK", role: .cancel) { saveErrorMessage = nil }
+        } message: {
+            Text(saveErrorMessage ?? "Die Änderung konnte nicht gespeichert werden.")
+        }
     }
 
     // MARK: - Bearbeitungs-Sheet
@@ -99,7 +109,37 @@ struct BudgetsView: View {
         ScrollView {
             LazyVStack(spacing: 12) {
                 ForEach(budgets) { budget in
-                    budgetCard(budget)
+                    NavigationLink {
+                        BudgetDetailView(
+                            budget: budget
+                        )
+                    } label: {
+                        budgetCard(budget)
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu {
+                        budgetContextMenu(budget)
+                    }
+                    .accessibilityAction(
+                        named: "Budget öffnen"
+                    ) {
+                        // NavigationLink übernimmt das Öffnen.
+                    }
+                    .accessibilityAction(
+                        named: "Budget bearbeiten"
+                    ) {
+                        editingBudget = budget
+                    }
+                    .accessibilityAction(
+                        named: "Budget archivieren"
+                    ) {
+                        archiveBudget(budget)
+                    }
+                    .accessibilityAction(
+                        named: "Budget löschen"
+                    ) {
+                        budgetToDelete = budget
+                    }
                 }
             }
             .padding()
@@ -134,7 +174,10 @@ struct BudgetsView: View {
         let spent = budget.spentAmount
         let progress = budget.visualProgress
 
-        return VStack(alignment: .leading, spacing: 12) {
+        return VStack(
+            alignment: .leading,
+            spacing: 12
+        ) {
             budgetHeader(budget)
 
             budgetValues(
@@ -146,7 +189,8 @@ struct BudgetsView: View {
                 ProgressView(value: progress)
                     .tint(
                         Color(
-                            hexString: budget.iconColorHex
+                            hexString:
+                                budget.iconColorHex
                         )
                     )
             }
@@ -175,52 +219,43 @@ struct BudgetsView: View {
                 style: .continuous
             )
         )
-        .contextMenu {
-            Button {
-                editingBudget = budget
-            } label: {
-                Label(
-                    "Bearbeiten",
-                    systemImage: "pencil"
-                )
-            }
+    }
 
-            Button {
-                archiveBudget(budget)
-            } label: {
-                Label(
-                    "Archivieren",
-                    systemImage: "archivebox"
-                )
-            }
+    // MARK: - Kontextmenü
 
-            Divider()
-
-            Button(
-                role: .destructive
-            ) {
-                budgetToDelete = budget
-            } label: {
-                Label(
-                    "Löschen",
-                    systemImage: "trash"
-                )
-            }
-        }
-        .accessibilityAction(
-            named: "Budget bearbeiten"
-        ) {
+    @ViewBuilder
+    private func budgetContextMenu(
+        _ budget: Budget
+    ) -> some View {
+        Button {
             editingBudget = budget
+        } label: {
+            Label(
+                "Bearbeiten",
+                systemImage: "pencil"
+            )
         }
-        .accessibilityAction(
-            named: "Budget archivieren"
-        ) {
+
+        Button {
             archiveBudget(budget)
+        } label: {
+            Label(
+                "Archivieren",
+                systemImage: "archivebox"
+            )
         }
-        .accessibilityAction(
-            named: "Budget löschen"
+
+        Divider()
+
+        Button(
+            role: .destructive
         ) {
             budgetToDelete = budget
+        } label: {
+            Label(
+                "Löschen",
+                systemImage: "trash"
+            )
         }
     }
 
@@ -234,6 +269,7 @@ struct BudgetsView: View {
 
             Text(budget.name)
                 .font(.headline)
+                .foregroundStyle(.primary)
                 .lineLimit(1)
 
             Spacer()
@@ -251,7 +287,10 @@ struct BudgetsView: View {
         spent: Decimal
     ) -> some View {
         HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(
+                alignment: .leading,
+                spacing: 2
+            ) {
                 Text("Ausgaben")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -263,11 +302,15 @@ struct BudgetsView: View {
                     )
                 )
                 .font(.title3.bold())
+                .foregroundStyle(.primary)
             }
 
             Spacer()
 
-            VStack(alignment: .trailing, spacing: 2) {
+            VStack(
+                alignment: .trailing,
+                spacing: 2
+            ) {
                 Text("Limit")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -280,6 +323,7 @@ struct BudgetsView: View {
                         )
                     )
                     .font(.headline)
+                    .foregroundStyle(.primary)
                 } else {
                     Text("Kein Limit")
                         .font(.headline)
@@ -299,12 +343,15 @@ struct BudgetsView: View {
         )
 
         return ZStack {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(color.opacity(0.15))
-                .frame(
-                    width: 46,
-                    height: 46
-                )
+            RoundedRectangle(
+                cornerRadius: 12,
+                style: .continuous
+            )
+            .fill(color.opacity(0.15))
+            .frame(
+                width: 46,
+                height: 46
+            )
 
             Image(systemName: budget.iconName)
                 .font(
@@ -328,9 +375,10 @@ struct BudgetsView: View {
         do {
             try modelContext.save()
         } catch {
-            print(
+            AppLogger.persistence.error(
                 "Budget konnte nicht archiviert werden: \(error)"
             )
+            saveErrorMessage = "Das Budget konnte nicht archiviert werden."
         }
     }
 
@@ -345,15 +393,24 @@ struct BudgetsView: View {
             try modelContext.save()
             budgetToDelete = nil
         } catch {
-            print(
+            AppLogger.persistence.error(
                 "Budget konnte nicht gelöscht werden: \(error)"
             )
+            saveErrorMessage = "Das Budget konnte nicht gelöscht werden."
         }
+    }
+
+    private var saveErrorPresented: Binding<Bool> {
+        Binding(
+            get: { saveErrorMessage != nil },
+            set: { if !$0 { saveErrorMessage = nil } }
+        )
     }
 
     // MARK: - Währung
 
     private var currencyCode: String {
-        Locale.current.currency?.identifier ?? "EUR"
+        Locale.current.currency?.identifier
+            ?? "EUR"
     }
 }

@@ -1,4 +1,5 @@
 import SwiftData
+import OSLog
 import SwiftUI
 
 struct SettingsView: View {
@@ -6,6 +7,7 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var draftName = ""
+    @State private var saveErrorMessage: String?
 
     @Query(
         sort: \UserSettings.updatedAt,
@@ -45,6 +47,11 @@ struct SettingsView: View {
             }
             .onDisappear {
                 saveName()
+            }
+            .alert("Speichern fehlgeschlagen", isPresented: saveErrorPresented) {
+                Button("OK", role: .cancel) { saveErrorMessage = nil }
+            } message: {
+                Text(saveErrorMessage ?? "Die Einstellungen konnten nicht gespeichert werden.")
             }
     }
 
@@ -371,12 +378,19 @@ struct SettingsView: View {
 
         do {
             try modelContext.save()
-            print("UserSettings wurden lokal gespeichert.")
         } catch {
-            print(
+            AppLogger.persistence.error(
                 "UserSettings konnten nicht gespeichert werden: \(error)"
             )
+            saveErrorMessage = "Die Einstellungen konnten nicht gespeichert werden."
         }
+    }
+
+    private var saveErrorPresented: Binding<Bool> {
+        Binding(
+            get: { saveErrorMessage != nil },
+            set: { if !$0 { saveErrorMessage = nil } }
+        )
     }
 }
 

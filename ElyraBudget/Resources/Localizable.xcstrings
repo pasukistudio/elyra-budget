@@ -72,6 +72,9 @@
     "Buchung bearbeiten" : {
 
     },
+    "Buchung hinzufügen" : {
+
+    },
     "Buchung löschen?" : {
 
     },
@@ -105,6 +108,9 @@
     "Budget löschen?" : {
 
     },
+    "Budget öffnen" : {
+
+    },
     "Budgetaktionen" : {
 
     },
@@ -115,6 +121,9 @@
 
     },
     "Budgets verwalten" : {
+
+    },
+    "Budgetübersicht" : {
 
     },
     "Cyan" : {
@@ -192,6 +201,9 @@
 
     },
     "Fixkosten anrechnen" : {
+
+    },
+    "Gesamt belegt" : {
 
     },
     "Grau" : {
@@ -273,6 +285,9 @@
     "Keine Budgets" : {
 
     },
+    "Keine variablen Buchungen in diesem Monat" : {
+
+    },
     "Lila" : {
 
     },
@@ -347,6 +362,9 @@
     "Notiz" : {
 
     },
+    "OK" : {
+
+    },
     "Optional" : {
 
     },
@@ -377,6 +395,9 @@
     "Speichern" : {
 
     },
+    "Speichern fehlgeschlagen" : {
+
+    },
     "System" : {
 
     },
@@ -384,6 +405,12 @@
 
     },
     "Übersicht" : {
+
+    },
+    "Variable Buchungen" : {
+
+    },
+    "Verbleibend" : {
 
     },
     "Verfügbar in diesem Monat" : {
@@ -402,6 +429,9 @@
 
     },
     "Ziehe den Griff links, um die Reihenfolge der Budgets zu ändern." : {
+
+    },
+    "Zurück" : {
 
     }
   },

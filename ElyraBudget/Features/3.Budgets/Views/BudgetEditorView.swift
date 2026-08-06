@@ -1,4 +1,5 @@
 import SwiftData
+import OSLog
 import SwiftUI
 
 struct BudgetEditorView: View {
@@ -16,6 +17,7 @@ struct BudgetEditorView: View {
 
     @State private var includesFixedCosts: Bool
     @State private var showingIconPicker = false
+    @State private var saveErrorMessage: String?
 
     // MARK: - Initialisierung
 
@@ -122,6 +124,11 @@ struct BudgetEditorView: View {
                         }
                         .disabled(!canSave)
                     }
+                }
+                .alert("Speichern fehlgeschlagen", isPresented: saveErrorPresented) {
+                    Button("OK", role: .cancel) { saveErrorMessage = nil }
+                } message: {
+                    Text(saveErrorMessage ?? "Das Budget konnte nicht gespeichert werden.")
                 }
         }
     }
@@ -533,9 +540,17 @@ struct BudgetEditorView: View {
             try modelContext.save()
             dismiss()
         } catch {
-            print(
+            AppLogger.persistence.error(
                 "Budget konnte nicht gespeichert werden: \(error)"
             )
+            saveErrorMessage = "Das Budget konnte nicht gespeichert werden."
         }
+    }
+
+    private var saveErrorPresented: Binding<Bool> {
+        Binding(
+            get: { saveErrorMessage != nil },
+            set: { if !$0 { saveErrorMessage = nil } }
+        )
     }
 }
