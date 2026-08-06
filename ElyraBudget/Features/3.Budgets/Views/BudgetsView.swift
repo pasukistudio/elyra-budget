@@ -91,9 +91,22 @@ struct BudgetsView: View {
         }
         .padding(16)
         .background(
-            .background,
-            in: RoundedRectangle(cornerRadius: 18)
+            .regularMaterial,
+            in: RoundedRectangle(
+                cornerRadius: 18,
+                style: .continuous
+            )
         )
+        .overlay {
+            RoundedRectangle(
+                cornerRadius: 18,
+                style: .continuous
+            )
+            .stroke(
+                .primary.opacity(0.08),
+                lineWidth: 1
+            )
+        }
     }
 
     // MARK: - Kartenkopf
