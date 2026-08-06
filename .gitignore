@@ -1,0 +1,40 @@
+# macOS
+.DS_Store
+
+# Xcode – lokale Benutzereinstellungen
+xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+
+# Xcode – Builds und Cache
+DerivedData/
+build/
+*.moved-aside
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+
+# SwiftLint
+.swiftlint.cache
+
+# Periphery
+.periphery_cache/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/
+
+# Temporäre Editor-Dateien
+*.swp
+*.swo
+*~

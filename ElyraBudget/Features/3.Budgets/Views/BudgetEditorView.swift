@@ -4,6 +4,7 @@ import SwiftUI
 struct BudgetEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(ProAccessManager.self) private var proAccess
 
     @State private var name = ""
     @State private var limit: Decimal?
@@ -12,50 +13,34 @@ struct BudgetEditorView: View {
     @State private var selectedColorHex = "#FF9500"
 
     @State private var includesFixedCosts = true
+    @State private var showingIconPicker = false
 
-    private let iconColumns = [
-        GridItem(.adaptive(minimum: 52), spacing: 12)
-    ]
+    // MARK: - Grid-Konfiguration
 
-    private let colorColumns = [
-        GridItem(.adaptive(minimum: 44), spacing: 12)
-    ]
+    private let iconColumns = Array(
+        repeating: GridItem(
+            .flexible(),
+            spacing: 12
+        ),
+        count: 5
+    )
 
-    private let availableIcons = [
-        "cart.fill",
-        "house.fill",
-        "car.fill",
-        "fuelpump.fill",
-        "fork.knife",
-        "cup.and.saucer.fill",
-        "gamecontroller.fill",
-        "film.fill",
-        "airplane",
-        "tram.fill",
-        "cross.case.fill",
-        "pawprint.fill",
-        "tshirt.fill",
-        "gift.fill",
-        "graduationcap.fill",
-        "phone.fill",
-        "bolt.fill",
-        "wifi",
-        "figure.run",
-        "ellipsis"
-    ]
+    private let colorColumns = Array(
+        repeating: GridItem(
+            .flexible(),
+            spacing: 8
+        ),
+        count: 5
+    )
 
-    private let availableColors = [
-        "#FF9500",
-        "#FF3B30",
-        "#FF2D55",
-        "#AF52DE",
-        "#5856D6",
-        "#007AFF",
-        "#32ADE6",
-        "#00C7BE",
-        "#34C759",
-        "#8E8E93"
-    ]
+    // MARK: - Häufige Budget-Icons
+
+    private let featuredIcons =
+        CategoryIconLibrary.budgetFeatured
+
+    // MARK: - Verfügbare Farben
+
+    private let availableColors = ColorPreset.allCases
 
     var body: some View {
         NavigationStack {
@@ -69,6 +54,13 @@ struct BudgetEditorView: View {
 
             #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
+                .sheet(
+                    isPresented: $showingIconPicker
+                ) {
+                    IconPickerView(
+                        selectedIcon: $selectedIcon
+                    )
+                }
             #endif
 
                 .toolbar {
@@ -191,12 +183,33 @@ struct BudgetEditorView: View {
                     spacing: 12
                 ) {
                     ForEach(
-                        availableIcons,
+                        featuredIcons,
                         id: \.self
                     ) { iconName in
                         iconButton(iconName)
                     }
                 }
+
+                Button {
+                    showingIconPicker = true
+                } label: {
+                    HStack {
+                        Text(
+                            "Weitere Icons"
+                        )
+                        .foregroundStyle(.primary)
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .contentShape(Rectangle())
+                    .padding(.trailing, 22)
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 10)
             }
             .padding(.vertical, 6)
 
@@ -207,20 +220,19 @@ struct BudgetEditorView: View {
 
                 LazyVGrid(
                     columns: colorColumns,
-                    spacing: 12
+                    spacing: 10
                 ) {
-                    ForEach(
-                        availableColors,
-                        id: \.self
-                    ) { colorHex in
-                        colorButton(colorHex)
+                    ForEach(availableColors) { preset in
+                        colorButton(preset)
                     }
                 }
+
+                customColorRow
+                    .padding(.top, 10)
             }
             .padding(.vertical, 6)
         }
     }
-
     // MARK: - Berechnung
 
     private var calculationSection: some View {
@@ -290,21 +302,25 @@ struct BudgetEditorView: View {
     // MARK: - Farbauswahl
 
     private func colorButton(
-        _ colorHex: String
+        _ preset: ColorPreset
     ) -> some View {
-        let color = Color(hexString: colorHex)
         let isSelected =
-            selectedColorHex == colorHex
+            selectedColorHex == preset.hex
 
         return Button {
-            withAnimation(.easeInOut(duration: 0.15)) {
-                selectedColorHex = colorHex
+            withAnimation(
+                .easeInOut(duration: 0.15)
+            ) {
+                selectedColorHex = preset.hex
             }
         } label: {
             ZStack {
                 Circle()
-                    .fill(color)
-                    .frame(width: 36, height: 36)
+                    .fill(preset.color)
+                    .frame(
+                        width: 36,
+                        height: 36
+                    )
 
                 if isSelected {
                     Image(systemName: "checkmark")
@@ -317,15 +333,76 @@ struct BudgetEditorView: View {
                         .foregroundStyle(.white)
                 }
             }
-            .frame(width: 44, height: 44)
+            .frame(
+                width: 44,
+                height: 44
+            )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Farbe auswählen")
+        .accessibilityLabel(preset.title)
         .accessibilityAddTraits(
             isSelected ? .isSelected : []
         )
     }
+    
+    // MARK: - Eigene Farbe
 
+    @ViewBuilder
+    private var customColorRow: some View {
+        if proAccess.hasPro {
+            ColorPicker(
+                selection: customColorBinding,
+                supportsOpacity: false
+            ) {
+                Text("Eigene Farbe")
+            }
+            .padding(.trailing, 17)
+        } else {
+            Button {
+                // Später Pro-Ansicht öffnen
+            } label: {
+                HStack(spacing: 10) {
+                    Text("Eigene Farbe")
+                        .foregroundStyle(.primary)
+
+                    Spacer()
+
+                    Text("PRO")
+                        .font(.caption.bold())
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            .tint.opacity(0.15),
+                            in: Capsule()
+                        )
+
+                    Image(systemName: "lock.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .contentShape(Rectangle())
+                .padding(.trailing, 22)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+    
+    // MARK: - Eigene Farbauswahl
+
+    private var customColorBinding: Binding<Color> {
+        Binding(
+            get: {
+                selectedColor
+            },
+            set: { newColor in
+                guard let hex = newColor.toHex() else {
+                    return
+                }
+
+                selectedColorHex = hex
+            }
+        )
+    }
+    
     // MARK: - Budget-Icon
 
     private func budgetIcon(

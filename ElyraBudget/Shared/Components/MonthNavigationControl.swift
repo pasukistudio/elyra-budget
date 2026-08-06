@@ -21,10 +21,10 @@ struct MonthNavigationControl: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 7)
-        .glassEffect(
-            .regular,
-            in: Capsule()
-        )
+//        .glassEffect(
+//            .regular,
+//            in: Capsule()
+//        )
     }
 
     // MARK: - Vorheriger Monat
@@ -34,11 +34,15 @@ struct MonthNavigationControl: View {
             action: onPrevious
         ) {
             Image(systemName: "chevron.left")
+                .frame(
+                    width: 30,
+                    height: 30
+                )
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Vorheriger Monat")
     }
-
     // MARK: - Monatsauswahl
 
     private var monthButton: some View {
@@ -49,7 +53,7 @@ struct MonthNavigationControl: View {
                 .font(.headline)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
-                .frame(minWidth: 100)
+                .frame(minWidth: 135)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Monat auswählen")
@@ -62,6 +66,11 @@ struct MonthNavigationControl: View {
             action: onNext
         ) {
             Image(systemName: "chevron.right")
+                .frame(
+                    width: 30,
+                    height: 30
+                )
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Nächster Monat")

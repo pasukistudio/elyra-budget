@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-enum SidebarSection: String, CaseIterable, Identifiable {
+enum AppSection: String, CaseIterable, Identifiable {
     // MARK: - Bereiche
 
     case overview

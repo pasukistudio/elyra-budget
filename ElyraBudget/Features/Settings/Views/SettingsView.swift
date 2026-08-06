@@ -150,12 +150,18 @@ struct SettingsView: View {
         profile: UserSettings
     ) -> some View {
         let isSelected =
-            profile.accentColorRawValue == accentColor.rawValue
+            profile.accentColorRawValue ==
+            accentColor.rawValue
 
         return Button {
             withAnimation {
                 profile.accentColorRawValue =
                     accentColor.rawValue
+
+                if let preset = accentColor.preset {
+                    profile.customAccentHex =
+                        preset.hex
+                }
 
                 profile.updatedAt = Date()
                 saveSettings()
@@ -164,14 +170,23 @@ struct SettingsView: View {
             VStack(spacing: 7) {
                 ZStack {
                     Circle()
-                        .fill(previewColor(for: accentColor))
-                        .frame(width: 38, height: 38)
+                        .fill(
+                            previewColor(
+                                for: accentColor
+                            )
+                        )
+                        .frame(
+                            width: 38,
+                            height: 38
+                        )
 
                     if isSelected {
                         Image(systemName: "checkmark")
                             .font(.headline)
                             .foregroundStyle(
-                                checkmarkColor(for: accentColor)
+                                checkmarkColor(
+                                    for: accentColor
+                                )
                             )
                     }
                 }
@@ -217,6 +232,8 @@ struct SettingsView: View {
                         profile.accentColorRawValue =
                             AppAccentColor.custom.rawValue
                         profile.updatedAt = Date()
+
+                        saveSettings()
                     }
                 ),
                 supportsOpacity: false

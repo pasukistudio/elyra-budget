@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "de",
   "strings" : {
+    "" : {
+
+    },
     "2.228,25 € verwendet" : {
 
     },
@@ -54,6 +57,9 @@
     "Budgets" : {
 
     },
+    "Cyan" : {
+
+    },
     "Darstellung" : {
 
     },
@@ -101,9 +107,6 @@
     "Erstelle Budgets für Lebensmittel, Wohnen, Mobilität und weitere Bereiche." : {
 
     },
-    "Farbe auswählen" : {
-
-    },
     "Fertig" : {
 
     },
@@ -111,6 +114,9 @@
 
     },
     "Fixkosten anrechnen" : {
+
+    },
+    "Grau" : {
 
     },
     "Grün" : {
@@ -156,6 +162,12 @@
 
     },
     "Icon-Farbe" : {
+
+    },
+    "Icons durchsuchen" : {
+
+    },
+    "Indigo" : {
 
     },
     "Ist diese Option aktiviert, werden später auch Fixkosten berücksichtigt, die diesem Budget zugeordnet sind." : {
@@ -276,6 +288,9 @@
 
     },
     "Vorschau" : {
+
+    },
+    "Weitere Icons" : {
 
     }
   },

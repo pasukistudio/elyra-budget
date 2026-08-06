@@ -3,6 +3,7 @@ import SwiftData
 
 @Model
 final class UserSettings {
+
     // MARK: - Profil
 
     var name: String = ""
@@ -13,7 +14,7 @@ final class UserSettings {
         AppAppearance.system.rawValue
 
     var accentColorRawValue: String =
-        AppAccentColor.system.rawValue
+        AppAccentColor.blue.rawValue
 
     var customAccentHex: String = "#007AFF"
 
@@ -29,7 +30,7 @@ final class UserSettings {
         appearanceRawValue: String =
             AppAppearance.system.rawValue,
         accentColorRawValue: String =
-            AppAccentColor.system.rawValue,
+            AppAccentColor.blue.rawValue,
         customAccentHex: String = "#007AFF"
     ) {
         self.name = name

@@ -1,0 +1,5 @@
+project: ElyraBudget.xcodeproj
+schemes:
+- ElyraBudget
+targets:
+- ElyraBudget
