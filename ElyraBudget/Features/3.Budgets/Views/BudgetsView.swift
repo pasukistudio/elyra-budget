@@ -131,12 +131,8 @@ struct BudgetsView: View {
     private func budgetCard(
         _ budget: Budget
     ) -> some View {
-        let spent: Decimal = 0
-
-        let progress = progressValue(
-            spent: spent,
-            limit: budget.limit
-        )
+        let spent = budget.spentAmount
+        let progress = budget.visualProgress
 
         return VStack(alignment: .leading, spacing: 12) {
             budgetHeader(budget)
@@ -319,33 +315,6 @@ struct BudgetsView: View {
                 )
                 .foregroundStyle(color)
         }
-    }
-
-    // MARK: - Fortschritt
-
-    private func progressValue(
-        spent: Decimal,
-        limit: Decimal
-    ) -> Double {
-        guard limit > 0 else {
-            return 0
-        }
-
-        let spentNumber = NSDecimalNumber(
-            decimal: spent
-        ).doubleValue
-
-        let limitNumber = NSDecimalNumber(
-            decimal: limit
-        ).doubleValue
-
-        return min(
-            max(
-                spentNumber / limitNumber,
-                0
-            ),
-            1
-        )
     }
 
     // MARK: - Archivieren
