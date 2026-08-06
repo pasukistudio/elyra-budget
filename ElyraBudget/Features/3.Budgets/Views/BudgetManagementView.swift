@@ -302,7 +302,7 @@ struct BudgetManagementView: View {
                 return
             }
 
-            var transaction = Transaction()
+            var transaction = SwiftUI.Transaction()
             transaction.disablesAnimations = true
 
             withTransaction(transaction) {
@@ -422,10 +422,10 @@ struct BudgetManagementView: View {
             at: targetIndex
         )
 
-        var transaction = Transaction()
-        transaction.disablesAnimations = true
+        var animationTransaction = SwiftUI.Transaction()
+        animationTransaction.disablesAnimations = true
 
-        withTransaction(transaction) {
+        withTransaction(animationTransaction) {
             updateSortOrder(
                 for: reorderedBudgets
             )

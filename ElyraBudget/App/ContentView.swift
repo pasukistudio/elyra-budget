@@ -532,7 +532,8 @@ struct ContentView: View {
         .modelContainer(
             for: [
                 UserSettings.self,
-                Budget.self
+                Budget.self,
+                Transaction.self
             ],
             inMemory: true
         )
@@ -551,7 +552,8 @@ struct ContentView: View {
         .modelContainer(
             for: [
                 UserSettings.self,
-                Budget.self
+                Budget.self,
+                Transaction.self
             ],
             inMemory: true
         )
@@ -569,7 +571,8 @@ struct ContentView: View {
         .modelContainer(
             for: [
                 UserSettings.self,
-                Budget.self
+                Budget.self,
+                Transaction.self
             ],
             inMemory: true
         )
@@ -588,7 +591,8 @@ struct ContentView: View {
         .modelContainer(
             for: [
                 UserSettings.self,
-                Budget.self
+                Budget.self,
+                Transaction.self
             ],
             inMemory: true
         )

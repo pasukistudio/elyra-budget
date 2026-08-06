@@ -19,6 +19,14 @@ final class Budget {
 
     var includesFixedCosts: Bool = true
 
+    // MARK: - Buchungen
+
+    @Relationship(
+        deleteRule: .nullify,
+        inverse: \Transaction.budget
+    )
+    var transactions: [Transaction]? = []
+
     // MARK: - Organisation
 
     var sortOrder: Int = 0
@@ -49,5 +57,79 @@ final class Budget {
         self.isArchived = isArchived
         self.createdAt = Date()
         self.updatedAt = Date()
+    }
+
+    // MARK: - Berechnete Buchungen
+
+    var sortedTransactions: [Transaction] {
+        (transactions ?? [])
+            .sorted {
+                $0.date > $1.date
+            }
+    }
+
+    // MARK: - Berechnete Budgetwerte
+
+    var spentAmount: Decimal {
+        (transactions ?? []).reduce(
+            Decimal.zero
+        ) { result, transaction in
+            result + transaction.budgetImpact
+        }
+    }
+
+    var remainingAmount: Decimal? {
+        guard limit > 0 else {
+            return nil
+        }
+
+        return limit - spentAmount
+    }
+
+    var progress: Double {
+        guard limit > 0 else {
+            return 0
+        }
+
+        let spentNumber = NSDecimalNumber(
+            decimal: spentAmount
+        ).doubleValue
+
+        let limitNumber = NSDecimalNumber(
+            decimal: limit
+        ).doubleValue
+
+        guard limitNumber > 0 else {
+            return 0
+        }
+
+        return spentNumber / limitNumber
+    }
+
+    var visualProgress: Double {
+        min(
+            max(progress, 0),
+            1
+        )
+    }
+
+    var progressPercentage: Double {
+        progress * 100
+    }
+
+    var isOverBudget: Bool {
+        guard limit > 0 else {
+            return false
+        }
+
+        return spentAmount > limit
+    }
+
+    var exceededAmount: Decimal {
+        guard isOverBudget else {
+            return 0
+        }
+
+        return spentAmount - limit
     }
 }
