@@ -4,7 +4,11 @@ import SwiftUI
 struct BudgetsView: View {
     @Binding var showingBudgetEditor: Bool
 
+    @Environment(\.modelContext)
+    private var modelContext
+
     @State private var editingBudget: Budget?
+    @State private var budgetToDelete: Budget?
 
     @Query(
         filter: #Predicate<Budget> {
@@ -34,6 +38,29 @@ struct BudgetsView: View {
                 )
             }
         }
+        .alert(
+            "Budget löschen?",
+            isPresented: deleteConfirmationIsPresented,
+            presenting: budgetToDelete
+        ) { budget in
+            Button(
+                "Löschen",
+                role: .destructive
+            ) {
+                deleteBudget(budget)
+            }
+
+            Button(
+                "Abbrechen",
+                role: .cancel
+            ) {
+                budgetToDelete = nil
+            }
+        } message: { budget in
+            Text(
+                "Das Budget „\(budget.name)“ wird dauerhaft gelöscht."
+            )
+        }
     }
 
     // MARK: - Bearbeitungs-Sheet
@@ -46,6 +73,21 @@ struct BudgetsView: View {
             set: { isPresented in
                 if !isPresented {
                     editingBudget = nil
+                }
+            }
+        )
+    }
+
+    // MARK: - Löschbestätigung
+
+    private var deleteConfirmationIsPresented: Binding<Bool> {
+        Binding(
+            get: {
+                budgetToDelete != nil
+            },
+            set: { isPresented in
+                if !isPresented {
+                    budgetToDelete = nil
                 }
             }
         )
@@ -146,11 +188,43 @@ struct BudgetsView: View {
                     systemImage: "pencil"
                 )
             }
+
+            Button {
+                archiveBudget(budget)
+            } label: {
+                Label(
+                    "Archivieren",
+                    systemImage: "archivebox"
+                )
+            }
+
+            Divider()
+
+            Button(
+                role: .destructive
+            ) {
+                budgetToDelete = budget
+            } label: {
+                Label(
+                    "Löschen",
+                    systemImage: "trash"
+                )
+            }
         }
         .accessibilityAction(
             named: "Budget bearbeiten"
         ) {
             editingBudget = budget
+        }
+        .accessibilityAction(
+            named: "Budget archivieren"
+        ) {
+            archiveBudget(budget)
+        }
+        .accessibilityAction(
+            named: "Budget löschen"
+        ) {
+            budgetToDelete = budget
         }
     }
 
@@ -272,6 +346,40 @@ struct BudgetsView: View {
             ),
             1
         )
+    }
+
+    // MARK: - Archivieren
+
+    private func archiveBudget(
+        _ budget: Budget
+    ) {
+        budget.isArchived = true
+        budget.updatedAt = .now
+
+        do {
+            try modelContext.save()
+        } catch {
+            print(
+                "Budget konnte nicht archiviert werden: \(error)"
+            )
+        }
+    }
+
+    // MARK: - Löschen
+
+    private func deleteBudget(
+        _ budget: Budget
+    ) {
+        modelContext.delete(budget)
+
+        do {
+            try modelContext.save()
+            budgetToDelete = nil
+        } catch {
+            print(
+                "Budget konnte nicht gelöscht werden: \(error)"
+            )
+        }
     }
 
     // MARK: - Währung

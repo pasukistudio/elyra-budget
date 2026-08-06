@@ -19,15 +19,17 @@ struct ContentView: View {
 
     @State private var showingMonthPicker = false
     @State private var showingBudgetEditor = false
+    @State private var showingBudgetManagement = false
+    @State private var showingArchivedBudgets = false
 
     // MARK: - Hauptansicht
 
     var body: some View {
-#if os(macOS)
+        #if os(macOS)
         macLayout
-#else
+        #else
         iOSLayout
-#endif
+        #endif
     }
 
     // MARK: - Hintergrund
@@ -37,13 +39,13 @@ struct ContentView: View {
         @ViewBuilder content: () -> Content
     ) -> some View {
         ZStack {
-#if os(iOS)
+            #if os(iOS)
             Color(.systemGroupedBackground)
                 .ignoresSafeArea()
-#else
+            #else
             Color(nsColor: .windowBackgroundColor)
                 .ignoresSafeArea()
-#endif
+            #endif
 
             content()
         }
@@ -75,7 +77,7 @@ struct ContentView: View {
     private var effectiveAccentColor: Color {
         selectedAccentColor
     }
-    
+
     // MARK: - Erscheinungsbild
 
     private var preferredColorScheme: ColorScheme? {
@@ -112,7 +114,7 @@ struct ContentView: View {
 
     // MARK: - iOS Layout
 
-#if os(iOS)
+    #if os(iOS)
     private var iOSLayout: some View {
         NavigationStack {
             TabView(selection: $selectedSection) {
@@ -148,17 +150,27 @@ struct ContentView: View {
             ) {
                 BudgetEditorView()
             }
+            .sheet(
+                isPresented: $showingBudgetManagement
+            ) {
+                BudgetManagementView()
+            }
+            .sheet(
+                isPresented: $showingArchivedBudgets
+            ) {
+                ArchivedBudgetsView()
+            }
         }
         .tint(effectiveAccentColor)
         .preferredColorScheme(
             preferredColorScheme
         )
     }
-#endif
+    #endif
 
     // MARK: - iOS Tabs
 
-#if os(iOS)
+    #if os(iOS)
     private var overviewTab: some View {
         appBackground {
             OverviewView()
@@ -231,11 +243,11 @@ struct ContentView: View {
         }
         .tag(AppSection.fixcosts)
     }
-#endif
+    #endif
 
     // MARK: - macOS Layout
 
-#if os(macOS)
+    #if os(macOS)
     private var macLayout: some View {
         NavigationSplitView {
             sidebar
@@ -263,6 +275,18 @@ struct ContentView: View {
                     ) {
                         BudgetEditorView()
                     }
+                    .sheet(
+                        isPresented:
+                            $showingBudgetManagement
+                    ) {
+                        BudgetManagementView()
+                    }
+                    .sheet(
+                        isPresented:
+                            $showingArchivedBudgets
+                    ) {
+                        ArchivedBudgetsView()
+                    }
             }
         }
         .tint(effectiveAccentColor)
@@ -270,11 +294,11 @@ struct ContentView: View {
             preferredColorScheme
         )
     }
-#endif
+    #endif
 
     // MARK: - macOS Seitenleiste
 
-#if os(macOS)
+    #if os(macOS)
     private var sidebar: some View {
         List(
             AppSection.allCases,
@@ -292,13 +316,13 @@ struct ContentView: View {
             ideal: 220
         )
     }
-#endif
+    #endif
 
     // MARK: - Gemeinsame Toolbar
 
     @ToolbarContentBuilder
     private var sharedToolbar: some ToolbarContent {
-#if os(iOS)
+        #if os(iOS)
         ToolbarItem(
             placement: .topBarLeading
         ) {
@@ -317,7 +341,7 @@ struct ContentView: View {
                 "Profil und Einstellungen"
             )
         }
-#endif
+        #endif
 
         ToolbarItem(
             placement: .principal
@@ -340,19 +364,73 @@ struct ContentView: View {
         ToolbarItem(
             placement: .primaryAction
         ) {
-            Button {
-                handleAddButton()
-            } label: {
-                Image(systemName: "plus")
-                    .foregroundStyle(
-                        effectiveAccentColor
-                    )
+            if selectedSection == .budgets {
+                budgetActionsMenu
+            } else {
+                standardAddButton
             }
-            .help(addButtonHelpText)
-            .accessibilityLabel(
-                addButtonAccessibilityLabel
-            )
         }
+    }
+
+    // MARK: - Budget-Menü
+
+    private var budgetActionsMenu: some View {
+        Menu {
+            Button {
+                showingBudgetEditor = true
+            } label: {
+                Label(
+                    "Neues Budget",
+                    systemImage: "plus"
+                )
+            }
+
+            Button {
+                showingBudgetManagement = true
+            } label: {
+                Label(
+                    "Budgets verwalten",
+                    systemImage: "arrow.up.arrow.down"
+                )
+            }
+
+            Divider()
+
+            Button {
+                showingArchivedBudgets = true
+            } label: {
+                Label(
+                    "Archivierte Budgets",
+                    systemImage: "archivebox"
+                )
+            }
+        } label: {
+            Image(systemName: "plus")
+                .foregroundStyle(
+                    effectiveAccentColor
+                )
+        }
+        .help("Budgetaktionen")
+        .accessibilityLabel(
+            "Budgetaktionen"
+        )
+    }
+
+    // MARK: - Standardmäßiger Plus-Button
+
+    private var standardAddButton: some View {
+        Button {
+            handleAddButton()
+        } label: {
+            Image(systemName: "plus")
+                .foregroundStyle(
+                    effectiveAccentColor
+                )
+        }
+        .help(addButtonHelpText)
+        .accessibilityLabel(
+            addButtonAccessibilityLabel
+        )
     }
 
     // MARK: - Hinzufügen
@@ -438,9 +516,9 @@ struct ContentView: View {
             return
         }
 
-        withAnimation {
+//        withAnimation {
             selectedDate = newDate
-        }
+//        }
     }
 }
 

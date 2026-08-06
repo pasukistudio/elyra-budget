@@ -4,10 +4,16 @@
     "" : {
 
     },
+    "%@ verschieben" : {
+
+    },
     "2.228,25 € verwendet" : {
 
     },
     "Abbrechen" : {
+
+    },
+    "Aktionen für %@" : {
 
     },
     "Akzentfarbe" : {
@@ -23,10 +29,22 @@
     "Allgemein" : {
 
     },
+    "Archivieren" : {
+
+    },
+    "Archivierte Budgets" : {
+
+    },
+    "Archivierte Budgets werden hier angezeigt und können wiederhergestellt werden." : {
+
+    },
     "Ausgaben" : {
 
     },
     "Ausgaben: 0,00 €" : {
+
+    },
+    "Bearbeiten" : {
 
     },
     "Benachrichtigungen" : {
@@ -48,7 +66,25 @@
     "Budget" : {
 
     },
+    "Budget archivieren" : {
+
+    },
+    "Budget bearbeiten" : {
+
+    },
+    "Budget endgültig löschen?" : {
+
+    },
     "Budget erstellen" : {
+
+    },
+    "Budget löschen" : {
+
+    },
+    "Budget löschen?" : {
+
+    },
+    "Budgetaktionen" : {
 
     },
     "Budgetname" : {
@@ -57,10 +93,16 @@
     "Budgets" : {
 
     },
+    "Budgets verwalten" : {
+
+    },
     "Cyan" : {
 
     },
     "Darstellung" : {
+
+    },
+    "Das Budget „%@“ wird dauerhaft gelöscht." : {
 
     },
     "Das Limit ist optional. Ohne Limit dient das Budget nur als Kategorie für deine Buchungen." : {
@@ -101,10 +143,16 @@
         }
       }
     },
+    "Endgültig löschen" : {
+
+    },
     "Erscheinungsbild" : {
 
     },
     "Erstelle Budgets für Lebensmittel, Wohnen, Mobilität und weitere Bereiche." : {
+
+    },
+    "Erstelle zuerst ein Budget, um es hier verwalten zu können." : {
 
     },
     "Fertig" : {
@@ -186,6 +234,12 @@
     "Kein Limit" : {
 
     },
+    "Keine archivierten Budgets" : {
+
+    },
+    "Keine Budgets" : {
+
+    },
     "Lila" : {
 
     },
@@ -193,6 +247,9 @@
 
     },
     "Limit 2.635,82 €" : {
+
+    },
+    "Löschen" : {
 
     },
     "Monat" : {
@@ -206,6 +263,9 @@
       }
     },
     "Monat auswählen" : {
+
+    },
+    "Nach oben oder unten ziehen" : {
 
     },
     "Nächster Monat" : {
@@ -291,6 +351,12 @@
 
     },
     "Weitere Icons" : {
+
+    },
+    "Wiederherstellen" : {
+
+    },
+    "Ziehe den Griff links, um die Reihenfolge der Budgets zu ändern." : {
 
     }
   },
