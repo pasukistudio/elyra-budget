@@ -7,6 +7,7 @@
 
 
 import SwiftData
+import OSLog
 import SwiftUI
 
 struct ArchivedBudgetsView: View {
@@ -21,6 +22,7 @@ struct ArchivedBudgetsView: View {
 
     @State
     private var budgetToDelete: Budget?
+    @State private var saveErrorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -68,6 +70,11 @@ struct ArchivedBudgetsView: View {
                 Text(
                     "Das Budget „\(budget.name)“ wird dauerhaft gelöscht."
                 )
+            }
+            .alert("Speichern fehlgeschlagen", isPresented: saveErrorPresented) {
+                Button("OK", role: .cancel) { saveErrorMessage = nil }
+            } message: {
+                Text(saveErrorMessage ?? "Die Änderung konnte nicht gespeichert werden.")
             }
         }
     }
@@ -286,10 +293,18 @@ struct ArchivedBudgetsView: View {
         do {
             try modelContext.save()
         } catch {
-            print(
+            AppLogger.persistence.error(
                 "\(errorMessage): \(error)"
             )
+            saveErrorMessage = errorMessage
         }
+    }
+
+    private var saveErrorPresented: Binding<Bool> {
+        Binding(
+            get: { saveErrorMessage != nil },
+            set: { if !$0 { saveErrorMessage = nil } }
+        )
     }
 
     // MARK: - Löschen-Bestätigung

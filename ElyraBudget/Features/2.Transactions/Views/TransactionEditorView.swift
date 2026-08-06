@@ -6,6 +6,7 @@
 //
 
 import SwiftData
+import OSLog
 import SwiftUI
 
 #if os(iOS)
@@ -50,6 +51,7 @@ struct TransactionEditorView: View {
     // MARK: - Budgetmenü
 
     @State private var showingBudgetMenu = false
+    @State private var saveErrorMessage: String?
 
     // MARK: - Initialisierung
 
@@ -141,6 +143,11 @@ struct TransactionEditorView: View {
                     }
                     .disabled(!canSave)
                 }
+            }
+            .alert("Speichern fehlgeschlagen", isPresented: saveErrorPresented) {
+                Button("OK", role: .cancel) { saveErrorMessage = nil }
+            } message: {
+                Text(saveErrorMessage ?? "Die Buchung konnte nicht gespeichert werden.")
             }
         }
     }
@@ -794,10 +801,18 @@ struct TransactionEditorView: View {
             try modelContext.save()
             dismiss()
         } catch {
-            print(
+            AppLogger.persistence.error(
                 "Buchung konnte nicht gespeichert werden: \(error)"
             )
+            saveErrorMessage = "Die Buchung konnte nicht gespeichert werden."
         }
+    }
+
+    private var saveErrorPresented: Binding<Bool> {
+        Binding(
+            get: { saveErrorMessage != nil },
+            set: { if !$0 { saveErrorMessage = nil } }
+        )
     }
 }
 // swiftlint:enable type_body_length

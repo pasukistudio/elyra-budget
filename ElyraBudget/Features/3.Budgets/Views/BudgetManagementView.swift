@@ -1,4 +1,5 @@
 import SwiftData
+import OSLog
 import SwiftUI
 
 struct BudgetManagementView: View {
@@ -643,7 +644,7 @@ struct BudgetManagementView: View {
         do {
             try modelContext.save()
         } catch {
-            print(
+            AppLogger.persistence.error(
                 "\(errorMessage): \(error)"
             )
         }
