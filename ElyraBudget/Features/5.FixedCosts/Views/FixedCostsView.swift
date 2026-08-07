@@ -25,6 +25,8 @@ struct FixedCostsView: View {
 
     @State private var editingFixedCost: FixedCost?
     @State private var showingEditor = false
+    @State private var savingsGoalFromFixedCost: FixedCost?
+    @State private var showingSavingsGoalEditor = false
     @State private var fixedCostToDelete: FixedCost?
     @State private var saveErrorMessage: String?
 
@@ -83,6 +85,15 @@ struct FixedCostsView: View {
         .sheet(isPresented: $showingEditor) {
             FixedCostEditorView(fixedCost: editingFixedCost, budgets: visibleBudgets, group: selectedGroup)
         }
+        .sheet(isPresented: $showingSavingsGoalEditor) {
+            SavingsGoalEditorView(
+                goal: nil,
+                budgets: visibleBudgets,
+                type: .goal,
+                group: selectedGroup,
+                linkedFixedCost: savingsGoalFromFixedCost
+            )
+        }
         .alert(
             "Fixkosten löschen?",
             isPresented: deleteConfirmationIsPresented,
@@ -131,6 +142,14 @@ struct FixedCostsView: View {
                             editingFixedCost = fixedCost
                             showingEditor = true
                         }
+                        .contextMenu {
+                            Button {
+                                savingsGoalFromFixedCost = fixedCost
+                                showingSavingsGoalEditor = true
+                            } label: {
+                                Label("Sparziel anlegen", systemImage: "banknote")
+                            }
+                        }
                         .swipeActions {
                             Button(role: .destructive) { fixedCostToDelete = fixedCost } label: {
                                 Label("Löschen", systemImage: "trash")
@@ -147,6 +166,14 @@ struct FixedCostsView: View {
                             .onTapGesture {
                                 editingFixedCost = fixedCost
                                 showingEditor = true
+                            }
+                            .contextMenu {
+                                Button {
+                                    savingsGoalFromFixedCost = fixedCost
+                                    showingSavingsGoalEditor = true
+                                } label: {
+                                    Label("Sparziel anlegen", systemImage: "banknote")
+                                }
                             }
                             .swipeActions {
                                 Button(role: .destructive) { fixedCostToDelete = fixedCost } label: {

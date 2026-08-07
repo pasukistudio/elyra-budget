@@ -23,6 +23,7 @@ struct FixedCostEditorView: View {
     @State private var note: String
     @State private var selectedBudget: Budget?
     @State private var showingBudgetMenu = false
+    @State private var showingSavingsGoalEditor = false
     @State private var saveErrorMessage: String?
 
     init(fixedCost: FixedCost?, budgets: [Budget], group: BudgetGroup? = nil) {
@@ -99,6 +100,24 @@ struct FixedCostEditorView: View {
                         TextField("Notiz (optional)", text: $note, axis: .vertical)
                     }
 
+                    if fixedCost != nil {
+                        Section {
+                            Button {
+                                showingSavingsGoalEditor = true
+                            } label: {
+                                Label(
+                                    hasLinkedSavingsGoal ? "Sparziel bearbeiten" : "Sparziel anlegen",
+                                    systemImage: "banknote"
+                                )
+                            }
+                            .disabled(hasLinkedSavingsGoal)
+                        } header: {
+                            Text("Sparen")
+                        } footer: {
+                            Text("Aus dieser Fixkostenposition wird ein vorausgefülltes Sparziel erstellt.")
+                        }
+                    }
+
                     Section("Pause") {
                         Toggle("Fixkosten pausieren", isOn: $isPaused)
                         if isPaused {
@@ -145,6 +164,15 @@ struct FixedCostEditorView: View {
                 }
             }
             .saveErrorAlert(message: $saveErrorMessage)
+            .sheet(isPresented: $showingSavingsGoalEditor) {
+                SavingsGoalEditorView(
+                    goal: nil,
+                    budgets: budgets,
+                    type: .goal,
+                    group: group,
+                    linkedFixedCost: fixedCost
+                )
+            }
         }
     }
 
@@ -155,6 +183,11 @@ struct FixedCostEditorView: View {
         Color.secondary.opacity(0.08)
         #endif
     }
+
+    private var hasLinkedSavingsGoal: Bool {
+        fixedCost?.savingsGoals?.contains { !$0.isArchived } == true
+    }
+
     private func save() {
         guard let amount else { return }
         let value = fixedCost ?? FixedCost()

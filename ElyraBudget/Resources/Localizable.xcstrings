@@ -62,6 +62,9 @@
     "Archivierte Budgets werden hier angezeigt und können wiederhergestellt werden." : {
 
     },
+    "Aus dieser Fixkostenposition wird ein vorausgefülltes Sparziel erstellt." : {
+
+    },
     "Ausgaben" : {
 
     },
@@ -235,6 +238,9 @@
     "Eine freie Rücklage hat keinen festen Zielbetrag." : {
 
     },
+    "Eine verknüpfte Fixkostenposition bestimmt, wofür das Sparziel aufgebaut wird." : {
+
+    },
     "Einstellungen" : {
       "localizations" : {
         "en" : {
@@ -393,6 +399,9 @@
     "Keine Budgets" : {
 
     },
+    "Keine Fixkosten" : {
+
+    },
     "Keine variablen Buchungen in diesem Monat" : {
 
     },
@@ -549,6 +558,12 @@
 
     },
     "Sparziel" : {
+
+    },
+    "Sparziel anlegen" : {
+
+    },
+    "Sparziel bearbeiten" : {
 
     },
     "Sparziele" : {

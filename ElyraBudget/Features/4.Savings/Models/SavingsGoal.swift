@@ -21,6 +21,7 @@ final class SavingsGoal {
     /// Optional until the user assigns the savings item to a budget group.
     var group: BudgetGroup?
     var budget: Budget?
+    var fixedCost: FixedCost?
 
     @Relationship(
         deleteRule: .cascade,
@@ -41,6 +42,7 @@ final class SavingsGoal {
         anchorDate: Date = .now,
         automaticBooking: Bool = false,
         budget: Budget? = nil,
+        fixedCost: FixedCost? = nil,
         group: BudgetGroup? = nil
     ) {
         self.id = UUID()
@@ -54,6 +56,7 @@ final class SavingsGoal {
         self.dayOfMonth = min(max(Calendar.current.component(.day, from: anchorDate), 1), 31)
         self.automaticBooking = automaticBooking
         self.budget = budget
+        self.fixedCost = fixedCost
         self.group = group
         self.createdAt = .now
         self.updatedAt = .now

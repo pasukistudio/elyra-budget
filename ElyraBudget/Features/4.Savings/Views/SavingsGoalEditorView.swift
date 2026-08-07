@@ -1,6 +1,26 @@
 import SwiftData
 import SwiftUI
 
+private func recommendedSavingsContribution(
+    for fixedCost: FixedCost,
+    calendar: Calendar = .autoupdatingCurrent
+) -> Decimal {
+    guard let dueDate = fixedCost.nextDueDate(after: .now, calendar: calendar) else {
+        return fixedCost.amount
+    }
+
+    let startMonth = calendar.dateInterval(of: .month, for: .now)?.start ?? .now
+    let dueMonth = calendar.dateInterval(of: .month, for: dueDate)?.start ?? dueDate
+    let months = max(
+        1,
+        calendar.dateComponents([.month], from: startMonth, to: dueMonth).month ?? 1
+    )
+    var rawRecommendation = fixedCost.amount / Decimal(months)
+    var roundedRecommendation = rawRecommendation
+    NSDecimalRound(&roundedRecommendation, &rawRecommendation, 2, .plain)
+    return roundedRecommendation
+}
+
 struct SavingsGoalEditorView: View {
     let goal: SavingsGoal?
     let budgets: [Budget]
@@ -15,6 +35,9 @@ struct SavingsGoalEditorView: View {
     @Query(sort: [SortDescriptor<Transaction>(\.date)])
     private var transactions: [Transaction]
 
+    @Query(sort: [SortDescriptor<FixedCost>(\.createdAt)])
+    private var fixedCosts: [FixedCost]
+
     @State private var name: String
     @State private var targetAmount: Decimal?
     @State private var contributionAmount: Decimal?
@@ -24,6 +47,7 @@ struct SavingsGoalEditorView: View {
     @State private var automaticBooking: Bool
     @State private var note: String
     @State private var selectedBudget: Budget?
+    @State private var selectedFixedCost: FixedCost?
     @State private var selectedIcon: String
     @State private var selectedColorHex: String
     @State private var showingIconPicker = false
@@ -38,21 +62,28 @@ struct SavingsGoalEditorView: View {
         goal: SavingsGoal?,
         budgets: [Budget],
         type: SavingsGoalType? = nil,
-        group: BudgetGroup? = nil
+        group: BudgetGroup? = nil,
+        linkedFixedCost: FixedCost? = nil
     ) {
         self.goal = goal
         self.budgets = budgets
         self.type = goal?.type ?? type ?? .goal
         self.group = group ?? goal?.group
-        _name = State(initialValue: goal?.name ?? "")
-        _targetAmount = State(initialValue: goal?.targetAmount)
-        _contributionAmount = State(initialValue: goal?.contributionAmount == 0 ? nil : goal?.contributionAmount)
-        _frequency = State(initialValue: goal?.frequency ?? .monthly)
+        let prefill = linkedFixedCost
+        _name = State(initialValue: goal?.name ?? prefill?.title ?? "")
+        _targetAmount = State(initialValue: goal?.targetAmount ?? prefill?.amount)
+        _contributionAmount = State(
+            initialValue: goal?.contributionAmount == 0
+                ? prefill.map { recommendedSavingsContribution(for: $0) }
+                : goal?.contributionAmount
+        )
+        _frequency = State(initialValue: goal?.frequency ?? (prefill == nil ? .monthly : .monthly))
         _schedule = State(initialValue: goal?.schedule ?? .fixedDay)
         _anchorDate = State(initialValue: goal?.anchorDate ?? .now)
-        _automaticBooking = State(initialValue: goal?.automaticBooking ?? false)
+        _automaticBooking = State(initialValue: goal?.automaticBooking ?? (prefill != nil))
         _note = State(initialValue: goal?.note ?? "")
         _selectedBudget = State(initialValue: goal?.budget)
+        _selectedFixedCost = State(initialValue: goal?.fixedCost ?? linkedFixedCost)
         _selectedIcon = State(initialValue: goal?.iconName ?? "banknote")
         _selectedColorHex = State(initialValue: goal?.iconColorHex ?? "#34C759")
     }
@@ -64,6 +95,7 @@ struct SavingsGoalEditorView: View {
                 goalSection
                 appearanceSection
                 intervalSection
+                fixedCostSection
                 assignmentSection
                 noteSection
             }
@@ -329,6 +361,49 @@ struct SavingsGoalEditorView: View {
         }
     }
 
+    private var fixedCostSection: some View {
+        Group {
+            if type == .goal {
+                Section {
+                    Menu {
+                        Button("Keine Fixkosten") { selectedFixedCost = nil }
+                        ForEach(availableFixedCosts) { fixedCost in
+                            Button {
+                                selectedFixedCost = fixedCost
+                            } label: {
+                                Label(fixedCost.title, systemImage: "calendar.badge.clock")
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Text("Fixkosten")
+                            Spacer()
+                            Text(selectedFixedCost?.title ?? "Keine Fixkosten")
+                                .foregroundStyle(selectedFixedCost == nil ? Color.accentColor : Color.secondary)
+                                .lineLimit(1)
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(Color.secondary.opacity(0.55))
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                } header: {
+                    Text("Ziel")
+                } footer: {
+                    Text("Eine verknüpfte Fixkostenposition bestimmt, wofür das Sparziel aufgebaut wird.")
+                }
+            }
+        }
+    }
+
+    private var availableFixedCosts: [FixedCost] {
+        fixedCosts.filter { fixedCost in
+            guard fixedCost.group === group || (group == nil && fixedCost.group == nil) else { return false }
+            return fixedCost === selectedFixedCost || !(fixedCost.savingsGoals ?? []).contains { $0 !== goal && !$0.isArchived }
+        }
+    }
+
     private var noteSection: some View {
         Section("Notiz") {
             TextField("Optional", text: $note, axis: .vertical)
@@ -377,6 +452,7 @@ struct SavingsGoalEditorView: View {
         value.automaticBooking = automaticBooking
         value.note = note
         value.budget = selectedBudget
+        value.fixedCost = type == .goal ? selectedFixedCost : nil
         value.group = group ?? selectedBudget?.group
         value.updatedAt = .now
 
