@@ -34,8 +34,13 @@ struct BudgetGroupMenu: View {
                 Label("Bereiche verwalten", systemImage: "slider.horizontal.3")
             }
         } label: {
-            Label(selection?.name ?? "Alle Bereiche", systemImage: "person.2.fill")
-                .labelStyle(.titleAndIcon)
+            HStack(spacing: 6) {
+                Image(systemName: selection?.iconName ?? "person.2.fill")
+                    .foregroundStyle(
+                        selection.map { Color(hexString: $0.iconColorHex) } ?? .secondary
+                    )
+                Text(selection?.name ?? "Alle Bereiche")
+            }
         }
         .accessibilityLabel("Budgetbereich auswählen")
     }
@@ -52,6 +57,11 @@ struct BudgetGroupManagementView: View {
             SortDescriptor<BudgetGroup>(\.createdAt)
         ]
     ) private var groups: [BudgetGroup]
+
+    @Query(
+        filter: #Predicate<BudgetGroup> { $0.isArchived },
+        sort: [SortDescriptor<BudgetGroup>(\.updatedAt, order: .reverse)]
+    ) private var archivedGroups: [BudgetGroup]
 
     @State private var editingGroup: BudgetGroup?
     @State private var showingEditor = false
@@ -107,6 +117,28 @@ struct BudgetGroupManagementView: View {
                         Label("Neuen Bereich hinzufügen", systemImage: "plus")
                     }
                 }
+
+                if !archivedGroups.isEmpty {
+                    Section("Archivierte Bereiche") {
+                        ForEach(archivedGroups) { group in
+                            HStack(spacing: 12) {
+                                IconBadgeView(
+                                    iconName: group.iconName,
+                                    color: Color(hexString: group.iconColorHex),
+                                    size: 34
+                                )
+                                Text(group.name)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Button("Wiederherstellen") {
+                                    restore(group)
+                                }
+                                .buttonStyle(.borderless)
+                                .foregroundStyle(.tint)
+                            }
+                        }
+                    }
+                }
             }
             .environment(\.editMode, .constant(.active))
             .navigationTitle("Budgetbereiche")
@@ -127,6 +159,13 @@ struct BudgetGroupManagementView: View {
     private func archive(_ group: BudgetGroup) {
         group.isArchived = true
         group.updatedAt = .now
+        try? modelContext.save()
+    }
+
+    private func restore(_ group: BudgetGroup) {
+        group.isArchived = false
+        group.updatedAt = .now
+        group.sortOrder = groups.count
         try? modelContext.save()
     }
 }
