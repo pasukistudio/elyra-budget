@@ -17,6 +17,7 @@ struct TransactionEditorView: View {
     let transaction: Transaction?
     let preselectedBudget: Budget?
     let initialDate: Date
+    let group: BudgetGroup?
 
     // MARK: - Environment
 
@@ -58,11 +59,13 @@ struct TransactionEditorView: View {
     init(
         transaction: Transaction? = nil,
         preselectedBudget: Budget? = nil,
-        initialDate: Date = .now
+        initialDate: Date = .now,
+        group: BudgetGroup? = nil
     ) {
         self.transaction = transaction
         self.preselectedBudget = preselectedBudget
         self.initialDate = initialDate
+        self.group = group ?? transaction?.group
 
         _title = State(
             initialValue: transaction?.title ?? ""
@@ -92,6 +95,12 @@ struct TransactionEditorView: View {
         )
     }
 
+    private var visibleBudgets: [Budget] {
+        budgets.filter { budget in
+            group == nil || budget.group === group
+        }
+    }
+
     // MARK: - Hauptansicht
 
     var body: some View {
@@ -109,7 +118,7 @@ struct TransactionEditorView: View {
                             Spacer()
 
                             TransactionEditorBudgetMenu(
-                                budgets: budgets,
+                                budgets: visibleBudgets,
                                 selectedBudget: $selectedBudget,
                                 isPresented: $showingBudgetMenu
                             )
@@ -306,6 +315,9 @@ struct TransactionEditorView: View {
             existingTransaction.budget =
                 selectedBudget
 
+            existingTransaction.group =
+                group ?? selectedBudget?.group
+
             existingTransaction.updatedAt =
                 .now
         } else {
@@ -315,7 +327,8 @@ struct TransactionEditorView: View {
                 date: date,
                 note: cleanedNote,
                 type: selectedType,
-                budget: selectedBudget
+                budget: selectedBudget,
+                group: group ?? selectedBudget?.group
             )
 
             modelContext.insert(

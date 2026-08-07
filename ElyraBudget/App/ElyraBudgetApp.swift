@@ -8,6 +8,7 @@ struct ElyraBudgetApp: App {
     private let sharedModelContainer: ModelContainer = {
         let schema = Schema([
             UserSettings.self,
+            BudgetGroup.self,
             Budget.self,
             Transaction.self,
             FixedCost.self,

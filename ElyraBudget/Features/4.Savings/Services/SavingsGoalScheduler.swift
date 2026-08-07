@@ -34,7 +34,8 @@ enum SavingsGoalScheduler {
                     date: occurrenceDate,
                     note: goal.note,
                     type: .expense,
-                    budget: goal.budget
+                    budget: goal.budget,
+                    group: goal.group ?? goal.budget?.group
                 )
                 transaction.savingsGoalID = goal.id
                 transaction.savingsGoalOccurrenceDate = occurrenceDate

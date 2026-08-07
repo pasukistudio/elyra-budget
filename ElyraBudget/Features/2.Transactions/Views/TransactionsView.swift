@@ -4,6 +4,7 @@ import SwiftUI
 
 struct TransactionsView: View {
     @Binding var selectedDate: Date
+    @Binding var selectedGroup: BudgetGroup?
     @Environment(\.appCurrencyCode) private var currencyCode
     @Environment(\.modelContext)
     private var modelContext
@@ -27,7 +28,18 @@ struct TransactionsView: View {
     @State private var saveErrorMessage: String?
 
     private var displayedTransactions: [Transaction] {
-        transactions.filter { $0.date.isInSameMonth(as: selectedDate) }
+        transactions.filter {
+            $0.date.isInSameMonth(as: selectedDate)
+                && (selectedGroup == nil || $0.group === selectedGroup)
+        }
+    }
+
+    init(
+        selectedDate: Binding<Date>,
+        selectedGroup: Binding<BudgetGroup?> = .constant(nil)
+    ) {
+        _selectedDate = selectedDate
+        _selectedGroup = selectedGroup
     }
 
     var body: some View {
@@ -43,7 +55,8 @@ struct TransactionsView: View {
         ) {
             if let editingTransaction {
                 TransactionEditorView(
-                    transaction: editingTransaction
+                    transaction: editingTransaction,
+                    group: selectedGroup
                 )
             }
         }

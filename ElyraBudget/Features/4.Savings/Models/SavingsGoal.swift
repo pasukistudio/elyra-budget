@@ -18,6 +18,8 @@ final class SavingsGoal {
     var iconColorHex: String = "#34C759"
     var sortOrder: Int = 0
     var isArchived: Bool = false
+    /// Optional until the user assigns the savings item to a budget group.
+    var group: BudgetGroup?
     var budget: Budget?
 
     @Relationship(
@@ -38,7 +40,8 @@ final class SavingsGoal {
         schedule: SavingsSchedule = .fixedDay,
         anchorDate: Date = .now,
         automaticBooking: Bool = false,
-        budget: Budget? = nil
+        budget: Budget? = nil,
+        group: BudgetGroup? = nil
     ) {
         self.id = UUID()
         self.name = name
@@ -51,6 +54,7 @@ final class SavingsGoal {
         self.dayOfMonth = min(max(Calendar.current.component(.day, from: anchorDate), 1), 31)
         self.automaticBooking = automaticBooking
         self.budget = budget
+        self.group = group
         self.createdAt = .now
         self.updatedAt = .now
     }

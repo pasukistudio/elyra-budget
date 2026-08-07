@@ -33,7 +33,8 @@ enum FixedCostScheduler {
                     date: dueDate,
                     note: fixedCost.note,
                     type: .expense,
-                    budget: fixedCost.budget
+                    budget: fixedCost.budget,
+                    group: fixedCost.group ?? fixedCost.budget?.group
                 )
                 transaction.fixedCostID = fixedCost.id
                 transaction.fixedCostOccurrenceDate = dueDate

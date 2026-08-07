@@ -19,6 +19,9 @@ final class Budget {
 
     var includesFixedCosts: Bool = true
 
+    /// Optional until budget groups are introduced for existing data.
+    var group: BudgetGroup?
+
     // MARK: - Buchungen
 
     @Relationship(
@@ -57,6 +60,7 @@ final class Budget {
         iconColorHex: String = "#FF9500",
         limit: Decimal = 0,
         includesFixedCosts: Bool = true,
+        group: BudgetGroup? = nil,
         sortOrder: Int = 0,
         isArchived: Bool = false
     ) {
@@ -65,6 +69,7 @@ final class Budget {
         self.iconColorHex = iconColorHex
         self.limit = limit
         self.includesFixedCosts = includesFixedCosts
+        self.group = group
         self.sortOrder = sortOrder
         self.isArchived = isArchived
         self.createdAt = Date()

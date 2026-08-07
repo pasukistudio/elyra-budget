@@ -1,0 +1,330 @@
+import SwiftData
+import SwiftUI
+
+struct BudgetGroupMenu: View {
+    @Binding var selection: BudgetGroup?
+    let groups: [BudgetGroup]
+    let manage: () -> Void
+
+    var body: some View {
+        Menu {
+            Button {
+                selection = nil
+            } label: {
+                Label("Alle Bereiche", systemImage: selection == nil ? "checkmark" : "square.dashed")
+            }
+
+            if !groups.isEmpty {
+                Divider()
+                ForEach(groups) { group in
+                    Button {
+                        selection = group
+                    } label: {
+                        Label {
+                            Text(group.name)
+                        } icon: {
+                            Image(systemName: group.iconName)
+                        }
+                    }
+                }
+            }
+
+            Divider()
+            Button(action: manage) {
+                Label("Bereiche verwalten", systemImage: "slider.horizontal.3")
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: selection?.iconName ?? "person.2.fill")
+                    .foregroundStyle(
+                        selection.map { Color(hexString: $0.iconColorHex) } ?? .secondary
+                    )
+                Text(selection?.name ?? "Alle Bereiche")
+            }
+        }
+        .accessibilityLabel("Budgetbereich auswählen")
+    }
+}
+
+struct BudgetGroupManagementView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+
+    @Query(
+        filter: #Predicate<BudgetGroup> { !$0.isArchived },
+        sort: [
+            SortDescriptor<BudgetGroup>(\.sortOrder),
+            SortDescriptor<BudgetGroup>(\.createdAt)
+        ]
+    ) private var groups: [BudgetGroup]
+
+    @Query(
+        filter: #Predicate<BudgetGroup> { $0.isArchived },
+        sort: [SortDescriptor<BudgetGroup>(\.updatedAt, order: .reverse)]
+    ) private var archivedGroups: [BudgetGroup]
+
+    @State private var editingGroup: BudgetGroup?
+    @State private var showingEditor = false
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Budgetbereiche") {
+                    ForEach(groups) { group in
+                        Button {
+                            editingGroup = group
+                            showingEditor = true
+                        } label: {
+                            HStack(spacing: 12) {
+                                IconBadgeView(
+                                    iconName: group.iconName,
+                                    color: Color(hexString: group.iconColorHex),
+                                    size: 34
+                                )
+                                Text(group.name)
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button {
+                                archive(group)
+                            } label: {
+                                Label("Archivieren", systemImage: "archivebox")
+                            }
+                            .tint(.orange)
+                        }
+                    }
+                    .onMove { source, destination in
+                        var reordered = groups
+                        reordered.move(fromOffsets: source, toOffset: destination)
+                        for (index, group) in reordered.enumerated() {
+                            group.sortOrder = index
+                            group.updatedAt = .now
+                        }
+                        try? modelContext.save()
+                    }
+                }
+
+                Section {
+                    Button {
+                        editingGroup = nil
+                        showingEditor = true
+                    } label: {
+                        Label("Neuen Bereich hinzufügen", systemImage: "plus")
+                    }
+                }
+
+                if !archivedGroups.isEmpty {
+                    Section("Archivierte Bereiche") {
+                        ForEach(archivedGroups) { group in
+                            HStack(spacing: 12) {
+                                IconBadgeView(
+                                    iconName: group.iconName,
+                                    color: Color(hexString: group.iconColorHex),
+                                    size: 34
+                                )
+                                Text(group.name)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Button("Wiederherstellen") {
+                                    restore(group)
+                                }
+                                .buttonStyle(.borderless)
+                                .foregroundStyle(.tint)
+                            }
+                        }
+                    }
+                }
+            }
+            .environment(\.editMode, .constant(.active))
+            .navigationTitle("Budgetbereiche")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fertig") { dismiss() }
+                }
+            }
+            .sheet(isPresented: $showingEditor) {
+                BudgetGroupEditorView(group: editingGroup)
+            }
+        }
+    }
+
+    private func archive(_ group: BudgetGroup) {
+        group.isArchived = true
+        group.updatedAt = .now
+        try? modelContext.save()
+    }
+
+    private func restore(_ group: BudgetGroup) {
+        group.isArchived = false
+        group.updatedAt = .now
+        group.sortOrder = groups.count
+        try? modelContext.save()
+    }
+}
+
+private struct BudgetGroupEditorView: View {
+    let group: BudgetGroup?
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @State private var name: String
+    @State private var selectedIcon: String
+    @State private var selectedColorHex: String
+    @State private var showingIconPicker = false
+    @State private var saveErrorMessage: String?
+
+    private let iconColumns = Array(
+        repeating: GridItem(.flexible(), spacing: 12),
+        count: 5
+    )
+
+    private let colorColumns = Array(
+        repeating: GridItem(.flexible(), spacing: 8),
+        count: 5
+    )
+
+    private let featuredIcons = CategoryIconLibrary.budgetFeatured
+
+    init(group: BudgetGroup?) {
+        self.group = group
+        _name = State(initialValue: group?.name ?? "")
+        _selectedIcon = State(initialValue: group?.iconName ?? "person.2.fill")
+        _selectedColorHex = State(initialValue: group?.iconColorHex ?? ColorPreset.blue.hex)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Budgetbereich") {
+                    TextField("Bezeichnung", text: $name)
+                }
+
+                Section("Darstellung") {
+                    Text("Icon")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    LazyVGrid(columns: iconColumns, spacing: 12) {
+                        ForEach(featuredIcons, id: \.self) { iconName in
+                            iconButton(iconName)
+                        }
+                    }
+
+                    Button {
+                        showingIconPicker = true
+                    } label: {
+                        Label("Weitere Icons", systemImage: "chevron.right")
+                            .labelStyle(.titleAndIcon)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
+                    Text("Icon-Farbe")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 8)
+
+                    LazyVGrid(columns: colorColumns, spacing: 10) {
+                        ForEach(ColorPreset.allCases) { preset in
+                            colorButton(preset)
+                        }
+                    }
+                }
+            }
+            .navigationTitle(group == nil ? "Neuer Bereich" : "Bereich bearbeiten")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .sheet(isPresented: $showingIconPicker) {
+                IconPickerView(selectedIcon: $selectedIcon)
+            }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Abbrechen") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Speichern") { save() }
+                        .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+            .saveErrorAlert(message: $saveErrorMessage)
+        }
+    }
+
+    private func save() {
+        let cleanedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanedName.isEmpty else { return }
+
+        let value = group ?? BudgetGroup()
+        value.name = cleanedName
+        value.iconName = selectedIcon
+        value.iconColorHex = selectedColorHex
+        value.updatedAt = .now
+        if group == nil {
+            value.sortOrder = 0
+            modelContext.insert(value)
+        }
+
+        do {
+            try modelContext.save()
+            dismiss()
+        } catch {
+            saveErrorMessage = "Der Budgetbereich konnte nicht gespeichert werden."
+        }
+    }
+
+    private var selectedColor: Color {
+        Color(hexString: selectedColorHex)
+    }
+
+    private func iconButton(_ iconName: String) -> some View {
+        let isSelected = selectedIcon == iconName
+
+        return Button {
+            selectedIcon = iconName
+        } label: {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(isSelected ? selectedColor.opacity(0.18) : Color.secondary.opacity(0.08))
+                    .frame(width: 48, height: 48)
+                Image(systemName: iconName)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(isSelected ? selectedColor : .secondary)
+                if isSelected {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(selectedColor, lineWidth: 2)
+                        .frame(width: 48, height: 48)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func colorButton(_ preset: ColorPreset) -> some View {
+        let isSelected = selectedColorHex == preset.hex
+
+        return Button {
+            selectedColorHex = preset.hex
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(preset.color)
+                    .frame(width: 36, height: 36)
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(preset.title)
+    }
+}

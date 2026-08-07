@@ -16,9 +16,6 @@
     "0,00" : {
 
     },
-    "2.228,25 € verwendet" : {
-
-    },
     "Abbrechen" : {
 
     },
@@ -41,6 +38,9 @@
         }
       }
     },
+    "Alle Bereiche" : {
+
+    },
     "Allgemein" : {
 
     },
@@ -51,6 +51,9 @@
 
     },
     "Archivieren" : {
+
+    },
+    "Archivierte Bereiche" : {
 
     },
     "Archivierte Budgets" : {
@@ -95,6 +98,12 @@
           }
         }
       }
+    },
+    "Bereich bearbeiten" : {
+
+    },
+    "Bereiche verwalten" : {
+
     },
     "Beschreibung" : {
 
@@ -151,6 +160,15 @@
 
     },
     "Budgetaktionen" : {
+
+    },
+    "Budgetbereich" : {
+
+    },
+    "Budgetbereich auswählen" : {
+
+    },
+    "Budgetbereiche" : {
 
     },
     "Budgetname" : {
@@ -390,7 +408,7 @@
     "Limit" : {
 
     },
-    "Limit 2.635,82 €" : {
+    "Limit %@" : {
 
     },
     "Löschen" : {
@@ -444,6 +462,12 @@
 
     },
     "Neue freie Rücklage" : {
+
+    },
+    "Neuen Bereich hinzufügen" : {
+
+    },
+    "Neuer Bereich" : {
 
     },
     "Neues Budget" : {
@@ -558,6 +582,9 @@
 
     },
     "Verwalten" : {
+
+    },
+    "verwendet" : {
 
     },
     "Vom Budget abziehen" : {

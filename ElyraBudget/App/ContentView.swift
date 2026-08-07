@@ -11,6 +11,14 @@ struct ContentView: View {
     private var modelContext
 
     @Query private var userSettings: [UserSettings]
+    @Query(
+        filter: #Predicate<BudgetGroup> { !$0.isArchived },
+        sort: [
+            SortDescriptor<BudgetGroup>(\.sortOrder),
+            SortDescriptor<BudgetGroup>(\.createdAt)
+        ]
+    )
+    private var budgetGroups: [BudgetGroup]
     @Query(sort: [SortDescriptor<FixedCost>(\.createdAt)])
     private var fixedCosts: [FixedCost]
     @Query(sort: [SortDescriptor<SavingsGoal>(\.createdAt)])
@@ -44,6 +52,8 @@ struct ContentView: View {
     @State private var requestingSavingsReserveEditor = false
     @State private var showingSavingsManagement = false
     @State private var showingArchivedSavings = false
+    @State private var selectedBudgetGroup: BudgetGroup?
+    @State private var showingBudgetGroupManagement = false
 
     // MARK: - Hauptansicht
 
@@ -56,6 +66,13 @@ struct ContentView: View {
             #endif
         }
         .environment(\.appCurrencyCode, appCurrencyCode)
+        .sheet(isPresented: $showingBudgetGroupManagement, onDismiss: {
+            if selectedBudgetGroup?.isArchived == true {
+                selectedBudgetGroup = nil
+            }
+        }) {
+            BudgetGroupManagementView()
+        }
         .task {
             processAutomaticFixedCosts()
             processAutomaticSavingsGoals()
@@ -211,7 +228,7 @@ struct ContentView: View {
             .sheet(
                 isPresented: $showingBudgetEditor
             ) {
-                BudgetEditorView()
+                BudgetEditorView(group: selectedBudgetGroup)
             }
             .sheet(
                 isPresented: $showingBudgetManagement
@@ -226,7 +243,10 @@ struct ContentView: View {
             .sheet(
                 isPresented: $showingTransactionEditor
             ) {
-                TransactionEditorView(initialDate: .now)
+                TransactionEditorView(
+                    initialDate: .now,
+                    group: selectedBudgetGroup
+                )
             }
         }
         .tint(effectiveAccentColor)
@@ -241,7 +261,7 @@ struct ContentView: View {
     #if os(iOS)
     private var overviewTab: some View {
         appBackground {
-            OverviewView()
+            OverviewView(selectedGroup: $selectedBudgetGroup)
         }
         .tabItem {
             Label(
@@ -255,7 +275,10 @@ struct ContentView: View {
 
     private var transactionsTab: some View {
         appBackground {
-            TransactionsView(selectedDate: $selectedDate)
+            TransactionsView(
+                selectedDate: $selectedDate,
+                selectedGroup: $selectedBudgetGroup
+            )
         }
         .tabItem {
             Label(
@@ -272,7 +295,8 @@ struct ContentView: View {
             BudgetsView(
                 showingBudgetEditor:
                     $showingBudgetEditor,
-                selectedDate: $selectedDate
+                selectedDate: $selectedDate,
+                selectedGroup: $selectedBudgetGroup
             )
         }
         .tabItem {
@@ -291,7 +315,8 @@ struct ContentView: View {
                 addRequested: $requestingSavingsGoalEditor,
                 reserveRequested: $requestingSavingsReserveEditor,
                 managementRequested: $showingSavingsManagement,
-                archiveRequested: $showingArchivedSavings
+                archiveRequested: $showingArchivedSavings,
+                selectedGroup: $selectedBudgetGroup
             )
         }
         .tabItem {
@@ -306,7 +331,10 @@ struct ContentView: View {
 
     private var fixedCostsTab: some View {
         appBackground {
-            FixedCostsView(addRequested: $requestingFixedCostEditor)
+            FixedCostsView(
+                addRequested: $requestingFixedCostEditor,
+                selectedGroup: $selectedBudgetGroup
+            )
         }
         .tabItem {
             Label(
@@ -347,7 +375,7 @@ struct ContentView: View {
                         isPresented:
                             $showingBudgetEditor
                     ) {
-                        BudgetEditorView()
+                        BudgetEditorView(group: selectedBudgetGroup)
                     }
                     .sheet(
                         isPresented:
@@ -438,6 +466,14 @@ struct ContentView: View {
                 }
             )
             .tint(effectiveAccentColor)
+        }
+
+        ToolbarItem(placement: .navigation) {
+            BudgetGroupMenu(
+                selection: $selectedBudgetGroup,
+                groups: budgetGroups,
+                manage: { showingBudgetGroupManagement = true }
+            )
         }
 
         ToolbarItem(
@@ -617,16 +653,20 @@ struct ContentView: View {
     private var selectedSectionView: some View {
         switch selectedSection {
         case .overview:
-            OverviewView()
+            OverviewView(selectedGroup: $selectedBudgetGroup)
 
         case .transactions:
-            TransactionsView(selectedDate: $selectedDate)
+            TransactionsView(
+                selectedDate: $selectedDate,
+                selectedGroup: $selectedBudgetGroup
+            )
 
         case .budgets:
             BudgetsView(
                 showingBudgetEditor:
                     $showingBudgetEditor,
-                selectedDate: $selectedDate
+                selectedDate: $selectedDate,
+                selectedGroup: $selectedBudgetGroup
             )
 
         case .savings:
@@ -634,11 +674,15 @@ struct ContentView: View {
                 addRequested: $requestingSavingsGoalEditor,
                 reserveRequested: $requestingSavingsReserveEditor,
                 managementRequested: $showingSavingsManagement,
-                archiveRequested: $showingArchivedSavings
+                archiveRequested: $showingArchivedSavings,
+                selectedGroup: $selectedBudgetGroup
             )
 
         case .fixcosts:
-            FixedCostsView(addRequested: $requestingFixedCostEditor)
+            FixedCostsView(
+                addRequested: $requestingFixedCostEditor,
+                selectedGroup: $selectedBudgetGroup
+            )
         }
     }
 
@@ -679,6 +723,7 @@ struct ContentView: View {
         .modelContainer(
             for: [
                 UserSettings.self,
+                BudgetGroup.self,
                 Budget.self,
                 Transaction.self,
                 FixedCost.self,
@@ -702,6 +747,7 @@ struct ContentView: View {
         .modelContainer(
             for: [
                 UserSettings.self,
+                BudgetGroup.self,
                 Budget.self,
                 Transaction.self,
                 FixedCost.self,
@@ -724,6 +770,7 @@ struct ContentView: View {
         .modelContainer(
             for: [
                 UserSettings.self,
+                BudgetGroup.self,
                 Budget.self,
                 Transaction.self,
                 FixedCost.self,
@@ -747,6 +794,7 @@ struct ContentView: View {
         .modelContainer(
             for: [
                 UserSettings.self,
+                BudgetGroup.self,
                 Budget.self,
                 Transaction.self,
                 FixedCost.self,

@@ -4,6 +4,7 @@ import SwiftUI
 
 struct BudgetEditorView: View {
     let budget: Budget?
+    let group: BudgetGroup?
     @Environment(\.appCurrencyCode) private var currencyCode
 
     @Environment(\.dismiss) private var dismiss
@@ -23,9 +24,11 @@ struct BudgetEditorView: View {
     // MARK: - Initialisierung
 
     init(
-        budget: Budget? = nil
+        budget: Budget? = nil,
+        group: BudgetGroup? = nil
     ) {
         self.budget = budget
+        self.group = group ?? budget?.group
 
         let initialLimit: Decimal?
 
@@ -499,6 +502,7 @@ struct BudgetEditorView: View {
             existingBudget.iconColorHex = selectedColorHex
             existingBudget.limit = normalizedLimit
             existingBudget.includesFixedCosts = includesFixedCosts
+            existingBudget.group = group
             existingBudget.updatedAt = .now
         } else {
             let newBudget = Budget(
@@ -508,6 +512,8 @@ struct BudgetEditorView: View {
                 limit: normalizedLimit,
                 includesFixedCosts: includesFixedCosts
             )
+
+            newBudget.group = group
 
             modelContext.insert(newBudget)
         }
