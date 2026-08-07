@@ -33,6 +33,12 @@ final class Budget {
     )
     var fixedCosts: [FixedCost]? = []
 
+    @Relationship(
+        deleteRule: .nullify,
+        inverse: \SavingsGoal.budget
+    )
+    var savingsGoals: [SavingsGoal]? = []
+
     // MARK: - Organisation
 
     var sortOrder: Int = 0

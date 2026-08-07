@@ -4,10 +4,16 @@
     "" : {
 
     },
+    "„%@“ bleibt erhalten und kann später im Archiv wiederhergestellt werden." : {
+
+    },
     "„%@“ wird dauerhaft gelöscht." : {
 
     },
     "%@ verschieben" : {
+
+    },
+    "0,00" : {
 
     },
     "2.228,25 € verwendet" : {
@@ -38,6 +44,12 @@
     "Allgemein" : {
 
     },
+    "Archiv" : {
+
+    },
+    "Archiv öffnen" : {
+
+    },
     "Archivieren" : {
 
     },
@@ -53,7 +65,22 @@
     "Ausgaben: 0,00 %@" : {
 
     },
+    "Automatisch %@" : {
+
+    },
     "Automatisch buchen" : {
+
+    },
+    "Automatisch sparen" : {
+
+    },
+    "Automatische Rücklage" : {
+
+    },
+    "Automatische Sparbuchungen werden als Ausgabe vom ausgewählten Budget erfasst." : {
+
+    },
+    "Automatisches Sparen" : {
 
     },
     "Bearbeiten" : {
@@ -166,13 +193,13 @@
     "Deine Einnahmen und Ausgaben erscheinen hier." : {
 
     },
-    "Deine Sparziele erscheinen später hier." : {
-
-    },
     "Details" : {
 
     },
     "Die Buchung „%@“ wird dauerhaft gelöscht." : {
+
+    },
+    "Die Einzahlung wird als Ausgabe vom ausgewählten Budget erfasst." : {
 
     },
     "Dunkel" : {
@@ -181,7 +208,13 @@
     "Eigene Farbe" : {
 
     },
+    "Ein Sparziel benötigt einen Zielbetrag." : {
+
+    },
     "Eine eigene Akzentfarbe ist Bestandteil von Elyra Budget Pro." : {
+
+    },
+    "Eine freie Rücklage hat keinen festen Zielbetrag." : {
 
     },
     "Einstellungen" : {
@@ -193,6 +226,9 @@
           }
         }
       }
+    },
+    "Einzahlen" : {
+
     },
     "Endgültig löschen" : {
 
@@ -231,6 +267,9 @@
 
     },
     "Fixkosten pausieren" : {
+
+    },
+    "Freie Rücklagen" : {
 
     },
     "Gesamt belegt" : {
@@ -284,6 +323,9 @@
     "Hell" : {
 
     },
+    "Hinzufügen" : {
+
+    },
     "Icon" : {
 
     },
@@ -294,6 +336,9 @@
 
     },
     "Icons durchsuchen" : {
+
+    },
+    "In den Archiv verschieben?" : {
 
     },
     "Indigo" : {
@@ -336,6 +381,9 @@
     "Lege regelmäßige Ausgaben an und behalte deine monatliche Belastung im Blick." : {
 
     },
+    "Lege Sparziele oder freie Rücklagen an und behalte deine Fortschritte im Blick." : {
+
+    },
     "Lila" : {
 
     },
@@ -346,6 +394,12 @@
 
     },
     "Löschen" : {
+
+    },
+    "Manuelle Einzahlung" : {
+
+    },
+    "Manuelle Rücklage" : {
 
     },
     "Monat" : {
@@ -389,6 +443,9 @@
     "Neue Fixkosten" : {
 
     },
+    "Neue freie Rücklage" : {
+
+    },
     "Neues Budget" : {
 
     },
@@ -399,6 +456,12 @@
 
     },
     "Neues Element erstellen" : {
+
+    },
+    "Neues Sparziel" : {
+
+    },
+    "Noch keine aktiven Sparziele oder freien Rücklagen." : {
 
     },
     "Noch keine Buchungen" : {
@@ -452,7 +515,19 @@
     "Rot" : {
 
     },
+    "Sparaktionen" : {
+
+    },
     "Sparen" : {
+
+    },
+    "Sparen hinzufügen" : {
+
+    },
+    "Sparziel" : {
+
+    },
+    "Sparziele" : {
 
     },
     "Speichern" : {
@@ -482,6 +557,15 @@
     "Verfügbar in diesem Monat" : {
 
     },
+    "Verwalten" : {
+
+    },
+    "Vom Budget abziehen" : {
+
+    },
+    "von %@" : {
+
+    },
     "Vorheriger Monat" : {
 
     },
@@ -498,6 +582,9 @@
 
     },
     "Ziehe den Griff links, um die Reihenfolge der Budgets zu ändern." : {
+
+    },
+    "Ziel" : {
 
     },
     "Zuordnung" : {

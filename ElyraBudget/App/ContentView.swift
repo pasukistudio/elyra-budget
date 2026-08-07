@@ -13,6 +13,8 @@ struct ContentView: View {
     @Query private var userSettings: [UserSettings]
     @Query(sort: [SortDescriptor<FixedCost>(\.createdAt)])
     private var fixedCosts: [FixedCost]
+    @Query(sort: [SortDescriptor<SavingsGoal>(\.createdAt)])
+    private var savingsGoals: [SavingsGoal]
     @Query(sort: [SortDescriptor<Transaction>(\.date)])
     private var transactions: [Transaction]
 
@@ -38,6 +40,10 @@ struct ContentView: View {
     @State private var showingArchivedBudgets = false
     @State private var showingTransactionEditor = false
     @State private var requestingFixedCostEditor = false
+    @State private var requestingSavingsGoalEditor = false
+    @State private var requestingSavingsReserveEditor = false
+    @State private var showingSavingsManagement = false
+    @State private var showingArchivedSavings = false
 
     // MARK: - Hauptansicht
 
@@ -52,10 +58,12 @@ struct ContentView: View {
         .environment(\.appCurrencyCode, appCurrencyCode)
         .task {
             processAutomaticFixedCosts()
+            processAutomaticSavingsGoals()
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
             processAutomaticFixedCosts()
+            processAutomaticSavingsGoals()
         }
     }
 
@@ -69,6 +77,20 @@ struct ContentView: View {
         } catch {
             AppLogger.persistence.error(
                 "Automatische Fixkosten konnten nicht gebucht werden: \(error)"
+            )
+        }
+    }
+
+    private func processAutomaticSavingsGoals() {
+        do {
+            try SavingsGoalScheduler.processAutomaticBookings(
+                goals: savingsGoals,
+                transactions: transactions,
+                modelContext: modelContext
+            )
+        } catch {
+            AppLogger.persistence.error(
+                "Automatische Sparbuchungen konnten nicht gebucht werden: \(error)"
             )
         }
     }
@@ -265,7 +287,12 @@ struct ContentView: View {
 
     private var savingsTab: some View {
         appBackground {
-            SavingsView()
+            SavingsView(
+                addRequested: $requestingSavingsGoalEditor,
+                reserveRequested: $requestingSavingsReserveEditor,
+                managementRequested: $showingSavingsManagement,
+                archiveRequested: $showingArchivedSavings
+            )
         }
         .tabItem {
             Label(
@@ -418,6 +445,8 @@ struct ContentView: View {
         ) {
             if selectedSection == .budgets {
                 budgetActionsMenu
+            } else if selectedSection == .savings {
+                savingsActionsMenu
             } else {
                 standardAddButton
             }
@@ -468,6 +497,43 @@ struct ContentView: View {
         )
     }
 
+    // MARK: - Sparen-Menü
+
+    private var savingsActionsMenu: some View {
+        Menu {
+            Button {
+                requestingSavingsGoalEditor = true
+            } label: {
+                Label("Neues Sparziel", systemImage: "target")
+            }
+
+            Button {
+                requestingSavingsReserveEditor = true
+            } label: {
+                Label("Neue freie Rücklage", systemImage: "banknote")
+            }
+
+            Button {
+                showingSavingsManagement = true
+            } label: {
+                Label("Verwalten", systemImage: "arrow.up.arrow.down")
+            }
+
+            Divider()
+
+            Button {
+                showingArchivedSavings = true
+            } label: {
+                Label("Archiv", systemImage: "archivebox")
+            }
+        } label: {
+            Image(systemName: "plus")
+                .foregroundStyle(effectiveAccentColor)
+        }
+        .help("Sparaktionen")
+        .accessibilityLabel("Sparaktionen")
+    }
+
     // MARK: - Standardmäßiger Plus-Button
 
     private var standardAddButton: some View {
@@ -498,8 +564,10 @@ struct ContentView: View {
         case .fixcosts:
             requestingFixedCostEditor = true
 
-        case .overview,
-             .savings:
+        case .savings:
+            requestingSavingsGoalEditor = true
+
+        case .overview:
             break
         }
     }
@@ -515,6 +583,9 @@ struct ContentView: View {
 
         case .fixcosts:
             return "Neue Fixkosten"
+
+        case .savings:
+            return "Sparen hinzufügen"
 
         default:
             return "Neues Element"
@@ -532,6 +603,9 @@ struct ContentView: View {
 
         case .fixcosts:
             return "Fixkosten erstellen"
+
+        case .savings:
+            return "Sparen hinzufügen"
 
         default:
             return "Neues Element erstellen"
@@ -556,7 +630,12 @@ struct ContentView: View {
             )
 
         case .savings:
-            SavingsView()
+            SavingsView(
+                addRequested: $requestingSavingsGoalEditor,
+                reserveRequested: $requestingSavingsReserveEditor,
+                managementRequested: $showingSavingsManagement,
+                archiveRequested: $showingArchivedSavings
+            )
 
         case .fixcosts:
             FixedCostsView(addRequested: $requestingFixedCostEditor)
@@ -602,7 +681,9 @@ struct ContentView: View {
                 UserSettings.self,
                 Budget.self,
                 Transaction.self,
-                FixedCost.self
+                FixedCost.self,
+                SavingsGoal.self,
+                SavingsContribution.self
             ],
             inMemory: false
         )
@@ -623,9 +704,11 @@ struct ContentView: View {
                 UserSettings.self,
                 Budget.self,
                 Transaction.self,
-                FixedCost.self
+                FixedCost.self,
+                SavingsGoal.self,
+                SavingsContribution.self
             ],
-            inMemory: true
+            inMemory: false
         )
         .environment(
             \.locale,
@@ -643,7 +726,9 @@ struct ContentView: View {
                 UserSettings.self,
                 Budget.self,
                 Transaction.self,
-                FixedCost.self
+                FixedCost.self,
+                SavingsGoal.self,
+                SavingsContribution.self
             ],
             inMemory: true
         )
@@ -664,7 +749,9 @@ struct ContentView: View {
                 UserSettings.self,
                 Budget.self,
                 Transaction.self,
-                FixedCost.self
+                FixedCost.self,
+                SavingsGoal.self,
+                SavingsContribution.self
             ],
             inMemory: true
         )

@@ -10,7 +10,9 @@ struct ElyraBudgetApp: App {
             UserSettings.self,
             Budget.self,
             Transaction.self,
-            FixedCost.self
+            FixedCost.self,
+            SavingsGoal.self,
+            SavingsContribution.self
         ])
 
         let configuration = ModelConfiguration(

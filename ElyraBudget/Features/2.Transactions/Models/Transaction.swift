@@ -32,6 +32,12 @@ final class Transaction {
     var fixedCostID: UUID?
     var fixedCostOccurrenceDate: Date?
 
+    // MARK: - Sparziel-Zuordnung
+
+    /// Identifies transactions generated from an automatic savings contribution.
+    var savingsGoalID: UUID?
+    var savingsGoalOccurrenceDate: Date?
+
     // MARK: - Zeitstempel
 
     var createdAt: Date = Date()
@@ -55,6 +61,8 @@ final class Transaction {
         self.budget = budget
         self.fixedCostID = nil
         self.fixedCostOccurrenceDate = nil
+        self.savingsGoalID = nil
+        self.savingsGoalOccurrenceDate = nil
         self.createdAt = Date()
         self.updatedAt = Date()
     }
