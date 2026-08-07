@@ -78,31 +78,46 @@ struct BudgetGroupManagementView: View {
     ) private var archivedGroups: [BudgetGroup]
 
     @State private var editingGroup: BudgetGroup?
-    @State private var showingEditor = false
+    @State private var showingNewEditor = false
 
     var body: some View {
         NavigationStack {
             List {
                 Section("Budgetbereiche") {
                     ForEach(groups) { group in
-                        Button {
-                            editingGroup = group
-                            showingEditor = true
-                        } label: {
-                            HStack(spacing: 12) {
-                                IconBadgeView(
-                                    iconName: group.iconName,
-                                    color: Color(hexString: group.iconColorHex),
-                                    size: 34
-                                )
-                                Text(group.name)
-                                    .foregroundStyle(.primary)
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.caption.weight(.semibold))
+                        HStack(spacing: 12) {
+                            Button {
+                                editingGroup = group
+                            } label: {
+                                HStack(spacing: 12) {
+                                    IconBadgeView(
+                                        iconName: group.iconName,
+                                        color: Color(hexString: group.iconColorHex),
+                                        size: 34
+                                    )
+                                    Text(group.name)
+                                        .foregroundStyle(.primary)
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            .buttonStyle(.plain)
+
+                            Menu {
+                                Button {
+                                    archive(group)
+                                } label: {
+                                    Label("Archivieren", systemImage: "archivebox")
+                                }
+                            } label: {
+                                Image(systemName: "ellipsis.circle")
                                     .foregroundStyle(.secondary)
                             }
+                            .accessibilityLabel("Optionen für \(group.name)")
                         }
+                        .contentShape(Rectangle())
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button {
                                 archive(group)
@@ -125,8 +140,7 @@ struct BudgetGroupManagementView: View {
 
                 Section {
                     Button {
-                        editingGroup = nil
-                        showingEditor = true
+                        showingNewEditor = true
                     } label: {
                         Label("Neuen Bereich hinzufügen", systemImage: "plus")
                     }
@@ -164,8 +178,11 @@ struct BudgetGroupManagementView: View {
                     Button("Fertig") { dismiss() }
                 }
             }
-            .sheet(isPresented: $showingEditor) {
-                BudgetGroupEditorView(group: editingGroup)
+            .sheet(item: $editingGroup) { group in
+                BudgetGroupEditorView(group: group)
+            }
+            .sheet(isPresented: $showingNewEditor) {
+                BudgetGroupEditorView(group: nil)
             }
         }
     }

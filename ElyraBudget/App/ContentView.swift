@@ -74,17 +74,14 @@ struct ContentView: View {
         }) {
             BudgetGroupManagementView()
         }
-        .sheet(isPresented: $showingSettings) {
-            SettingsView()
-        }
         .task {
-            ensureDefaultBudgetGroup()
+            await ensureDefaultBudgetGroupAfterCloudKitSync()
             processAutomaticFixedCosts()
             processAutomaticSavingsGoals()
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
-            ensureDefaultBudgetGroup()
+            selectExistingBudgetGroupIfNeeded()
             processAutomaticFixedCosts()
             processAutomaticSavingsGoals()
         }
@@ -118,8 +115,54 @@ struct ContentView: View {
         }
     }
 
+    private func ensureDefaultBudgetGroupAfterCloudKitSync() async {
+        // SwiftData imports CloudKit records asynchronously. Give an existing
+        // budget group time to arrive before creating the default one.
+        for _ in 0..<6 {
+            guard !Task.isCancelled else { return }
+
+            selectExistingBudgetGroupIfNeeded()
+            let existingGroups = (try? modelContext.fetch(
+                FetchDescriptor<BudgetGroup>()
+            )) ?? []
+
+            if !existingGroups.isEmpty {
+                return
+            }
+
+            try? await Task.sleep(for: .milliseconds(500))
+        }
+
+        ensureDefaultBudgetGroup()
+    }
+
+    private func selectExistingBudgetGroupIfNeeded() {
+        guard selectedBudgetGroup == nil else { return }
+
+        let existingGroups = (try? modelContext.fetch(
+            FetchDescriptor<BudgetGroup>()
+        )) ?? []
+
+        selectedBudgetGroup = existingGroups.first {
+            !$0.isArchived && $0.name.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            ).localizedCaseInsensitiveCompare("Persönlich") == .orderedSame
+        } ?? existingGroups.first { !$0.isArchived }
+    }
+
     private func ensureDefaultBudgetGroup() {
         let existingGroups = (try? modelContext.fetch(FetchDescriptor<BudgetGroup>())) ?? []
+
+        if let personalGroup = existingGroups.first(where: {
+            $0.name.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            ).localizedCaseInsensitiveCompare("Persönlich") == .orderedSame
+        }) {
+            if selectedBudgetGroup == nil, !personalGroup.isArchived {
+                selectedBudgetGroup = personalGroup
+            }
+            return
+        }
 
         guard existingGroups.isEmpty else {
             if selectedBudgetGroup == nil {
@@ -274,6 +317,9 @@ struct ContentView: View {
                 effectiveToolbarColorScheme,
                 for: .navigationBar
             )
+            .navigationDestination(isPresented: $showingSettings) {
+                SettingsView()
+            }
             .sheet(
                 isPresented: $showingMonthPicker
             ) {
@@ -417,6 +463,9 @@ struct ContentView: View {
                     )
                     .toolbar {
                         sharedToolbar
+                    }
+                    .navigationDestination(isPresented: $showingSettings) {
+                        SettingsView()
                     }
                     .sheet(
                         isPresented:
