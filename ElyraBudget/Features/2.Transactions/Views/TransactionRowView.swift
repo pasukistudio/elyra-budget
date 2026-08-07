@@ -13,26 +13,24 @@ struct TransactionRowView: View {
                     .font(.headline)
                     .lineLimit(1)
 
-                HStack(spacing: 6) {
-                    Text(transaction.date, format: .dateTime.hour().minute())
-                    if let budget = transaction.budget {
-                        Text("•")
-                        HStack(spacing: 4) {
-                            Image(systemName: budget.iconName)
-                            Text(budget.name)
-                        }
-                        .foregroundStyle(Color(hexString: budget.iconColorHex))
-                        .lineLimit(1)
-                    }
+                if let budget = transaction.budget {
+                    Text(budget.name)
+                    .font(.caption)
+                    .foregroundStyle(Color(hexString: budget.iconColorHex))
+                    .lineLimit(1)
                 }
-                .font(.caption)
-                .foregroundStyle(.secondary)
             }
 
             Spacer(minLength: 8)
-            Text(transaction.signedAmount, format: .currency(code: currencyCode))
-                .font(.headline)
-                .foregroundStyle(amountColor)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(transaction.signedAmount, format: .currency(code: currencyCode))
+                    .font(.headline)
+                    .foregroundStyle(amountColor)
+
+                Text(transaction.date, format: .dateTime.day().month(.abbreviated).year())
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(.vertical, 4)
     }
@@ -40,12 +38,24 @@ struct TransactionRowView: View {
     private var transactionIcon: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .fill(amountColor.opacity(0.14))
+                .fill(transactionIconColor.opacity(0.14))
                 .frame(width: 44, height: 44)
-            Image(systemName: transaction.type.systemImage)
+            Image(systemName: transactionIconName)
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(amountColor)
+                .foregroundStyle(transactionIconColor)
         }
+    }
+
+    private var transactionIconName: String {
+        transaction.budget?.iconName ?? transaction.type.systemImage
+    }
+
+    private var transactionIconColor: Color {
+        if let budget = transaction.budget {
+            return Color(hexString: budget.iconColorHex)
+        }
+
+        return amountColor
     }
 
     private var amountColor: Color {
