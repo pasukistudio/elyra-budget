@@ -4,6 +4,9 @@
     "" : {
 
     },
+    "„%@“ wird dauerhaft gelöscht." : {
+
+    },
     "%@ verschieben" : {
 
     },
@@ -13,7 +16,13 @@
     "Abbrechen" : {
 
     },
+    "Abbuchung" : {
+
+    },
     "Aktionen für %@" : {
+
+    },
+    "Aktiv" : {
 
     },
     "Akzentfarbe" : {
@@ -44,6 +53,9 @@
     "Ausgaben: 0,00 %@" : {
 
     },
+    "Automatisch buchen" : {
+
+    },
     "Bearbeiten" : {
 
     },
@@ -60,7 +72,13 @@
     "Beschreibung" : {
 
     },
+    "Bezeichnung" : {
+
+    },
     "Blau" : {
+
+    },
+    "Buchung" : {
 
     },
     "Buchung bearbeiten" : {
@@ -188,6 +206,9 @@
     "Erstelle zuerst ein Budget, um es hier verwalten zu können." : {
 
     },
+    "Fällig" : {
+
+    },
     "Fertig" : {
 
     },
@@ -197,6 +218,21 @@
     "Fixkosten anrechnen" : {
 
     },
+    "Fixkosten bearbeiten" : {
+
+    },
+    "Fixkosten erstellen" : {
+
+    },
+    "Fixkosten hinzufügen" : {
+
+    },
+    "Fixkosten löschen?" : {
+
+    },
+    "Fixkosten pausieren" : {
+
+    },
     "Gesamt belegt" : {
 
     },
@@ -204,6 +240,9 @@
 
     },
     "Grün" : {
+
+    },
+    "Grunddaten" : {
 
     },
     "Gute Nacht" : {
@@ -236,6 +275,9 @@
     "Guten Nachmittag," : {
 
     },
+    "Häufigkeit" : {
+
+    },
     "Hauptwährung" : {
 
     },
@@ -257,6 +299,9 @@
     "Indigo" : {
 
     },
+    "Intervall" : {
+
+    },
     "Ist diese Option aktiviert, werden später auch Fixkosten berücksichtigt, die diesem Budget zugeordnet sind." : {
 
     },
@@ -269,6 +314,9 @@
           }
         }
       }
+    },
+    "Jetzt buchen" : {
+
     },
     "Kein Budget" : {
 
@@ -283,6 +331,9 @@
 
     },
     "Keine variablen Buchungen in diesem Monat" : {
+
+    },
+    "Lege regelmäßige Ausgaben an und behalte deine monatliche Belastung im Blick." : {
 
     },
     "Lila" : {
@@ -310,6 +361,9 @@
     "Monat auswählen" : {
 
     },
+    "Nach diesem Datum wird die Fixkostenbuchung wieder fällig." : {
+
+    },
     "Nach oben oder unten ziehen" : {
 
     },
@@ -330,6 +384,9 @@
 
     },
     "Neue Buchung erstellen" : {
+
+    },
+    "Neue Fixkosten" : {
 
     },
     "Neues Budget" : {
@@ -359,6 +416,9 @@
     "Notiz" : {
 
     },
+    "Notiz (optional)" : {
+
+    },
     "OK" : {
 
     },
@@ -368,6 +428,15 @@
     "Orange" : {
 
     },
+    "Pause" : {
+
+    },
+    "Pausiert" : {
+
+    },
+    "Pausiert bis" : {
+
+    },
     "PRO" : {
 
     },
@@ -375,9 +444,6 @@
 
     },
     "Profil und Einstellungen" : {
-
-    },
-    "Regelmäßige Ausgaben erscheinen später hier." : {
 
     },
     "Rosa" : {
@@ -393,6 +459,9 @@
 
     },
     "Speichern fehlgeschlagen" : {
+
+    },
+    "Startdatum" : {
 
     },
     "System" : {
@@ -429,6 +498,9 @@
 
     },
     "Ziehe den Griff links, um die Reihenfolge der Budgets zu ändern." : {
+
+    },
+    "Zuordnung" : {
 
     },
     "Zurück" : {

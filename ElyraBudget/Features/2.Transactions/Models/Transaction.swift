@@ -26,6 +26,12 @@ final class Transaction {
 
     var budget: Budget?
 
+    // MARK: - Fixkosten-Zuordnung
+
+    /// Identifies transactions generated from a fixed cost.
+    var fixedCostID: UUID?
+    var fixedCostOccurrenceDate: Date?
+
     // MARK: - Zeitstempel
 
     var createdAt: Date = Date()
@@ -47,6 +53,8 @@ final class Transaction {
         self.note = note
         self.typeRawValue = type.rawValue
         self.budget = budget
+        self.fixedCostID = nil
+        self.fixedCostOccurrenceDate = nil
         self.createdAt = Date()
         self.updatedAt = Date()
     }

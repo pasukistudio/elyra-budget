@@ -27,6 +27,12 @@ final class Budget {
     )
     var transactions: [Transaction]? = []
 
+    @Relationship(
+        deleteRule: .nullify,
+        inverse: \FixedCost.budget
+    )
+    var fixedCosts: [FixedCost]? = []
+
     // MARK: - Organisation
 
     var sortOrder: Int = 0

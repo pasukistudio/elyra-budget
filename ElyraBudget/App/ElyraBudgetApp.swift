@@ -9,7 +9,8 @@ struct ElyraBudgetApp: App {
         let schema = Schema([
             UserSettings.self,
             Budget.self,
-            Transaction.self
+            Transaction.self,
+            FixedCost.self
         ])
 
         let configuration = ModelConfiguration(
