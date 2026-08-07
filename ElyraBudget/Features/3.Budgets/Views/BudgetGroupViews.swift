@@ -5,6 +5,19 @@ struct BudgetGroupMenu: View {
     @Binding var selection: BudgetGroup?
     let groups: [BudgetGroup]
     let manage: () -> Void
+    let settings: () -> Void
+
+    init(
+        selection: Binding<BudgetGroup?>,
+        groups: [BudgetGroup],
+        manage: @escaping () -> Void,
+        settings: @escaping () -> Void = {}
+    ) {
+        _selection = selection
+        self.groups = groups
+        self.manage = manage
+        self.settings = settings
+    }
 
     var body: some View {
         Menu {
@@ -33,16 +46,17 @@ struct BudgetGroupMenu: View {
             Button(action: manage) {
                 Label("Bereiche verwalten", systemImage: "slider.horizontal.3")
             }
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: selection?.iconName ?? "person.2.fill")
-                    .foregroundStyle(
-                        selection.map { Color(hexString: $0.iconColorHex) } ?? .secondary
-                    )
-                Text(selection?.name ?? "Alle Bereiche")
+
+            Button(action: settings) {
+                Label("Einstellungen", systemImage: "gearshape")
             }
+        } label: {
+            Image(systemName: selection?.iconName ?? "person.2.fill")
+                .foregroundStyle(
+                    selection.map { Color(hexString: $0.iconColorHex) } ?? .secondary
+                )
         }
-        .accessibilityLabel("Budgetbereich auswählen")
+        .accessibilityLabel(selection?.name ?? "Budgetbereich auswählen")
     }
 }
 
