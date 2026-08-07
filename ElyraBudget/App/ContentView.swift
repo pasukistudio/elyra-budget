@@ -54,6 +54,7 @@ struct ContentView: View {
     @State private var showingArchivedSavings = false
     @State private var selectedBudgetGroup: BudgetGroup?
     @State private var showingBudgetGroupManagement = false
+    @State private var showingSettings = false
 
     // MARK: - Hauptansicht
 
@@ -74,11 +75,13 @@ struct ContentView: View {
             BudgetGroupManagementView()
         }
         .task {
+            await ensureDefaultBudgetGroupAfterCloudKitSync()
             processAutomaticFixedCosts()
             processAutomaticSavingsGoals()
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
+            selectExistingBudgetGroupIfNeeded()
             processAutomaticFixedCosts()
             processAutomaticSavingsGoals()
         }
@@ -109,6 +112,102 @@ struct ContentView: View {
             AppLogger.persistence.error(
                 "Automatische Sparbuchungen konnten nicht gebucht werden: \(error)"
             )
+        }
+    }
+
+    private func ensureDefaultBudgetGroupAfterCloudKitSync() async {
+        // SwiftData imports CloudKit records asynchronously. Give an existing
+        // budget group time to arrive before creating the default one.
+        for _ in 0..<6 {
+            guard !Task.isCancelled else { return }
+
+            selectExistingBudgetGroupIfNeeded()
+            let existingGroups = (try? modelContext.fetch(
+                FetchDescriptor<BudgetGroup>()
+            )) ?? []
+
+            if !existingGroups.isEmpty {
+                return
+            }
+
+            try? await Task.sleep(for: .milliseconds(500))
+        }
+
+        ensureDefaultBudgetGroup()
+    }
+
+    private func selectExistingBudgetGroupIfNeeded() {
+        guard selectedBudgetGroup == nil else { return }
+
+        let existingGroups = (try? modelContext.fetch(
+            FetchDescriptor<BudgetGroup>()
+        )) ?? []
+
+        selectedBudgetGroup = existingGroups.first {
+            !$0.isArchived && $0.name.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            ).localizedCaseInsensitiveCompare("Persönlich") == .orderedSame
+        } ?? existingGroups.first { !$0.isArchived }
+    }
+
+    private func ensureDefaultBudgetGroup() {
+        let existingGroups = (try? modelContext.fetch(FetchDescriptor<BudgetGroup>())) ?? []
+
+        if let personalGroup = existingGroups.first(where: {
+            $0.name.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            ).localizedCaseInsensitiveCompare("Persönlich") == .orderedSame
+        }) {
+            if selectedBudgetGroup == nil, !personalGroup.isArchived {
+                selectedBudgetGroup = personalGroup
+            }
+            return
+        }
+
+        guard existingGroups.isEmpty else {
+            if selectedBudgetGroup == nil {
+                selectedBudgetGroup = existingGroups.first { !$0.isArchived }
+            }
+            return
+        }
+
+        let personalGroup = BudgetGroup(
+            name: "Persönlich",
+            iconName: "person.fill",
+            iconColorHex: ColorPreset.blue.hex,
+            sortOrder: 0
+        )
+        modelContext.insert(personalGroup)
+
+        assignUngroupedData(to: personalGroup)
+
+        do {
+            try modelContext.save()
+            selectedBudgetGroup = personalGroup
+        } catch {
+            AppLogger.persistence.error(
+                "Standard-Budgetbereich konnte nicht erstellt werden: \(error)"
+            )
+        }
+    }
+
+    private func assignUngroupedData(to group: BudgetGroup) {
+        let budgets = (try? modelContext.fetch(FetchDescriptor<Budget>())) ?? []
+        let fixedCosts = (try? modelContext.fetch(FetchDescriptor<FixedCost>())) ?? []
+        let savingsGoals = (try? modelContext.fetch(FetchDescriptor<SavingsGoal>())) ?? []
+        let transactions = (try? modelContext.fetch(FetchDescriptor<Transaction>())) ?? []
+
+        for budget in budgets where budget.group == nil {
+            budget.group = group
+        }
+        for fixedCost in fixedCosts where fixedCost.group == nil {
+            fixedCost.group = fixedCost.budget?.group ?? group
+        }
+        for savingsGoal in savingsGoals where savingsGoal.group == nil {
+            savingsGoal.group = savingsGoal.budget?.group ?? group
+        }
+        for transaction in transactions where transaction.group == nil {
+            transaction.group = transaction.budget?.group ?? group
         }
     }
 
@@ -218,6 +317,9 @@ struct ContentView: View {
                 effectiveToolbarColorScheme,
                 for: .navigationBar
             )
+            .navigationDestination(isPresented: $showingSettings) {
+                SettingsView()
+            }
             .sheet(
                 isPresented: $showingMonthPicker
             ) {
@@ -362,6 +464,9 @@ struct ContentView: View {
                     .toolbar {
                         sharedToolbar
                     }
+                    .navigationDestination(isPresented: $showingSettings) {
+                        SettingsView()
+                    }
                     .sheet(
                         isPresented:
                             $showingMonthPicker
@@ -429,26 +534,14 @@ struct ContentView: View {
 
     @ToolbarContentBuilder
     private var sharedToolbar: some ToolbarContent {
-        #if os(iOS)
-        ToolbarItem(
-            placement: .topBarLeading
-        ) {
-            NavigationLink {
-                SettingsView()
-            } label: {
-                Image(
-                    systemName:
-                        "person.crop.circle.fill"
-                )
-                .foregroundStyle(
-                    effectiveAccentColor
-                )
-            }
-            .accessibilityLabel(
-                "Profil und Einstellungen"
+        ToolbarItem(placement: budgetGroupToolbarPlacement) {
+            BudgetGroupMenu(
+                selection: $selectedBudgetGroup,
+                groups: budgetGroups,
+                manage: { showingBudgetGroupManagement = true },
+                settings: { showingSettings = true }
             )
         }
-        #endif
 
         ToolbarItem(
             placement: .principal
@@ -468,14 +561,6 @@ struct ContentView: View {
             .tint(effectiveAccentColor)
         }
 
-        ToolbarItem(placement: .navigation) {
-            BudgetGroupMenu(
-                selection: $selectedBudgetGroup,
-                groups: budgetGroups,
-                manage: { showingBudgetGroupManagement = true }
-            )
-        }
-
         ToolbarItem(
             placement: .primaryAction
         ) {
@@ -487,6 +572,14 @@ struct ContentView: View {
                 standardAddButton
             }
         }
+    }
+
+    private var budgetGroupToolbarPlacement: ToolbarItemPlacement {
+        #if os(iOS)
+        .topBarLeading
+        #else
+        .navigation
+        #endif
     }
 
     // MARK: - Budget-Menü
