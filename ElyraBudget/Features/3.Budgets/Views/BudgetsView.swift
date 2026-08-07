@@ -106,7 +106,8 @@ struct BudgetsView: View {
                 ForEach(budgets) { budget in
                     NavigationLink {
                         BudgetDetailView(
-                            budget: budget
+                            budget: budget,
+                            selectedDate: selectedDate
                         )
                     } label: {
                         BudgetCardView(

@@ -19,24 +19,24 @@ struct TransactionEditorDetailsSection: View {
 
                 Divider().padding(.horizontal, 17)
 
-                Button {
-                    withAnimation(.easeInOut(duration: 0.16)) {
-                        showingBudgetMenu.toggle()
-                    }
-                } label: {
-                    HStack(spacing: 12) {
-                        Text("Budget")
-                        Spacer(minLength: 8)
+                HStack(spacing: 12) {
+                    Text("Budget")
+                    Spacer(minLength: 8)
+
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.16)) {
+                            showingBudgetMenu.toggle()
+                        }
+                    } label: {
                         selectedBudgetValue
                         Image(systemName: "chevron.up.chevron.down")
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(showingBudgetMenu ? Color.accentColor : Color.secondary.opacity(0.55))
                     }
-                    .padding(.horizontal, 17)
-                    .frame(minHeight: 56)
-                    .contentShape(Rectangle())
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
+                .padding(.horizontal, 17)
+                .frame(minHeight: 56)
 
                 Divider().padding(.horizontal, 17)
 
