@@ -3,6 +3,7 @@ import SwiftUI
 
 struct FixedCostsView: View {
     @Binding private var addRequested: Bool
+    @Binding private var selectedGroup: BudgetGroup?
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.appCurrencyCode) private var currencyCode
@@ -27,29 +28,43 @@ struct FixedCostsView: View {
     @State private var fixedCostToDelete: FixedCost?
     @State private var saveErrorMessage: String?
 
-    init(addRequested: Binding<Bool> = .constant(false)) {
+    init(
+        addRequested: Binding<Bool> = .constant(false),
+        selectedGroup: Binding<BudgetGroup?> = .constant(nil)
+    ) {
         _addRequested = addRequested
+        _selectedGroup = selectedGroup
     }
 
-    private var activeCosts: [FixedCost] { fixedCosts.filter { !$0.isPaused } }
-    private var pausedCosts: [FixedCost] { fixedCosts.filter(\.isPaused) }
+    private var visibleFixedCosts: [FixedCost] {
+        guard let selectedGroup else { return fixedCosts }
+        return fixedCosts.filter { $0.group === selectedGroup }
+    }
+
+    private var visibleBudgets: [Budget] {
+        guard let selectedGroup else { return budgets }
+        return budgets.filter { $0.group === selectedGroup }
+    }
+
+    private var activeCosts: [FixedCost] { visibleFixedCosts.filter { !$0.isPaused } }
+    private var pausedCosts: [FixedCost] { visibleFixedCosts.filter(\.isPaused) }
 
     private var monthlyAverage: Decimal {
-        fixedCosts.filter { !$0.isPaused }.reduce(.zero) { $0 + $1.monthlyEquivalent }
+        visibleFixedCosts.filter { !$0.isPaused }.reduce(.zero) { $0 + $1.monthlyEquivalent }
     }
 
     private var yearlyAverage: Decimal { monthlyAverage * 12 }
 
     private var pendingItems: [FixedCostDueItem] {
         FixedCostScheduler.pendingManualBookings(
-            fixedCosts: fixedCosts,
+            fixedCosts: visibleFixedCosts,
             transactions: transactions
         )
     }
 
     var body: some View {
         Group {
-            if fixedCosts.isEmpty {
+            if visibleFixedCosts.isEmpty {
                 emptyState
             } else {
                 content
@@ -66,7 +81,7 @@ struct FixedCostsView: View {
             }
         }
         .sheet(isPresented: $showingEditor) {
-            FixedCostEditorView(fixedCost: editingFixedCost, budgets: budgets)
+            FixedCostEditorView(fixedCost: editingFixedCost, budgets: visibleBudgets, group: selectedGroup)
         }
         .alert(
             "Fixkosten löschen?",
@@ -199,7 +214,8 @@ struct FixedCostsView: View {
             date: item.dueDate,
             note: item.fixedCost.note,
             type: .expense,
-            budget: item.fixedCost.budget
+            budget: item.fixedCost.budget,
+            group: item.fixedCost.group ?? item.fixedCost.budget?.group
         )
         transaction.fixedCostID = item.fixedCost.id
         transaction.fixedCostOccurrenceDate = item.dueDate
@@ -254,5 +270,5 @@ private struct FixedCostRowView: View {
 
 #Preview {
     FixedCostsView()
-        .modelContainer(for: [UserSettings.self, Budget.self, Transaction.self, FixedCost.self], inMemory: true)
+        .modelContainer(for: [UserSettings.self, BudgetGroup.self, Budget.self, Transaction.self, FixedCost.self], inMemory: true)
 }

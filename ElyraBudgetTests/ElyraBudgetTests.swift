@@ -12,6 +12,24 @@ import Testing
 
 struct ElyraBudgetTests {
 
+    @Test func financialItemsCanShareBudgetGroup() {
+        let group = BudgetGroup(name: "Gemeinschaftsbudget")
+        let budget = Budget(name: "Versicherung", group: group)
+        let fixedCost = FixedCost(title: "Hausratversicherung", budget: budget, group: group)
+        let savingsGoal = SavingsGoal(name: "Renovierung", budget: budget, group: group)
+        let transaction = Transaction(
+            title: "Hausratversicherung",
+            amount: 25,
+            budget: budget,
+            group: group
+        )
+
+        #expect(budget.group === group)
+        #expect(fixedCost.group === group)
+        #expect(savingsGoal.group === group)
+        #expect(transaction.group === group)
+    }
+
     @Test func expenseImpactsBudgetAsPositiveAmount() {
         let transaction = Transaction(
             amount: 42.50,

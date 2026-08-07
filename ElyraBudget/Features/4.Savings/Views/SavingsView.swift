@@ -6,6 +6,7 @@ struct SavingsView: View {
     @Binding private var reserveRequested: Bool
     @Binding private var managementRequested: Bool
     @Binding private var archiveRequested: Bool
+    @Binding private var selectedGroup: BudgetGroup?
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.appCurrencyCode) private var currencyCode
@@ -44,17 +45,34 @@ struct SavingsView: View {
         addRequested: Binding<Bool> = .constant(false),
         reserveRequested: Binding<Bool> = .constant(false),
         managementRequested: Binding<Bool> = .constant(false),
-        archiveRequested: Binding<Bool> = .constant(false)
+        archiveRequested: Binding<Bool> = .constant(false),
+        selectedGroup: Binding<BudgetGroup?> = .constant(nil)
     ) {
         _addRequested = addRequested
         _reserveRequested = reserveRequested
         _managementRequested = managementRequested
         _archiveRequested = archiveRequested
+        _selectedGroup = selectedGroup
+    }
+
+    private var visibleGoals: [SavingsGoal] {
+        guard let selectedGroup else { return goals }
+        return goals.filter { $0.group === selectedGroup }
+    }
+
+    private var visibleArchivedGoals: [SavingsGoal] {
+        guard let selectedGroup else { return archivedGoals }
+        return archivedGoals.filter { $0.group === selectedGroup }
+    }
+
+    private var visibleBudgets: [Budget] {
+        guard let selectedGroup else { return budgets }
+        return budgets.filter { $0.group === selectedGroup }
     }
 
     var body: some View {
         Group {
-            if goals.isEmpty {
+            if visibleGoals.isEmpty {
                 emptyState
             } else {
                 content
@@ -62,19 +80,19 @@ struct SavingsView: View {
         }
         .sheet(isPresented: $showingEditor) {
             if editorType == .goal {
-                SavingsGoalEditorView(goal: editingGoal, budgets: budgets, type: .goal)
+                SavingsGoalEditorView(goal: editingGoal, budgets: visibleBudgets, type: .goal, group: selectedGroup)
             } else {
-                FreeReserveEditorView(reserve: editingGoal, budgets: budgets)
+                FreeReserveEditorView(reserve: editingGoal, budgets: visibleBudgets, group: selectedGroup)
             }
         }
         .sheet(isPresented: $showingManagement) {
-            SavingsManagementView(goals: goals, archivedGoals: archivedGoals, budgets: budgets)
+            SavingsManagementView(goals: visibleGoals, archivedGoals: visibleArchivedGoals, budgets: visibleBudgets)
         }
         .sheet(isPresented: $showingArchived) {
-            ArchivedSavingsView(goals: archivedGoals)
+            ArchivedSavingsView(goals: visibleArchivedGoals)
         }
         .sheet(item: $contributingGoal) { goal in
-            SavingsContributionEditorView(goal: goal, budgets: budgets)
+            SavingsContributionEditorView(goal: goal, budgets: visibleBudgets)
         }
         .alert(
             "In den Archiv verschieben?",
@@ -114,8 +132,8 @@ struct SavingsView: View {
 
     private var content: some View {
         List {
-            let activeGoals = goals.filter { $0.type == .goal }
-            let reserves = goals.filter { $0.type == .reserve }
+            let activeGoals = visibleGoals.filter { $0.type == .goal }
+            let reserves = visibleGoals.filter { $0.type == .reserve }
 
             if !activeGoals.isEmpty {
                 Section("Sparziele") { }
@@ -129,7 +147,7 @@ struct SavingsView: View {
                     Section { goalRow(goal) }
                 }
             }
-            if goals.isEmpty {
+            if visibleGoals.isEmpty {
                 Section {
                     Text("Noch keine aktiven Sparziele oder freien Rücklagen.")
                         .foregroundStyle(.secondary)
@@ -275,9 +293,9 @@ private struct SavingsManagementView: View {
             }
             .sheet(isPresented: $showingEditor) {
                 if editorType == .goal {
-                    SavingsGoalEditorView(goal: editingGoal, budgets: budgets, type: .goal)
+                    SavingsGoalEditorView(goal: editingGoal, budgets: budgets, type: .goal, group: editingGoal?.group)
                 } else {
-                    FreeReserveEditorView(reserve: editingGoal, budgets: budgets)
+                    FreeReserveEditorView(reserve: editingGoal, budgets: budgets, group: editingGoal?.group)
                 }
             }
             .sheet(isPresented: $showingArchived) {
@@ -388,5 +406,5 @@ private struct SavingsGoalCardView: View {
 
 #Preview {
     SavingsView()
-        .modelContainer(for: [UserSettings.self, Budget.self, Transaction.self, FixedCost.self, SavingsGoal.self, SavingsContribution.self], inMemory: true)
+        .modelContainer(for: [UserSettings.self, BudgetGroup.self, Budget.self, Transaction.self, FixedCost.self, SavingsGoal.self, SavingsContribution.self], inMemory: true)
 }

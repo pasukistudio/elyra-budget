@@ -5,6 +5,7 @@ import SwiftUI
 struct BudgetsView: View {
     @Binding var showingBudgetEditor: Bool
     @Binding var selectedDate: Date
+    @Binding var selectedGroup: BudgetGroup?
     @Environment(\.appCurrencyCode) private var currencyCode
 
     @Environment(\.modelContext)
@@ -25,9 +26,24 @@ struct BudgetsView: View {
     )
     private var budgets: [Budget]
 
+    init(
+        showingBudgetEditor: Binding<Bool> = .constant(false),
+        selectedDate: Binding<Date> = .constant(.now),
+        selectedGroup: Binding<BudgetGroup?> = .constant(nil)
+    ) {
+        _showingBudgetEditor = showingBudgetEditor
+        _selectedDate = selectedDate
+        _selectedGroup = selectedGroup
+    }
+
+    private var visibleBudgets: [Budget] {
+        guard let selectedGroup else { return budgets }
+        return budgets.filter { $0.group === selectedGroup }
+    }
+
     var body: some View {
         Group {
-            if budgets.isEmpty {
+            if visibleBudgets.isEmpty {
                 emptyState
             } else {
                 budgetList
@@ -38,7 +54,8 @@ struct BudgetsView: View {
         ) {
             if let editingBudget {
                 BudgetEditorView(
-                    budget: editingBudget
+                    budget: editingBudget,
+                    group: selectedGroup
                 )
             }
         }
@@ -103,7 +120,7 @@ struct BudgetsView: View {
     private var budgetList: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
-                ForEach(budgets) { budget in
+                ForEach(visibleBudgets) { budget in
                     NavigationLink {
                         BudgetDetailView(
                             budget: budget,

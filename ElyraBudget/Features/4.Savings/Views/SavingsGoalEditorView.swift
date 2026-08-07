@@ -5,6 +5,7 @@ struct SavingsGoalEditorView: View {
     let goal: SavingsGoal?
     let budgets: [Budget]
     let type: SavingsGoalType
+    let group: BudgetGroup?
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -33,10 +34,16 @@ struct SavingsGoalEditorView: View {
     private let featuredIcons = CategoryIconLibrary.budgetFeatured
     private let availableColors = ColorPreset.allCases
 
-    init(goal: SavingsGoal?, budgets: [Budget], type: SavingsGoalType? = nil) {
+    init(
+        goal: SavingsGoal?,
+        budgets: [Budget],
+        type: SavingsGoalType? = nil,
+        group: BudgetGroup? = nil
+    ) {
         self.goal = goal
         self.budgets = budgets
         self.type = goal?.type ?? type ?? .goal
+        self.group = group ?? goal?.group
         _name = State(initialValue: goal?.name ?? "")
         _targetAmount = State(initialValue: goal?.targetAmount)
         _contributionAmount = State(initialValue: goal?.contributionAmount == 0 ? nil : goal?.contributionAmount)
@@ -370,6 +377,7 @@ struct SavingsGoalEditorView: View {
         value.automaticBooking = automaticBooking
         value.note = note
         value.budget = selectedBudget
+        value.group = group ?? selectedBudget?.group
         value.updatedAt = .now
 
         if goal == nil { modelContext.insert(value) }

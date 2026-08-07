@@ -15,6 +15,8 @@ final class FixedCost {
     var pauseUntil: Date?
     var note: String = ""
     var budget: Budget?
+    /// Optional until the user assigns the fixed cost to a budget group.
+    var group: BudgetGroup?
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
 
@@ -26,7 +28,8 @@ final class FixedCost {
         anchorDate: Date = .now,
         dayOfMonth: Int = 1,
         automaticBooking: Bool = true,
-        budget: Budget? = nil
+        budget: Budget? = nil,
+        group: BudgetGroup? = nil
     ) {
         self.id = UUID()
         self.title = title
@@ -37,6 +40,7 @@ final class FixedCost {
         self.dayOfMonth = min(max(dayOfMonth, 1), 31)
         self.automaticBooking = automaticBooking
         self.budget = budget
+        self.group = group
         self.createdAt = .now
         self.updatedAt = .now
     }

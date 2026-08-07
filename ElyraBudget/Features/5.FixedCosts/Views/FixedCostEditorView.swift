@@ -4,6 +4,7 @@ import SwiftUI
 struct FixedCostEditorView: View {
     let fixedCost: FixedCost?
     let budgets: [Budget]
+    let group: BudgetGroup?
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -24,9 +25,10 @@ struct FixedCostEditorView: View {
     @State private var showingBudgetMenu = false
     @State private var saveErrorMessage: String?
 
-    init(fixedCost: FixedCost?, budgets: [Budget]) {
+    init(fixedCost: FixedCost?, budgets: [Budget], group: BudgetGroup? = nil) {
         self.fixedCost = fixedCost
         self.budgets = budgets
+        self.group = group ?? fixedCost?.group
         _title = State(initialValue: fixedCost?.title ?? "")
         _amount = State(initialValue: fixedCost?.amount)
         _frequency = State(initialValue: fixedCost?.frequency ?? .monthly)
@@ -170,6 +172,7 @@ struct FixedCostEditorView: View {
         value.pauseUntil = isPaused ? Calendar.autoupdatingCurrent.startOfDay(for: pauseUntil) : nil
         value.note = note
         value.budget = selectedBudget
+        value.group = group ?? selectedBudget?.group
         value.updatedAt = .now
         if fixedCost == nil { modelContext.insert(value) }
         do {

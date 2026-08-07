@@ -84,7 +84,8 @@ struct SavingsContributionEditorView: View {
             amount: amount,
             note: goal.note,
             type: .expense,
-            budget: selectedBudget
+            budget: selectedBudget,
+            group: goal.group ?? selectedBudget?.group
         )
         transaction.savingsGoalID = goal.id
         modelContext.insert(transaction)

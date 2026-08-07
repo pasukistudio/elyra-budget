@@ -25,6 +25,8 @@ final class Transaction {
     // MARK: - Budget-Zuordnung
 
     var budget: Budget?
+    /// Optional group context for transactions without a budget assignment.
+    var group: BudgetGroup?
 
     // MARK: - Fixkosten-Zuordnung
 
@@ -51,7 +53,8 @@ final class Transaction {
         date: Date = Date(),
         note: String = "",
         type: TransactionType = .expense,
-        budget: Budget? = nil
+        budget: Budget? = nil,
+        group: BudgetGroup? = nil
     ) {
         self.title = title
         self.amount = amount
@@ -59,6 +62,7 @@ final class Transaction {
         self.note = note
         self.typeRawValue = type.rawValue
         self.budget = budget
+        self.group = group
         self.fixedCostID = nil
         self.fixedCostOccurrenceDate = nil
         self.savingsGoalID = nil
