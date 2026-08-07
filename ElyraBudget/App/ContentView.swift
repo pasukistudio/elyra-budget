@@ -1,11 +1,20 @@
 import SwiftData
 import SwiftUI
+import os
+
 
 struct ContentView: View {
 
     // MARK: - SwiftData
 
+    @Environment(\.modelContext)
+    private var modelContext
+
     @Query private var userSettings: [UserSettings]
+    @Query(sort: [SortDescriptor<FixedCost>(\.createdAt)])
+    private var fixedCosts: [FixedCost]
+    @Query(sort: [SortDescriptor<Transaction>(\.date)])
+    private var transactions: [Transaction]
 
     private var appCurrencyCode: String {
         userSettings.first?.currencyRawValue ?? AppCurrency.eur.rawValue
@@ -15,6 +24,8 @@ struct ContentView: View {
 
     @Environment(\.colorScheme)
     private var systemColorScheme
+    @Environment(\.scenePhase)
+    private var scenePhase
 
     // MARK: - Navigation & Sheets
 
@@ -26,6 +37,7 @@ struct ContentView: View {
     @State private var showingBudgetManagement = false
     @State private var showingArchivedBudgets = false
     @State private var showingTransactionEditor = false
+    @State private var requestingFixedCostEditor = false
 
     // MARK: - Hauptansicht
 
@@ -38,6 +50,27 @@ struct ContentView: View {
             #endif
         }
         .environment(\.appCurrencyCode, appCurrencyCode)
+        .task {
+            processAutomaticFixedCosts()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
+            processAutomaticFixedCosts()
+        }
+    }
+
+    private func processAutomaticFixedCosts() {
+        do {
+            try FixedCostScheduler.processAutomaticBookings(
+                fixedCosts: fixedCosts,
+                transactions: transactions,
+                modelContext: modelContext
+            )
+        } catch {
+            AppLogger.persistence.error(
+                "Automatische Fixkosten konnten nicht gebucht werden: \(error)"
+            )
+        }
     }
 
     // MARK: - Hintergrund
@@ -246,7 +279,7 @@ struct ContentView: View {
 
     private var fixedCostsTab: some View {
         appBackground {
-            FixedCostsView()
+            FixedCostsView(addRequested: $requestingFixedCostEditor)
         }
         .tabItem {
             Label(
@@ -461,10 +494,12 @@ struct ContentView: View {
 
         case .transactions:
             showingTransactionEditor = true
-            
+
+        case .fixcosts:
+            requestingFixedCostEditor = true
+
         case .overview,
-             .savings,
-             .fixcosts:
+             .savings:
             break
         }
     }
@@ -477,6 +512,9 @@ struct ContentView: View {
 
         case .budgets:
             return "Neues Budget"
+
+        case .fixcosts:
+            return "Neue Fixkosten"
 
         default:
             return "Neues Element"
@@ -491,6 +529,9 @@ struct ContentView: View {
 
         case .budgets:
             return "Neues Budget erstellen"
+
+        case .fixcosts:
+            return "Fixkosten erstellen"
 
         default:
             return "Neues Element erstellen"
@@ -518,7 +559,7 @@ struct ContentView: View {
             SavingsView()
 
         case .fixcosts:
-            FixedCostsView()
+            FixedCostsView(addRequested: $requestingFixedCostEditor)
         }
     }
 
@@ -560,7 +601,8 @@ struct ContentView: View {
             for: [
                 UserSettings.self,
                 Budget.self,
-                Transaction.self
+                Transaction.self,
+                FixedCost.self
             ],
             inMemory: false
         )
@@ -580,7 +622,8 @@ struct ContentView: View {
             for: [
                 UserSettings.self,
                 Budget.self,
-                Transaction.self
+                Transaction.self,
+                FixedCost.self
             ],
             inMemory: true
         )
@@ -599,7 +642,8 @@ struct ContentView: View {
             for: [
                 UserSettings.self,
                 Budget.self,
-                Transaction.self
+                Transaction.self,
+                FixedCost.self
             ],
             inMemory: true
         )
@@ -619,7 +663,8 @@ struct ContentView: View {
             for: [
                 UserSettings.self,
                 Budget.self,
-                Transaction.self
+                Transaction.self,
+                FixedCost.self
             ],
             inMemory: true
         )

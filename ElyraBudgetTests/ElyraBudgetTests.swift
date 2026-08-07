@@ -106,4 +106,27 @@ struct ElyraBudgetTests {
         #expect(AppCurrency.chf.rawValue == "CHF")
     }
 
+    @Test func fixedCostCalculatesMonthlyEquivalent() {
+        let yearly = FixedCost(amount: 120, frequency: .yearly)
+        let quarterly = FixedCost(amount: 90, frequency: .quarterly)
+
+        #expect(yearly.monthlyEquivalent == 10)
+        #expect(quarterly.monthlyEquivalent == 30)
+    }
+
+    @Test func fixedCostUsesLastDayForShortMonths() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let january = calendar.date(from: DateComponents(year: 2026, month: 1, day: 31))!
+        let february = calendar.date(from: DateComponents(year: 2026, month: 2, day: 28))!
+        let fixedCost = FixedCost(
+            amount: 10,
+            frequency: .monthly,
+            schedule: .lastDayOfMonth,
+            anchorDate: january
+        )
+
+        #expect(fixedCost.occurrenceDates(through: february, calendar: calendar).count == 2)
+    }
+
 }
