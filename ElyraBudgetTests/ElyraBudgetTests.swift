@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftData
 import Testing
 @testable import ElyraBudget
 
@@ -127,6 +128,99 @@ struct ElyraBudgetTests {
         )
 
         #expect(fixedCost.occurrenceDates(through: february, calendar: calendar).count == 2)
+    }
+
+    @Test func savingsGoalWithoutTargetHasNoRemainingAmount() {
+        let goal = SavingsGoal(name: "Notgroschen")
+        goal.contributions = [
+            SavingsContribution(amount: 50, goal: goal)
+        ]
+
+        #expect(goal.savedAmount == 50)
+        #expect(goal.remainingAmount == nil)
+        #expect(!goal.isCompleted)
+    }
+
+    @Test func savingsGoalCalculatesProgressAgainstTarget() {
+        let goal = SavingsGoal(
+            name: "Urlaub",
+            targetAmount: 1_000
+        )
+        goal.contributions = [
+            SavingsContribution(amount: 250, goal: goal),
+            SavingsContribution(amount: 100, goal: goal)
+        ]
+
+        #expect(goal.savedAmount == 350)
+        #expect(goal.remainingAmount == 650)
+        #expect(abs(goal.progress - 0.35) < 0.0001)
+        #expect(!goal.isCompleted)
+    }
+
+    @Test func savingsGoalUsesConfiguredMonthlySchedule() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let start = calendar.date(from: DateComponents(year: 2026, month: 1, day: 10))!
+        let end = calendar.date(from: DateComponents(year: 2026, month: 3, day: 31))!
+        let goal = SavingsGoal(
+            name: "Urlaub",
+            frequency: .monthly,
+            schedule: .lastDayOfMonth,
+            anchorDate: start
+        )
+
+        let dates = goal.occurrenceDates(through: end, calendar: calendar)
+
+        #expect(dates.count == 3)
+        #expect(calendar.component(.day, from: dates[0]) == 31)
+        #expect(calendar.component(.day, from: dates[1]) == 28)
+        #expect(calendar.component(.day, from: dates[2]) == 31)
+    }
+
+    @Test func savingsGoalAutomaticBookingCarriesBudgetAndPreventsDuplicates() throws {
+        let container = try ModelContainer(
+            for: UserSettings.self,
+            Budget.self,
+            Transaction.self,
+            FixedCost.self,
+            SavingsGoal.self,
+            SavingsContribution.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = ModelContext(container)
+        let budget = Budget(name: "Sparen")
+        let goal = SavingsGoal(
+            name: "Notgroschen",
+            contributionAmount: 100,
+            frequency: .monthly,
+            anchorDate: Calendar.current.startOfDay(for: .now),
+            automaticBooking: true,
+            budget: budget
+        )
+        context.insert(budget)
+        context.insert(goal)
+
+        try SavingsGoalScheduler.processAutomaticBookings(
+            goals: [goal],
+            transactions: [],
+            modelContext: context,
+            through: .now
+        )
+
+        let firstTransactions = try context.fetch(FetchDescriptor<Transaction>())
+        #expect(firstTransactions.count == 1)
+        #expect(firstTransactions.first?.budget?.persistentModelID == budget.persistentModelID)
+
+        try SavingsGoalScheduler.processAutomaticBookings(
+            goals: [goal],
+            transactions: firstTransactions,
+            modelContext: context,
+            through: .now
+        )
+
+        let secondTransactions = try context.fetch(FetchDescriptor<Transaction>())
+        #expect(secondTransactions.count == 1)
+        #expect(goal.savedAmount == 100)
     }
 
 }
