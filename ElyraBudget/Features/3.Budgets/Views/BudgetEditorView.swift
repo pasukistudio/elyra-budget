@@ -150,7 +150,7 @@ struct BudgetEditorView: View {
                     .font(.headline)
                     .lineLimit(1)
 
-                    Text("Ausgaben: 0,00 €")
+                    Text("Ausgaben: 0,00 \(currencySymbol)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -194,14 +194,19 @@ struct BudgetEditorView: View {
             .textInputAutocapitalization(.words)
             #endif
 
-            TextField(
-                "Kein Limit",
-                value: $limit,
-                format: .number
-                    .precision(
-                        .fractionLength(0 ... 2)
-                    )
-            )
+            HStack {
+                TextField(
+                    "Kein Limit",
+                    value: $limit,
+                    format: .number
+                        .precision(
+                            .fractionLength(0 ... 2)
+                        )
+                )
+
+                Text(currencySymbol)
+                    .foregroundStyle(.secondary)
+            }
 
             #if os(iOS)
             .keyboardType(.decimalPad)
@@ -460,6 +465,10 @@ struct BudgetEditorView: View {
 
     private var selectedColor: Color {
         Color(hexString: selectedColorHex)
+    }
+
+    private var currencySymbol: String {
+        AppCurrency(rawValue: currencyCode)?.symbol ?? currencyCode
     }
 
     private var normalizedLimit: Decimal {

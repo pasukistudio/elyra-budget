@@ -72,7 +72,7 @@ struct TransactionEditorDetailsSection: View {
             }
         } else {
             Text("Kein Budget")
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(.tint)
                 .lineLimit(1)
         }
     }
