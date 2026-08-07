@@ -15,6 +15,11 @@ final class FixedCost {
     var pauseUntil: Date?
     var note: String = ""
     var budget: Budget?
+    @Relationship(
+        deleteRule: .nullify,
+        inverse: \SavingsGoal.fixedCost
+    )
+    var savingsGoals: [SavingsGoal]? = []
     /// Optional until the user assigns the fixed cost to a budget group.
     var group: BudgetGroup?
     var createdAt: Date = Date()

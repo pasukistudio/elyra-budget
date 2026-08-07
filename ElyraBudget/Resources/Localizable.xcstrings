@@ -235,6 +235,9 @@
     "Eine freie Rücklage hat keinen festen Zielbetrag." : {
 
     },
+    "Eine verknüpfte Fixkostenposition bestimmt, wofür das Sparziel aufgebaut wird." : {
+
+    },
     "Einstellungen" : {
       "localizations" : {
         "en" : {
@@ -393,6 +396,9 @@
     "Keine Budgets" : {
 
     },
+    "Keine Fixkosten" : {
+
+    },
     "Keine variablen Buchungen in diesem Monat" : {
 
     },
@@ -549,6 +555,9 @@
 
     },
     "Sparziel" : {
+
+    },
+    "Sparziel anlegen" : {
 
     },
     "Sparziele" : {

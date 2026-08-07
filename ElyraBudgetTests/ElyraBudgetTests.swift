@@ -195,6 +195,33 @@ struct ElyraBudgetTests {
         #expect(calendar.component(.day, from: dates[2]) == 31)
     }
 
+    @Test func savingsGoalCanReferenceFixedCost() throws {
+        let container = try ModelContainer(
+            for: FixedCost.self,
+            SavingsGoal.self,
+            SavingsContribution.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = ModelContext(container)
+        let fixedCost = FixedCost(
+            title: "Apple Developer Account",
+            amount: 99,
+            frequency: .yearly
+        )
+        let goal = SavingsGoal(
+            name: "Apple Developer Account",
+            targetAmount: 99,
+            fixedCost: fixedCost
+        )
+        context.insert(fixedCost)
+        context.insert(goal)
+        try context.save()
+
+        let storedGoal = try context.fetch(FetchDescriptor<SavingsGoal>()).first
+        #expect(storedGoal?.fixedCost?.persistentModelID == fixedCost.persistentModelID)
+        #expect(fixedCost.savingsGoals?.contains { $0.persistentModelID == goal.persistentModelID } == true)
+    }
+
     @Test func savingsGoalAutomaticBookingCarriesBudgetAndPreventsDuplicates() throws {
         let container = try ModelContainer(
             for: UserSettings.self,
