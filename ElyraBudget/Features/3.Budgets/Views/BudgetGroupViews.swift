@@ -79,6 +79,14 @@ struct BudgetGroupManagementView: View {
                                     .foregroundStyle(.secondary)
                             }
                         }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button {
+                                archive(group)
+                            } label: {
+                                Label("Archivieren", systemImage: "archivebox")
+                            }
+                            .tint(.orange)
+                        }
                     }
                     .onMove { source, destination in
                         var reordered = groups
@@ -115,6 +123,12 @@ struct BudgetGroupManagementView: View {
             }
         }
     }
+
+    private func archive(_ group: BudgetGroup) {
+        group.isArchived = true
+        group.updatedAt = .now
+        try? modelContext.save()
+    }
 }
 
 private struct BudgetGroupEditorView: View {
@@ -123,11 +137,28 @@ private struct BudgetGroupEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @State private var name: String
+    @State private var selectedIcon: String
+    @State private var selectedColorHex: String
+    @State private var showingIconPicker = false
     @State private var saveErrorMessage: String?
+
+    private let iconColumns = Array(
+        repeating: GridItem(.flexible(), spacing: 12),
+        count: 5
+    )
+
+    private let colorColumns = Array(
+        repeating: GridItem(.flexible(), spacing: 8),
+        count: 5
+    )
+
+    private let featuredIcons = CategoryIconLibrary.budgetFeatured
 
     init(group: BudgetGroup?) {
         self.group = group
         _name = State(initialValue: group?.name ?? "")
+        _selectedIcon = State(initialValue: group?.iconName ?? "person.2.fill")
+        _selectedColorHex = State(initialValue: group?.iconColorHex ?? ColorPreset.blue.hex)
     }
 
     var body: some View {
@@ -136,11 +167,45 @@ private struct BudgetGroupEditorView: View {
                 Section("Budgetbereich") {
                     TextField("Bezeichnung", text: $name)
                 }
+
+                Section("Darstellung") {
+                    Text("Icon")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    LazyVGrid(columns: iconColumns, spacing: 12) {
+                        ForEach(featuredIcons, id: \.self) { iconName in
+                            iconButton(iconName)
+                        }
+                    }
+
+                    Button {
+                        showingIconPicker = true
+                    } label: {
+                        Label("Weitere Icons", systemImage: "chevron.right")
+                            .labelStyle(.titleAndIcon)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
+                    Text("Icon-Farbe")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 8)
+
+                    LazyVGrid(columns: colorColumns, spacing: 10) {
+                        ForEach(ColorPreset.allCases) { preset in
+                            colorButton(preset)
+                        }
+                    }
+                }
             }
             .navigationTitle(group == nil ? "Neuer Bereich" : "Bereich bearbeiten")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
+            .sheet(isPresented: $showingIconPicker) {
+                IconPickerView(selectedIcon: $selectedIcon)
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Abbrechen") { dismiss() }
@@ -160,6 +225,8 @@ private struct BudgetGroupEditorView: View {
 
         let value = group ?? BudgetGroup()
         value.name = cleanedName
+        value.iconName = selectedIcon
+        value.iconColorHex = selectedColorHex
         value.updatedAt = .now
         if group == nil {
             value.sortOrder = 0
@@ -172,5 +239,53 @@ private struct BudgetGroupEditorView: View {
         } catch {
             saveErrorMessage = "Der Budgetbereich konnte nicht gespeichert werden."
         }
+    }
+
+    private var selectedColor: Color {
+        Color(hexString: selectedColorHex)
+    }
+
+    private func iconButton(_ iconName: String) -> some View {
+        let isSelected = selectedIcon == iconName
+
+        return Button {
+            selectedIcon = iconName
+        } label: {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(isSelected ? selectedColor.opacity(0.18) : Color.secondary.opacity(0.08))
+                    .frame(width: 48, height: 48)
+                Image(systemName: iconName)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(isSelected ? selectedColor : .secondary)
+                if isSelected {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(selectedColor, lineWidth: 2)
+                        .frame(width: 48, height: 48)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func colorButton(_ preset: ColorPreset) -> some View {
+        let isSelected = selectedColorHex == preset.hex
+
+        return Button {
+            selectedColorHex = preset.hex
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(preset.color)
+                    .frame(width: 36, height: 36)
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(preset.title)
     }
 }
