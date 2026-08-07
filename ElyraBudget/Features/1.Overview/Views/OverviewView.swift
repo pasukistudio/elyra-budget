@@ -2,6 +2,72 @@ import SwiftData
 import SwiftUI
 
 struct OverviewView: View {
+    @Binding var selectedGroup: BudgetGroup?
+
+    @Environment(\.appCurrencyCode) private var currencyCode
+
+    @Query(
+        filter: #Predicate<Budget> { !$0.isArchived },
+        sort: [
+            SortDescriptor<Budget>(\.sortOrder),
+            SortDescriptor<Budget>(\.createdAt)
+        ]
+    )
+    private var budgets: [Budget]
+
+    @Query(sort: [SortDescriptor<Transaction>(\.date)])
+    private var transactions: [Transaction]
+
+    init(selectedGroup: Binding<BudgetGroup?> = .constant(nil)) {
+        _selectedGroup = selectedGroup
+    }
+
+    private var visibleBudgets: [Budget] {
+        budgets.filter { budget in
+            selectedGroup == nil || budget.group === selectedGroup
+        }
+    }
+
+    private var visibleTransactions: [Transaction] {
+        transactions.filter { transaction in
+            selectedGroup == nil
+                || transaction.group === selectedGroup
+                || transaction.budget?.group === selectedGroup
+        }
+    }
+
+    private var currentMonth: Date { .now }
+
+    private var monthlyLimit: Decimal {
+        visibleBudgets.reduce(into: Decimal.zero) { result, budget in
+            result += budget.limit
+        }
+    }
+
+    private var monthlyUsed: Decimal {
+        visibleTransactions
+            .filter { $0.date.isInSameMonth(as: currentMonth) }
+            .reduce(into: Decimal.zero) { result, transaction in
+                result += transaction.budgetImpact
+            }
+    }
+
+    private var monthlyAvailable: Decimal {
+        monthlyLimit - monthlyUsed
+    }
+
+    private var monthlyProgress: Double {
+        guard monthlyLimit > 0 else { return 0 }
+        return min(
+            max(
+                NSDecimalNumber(decimal: monthlyUsed).doubleValue
+                    / NSDecimalNumber(decimal: monthlyLimit).doubleValue,
+                0
+            ),
+            1
+        )
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
@@ -172,21 +238,29 @@ struct OverviewView: View {
                 .font(.headline)
                 .foregroundStyle(.secondary)
 
-            Text(407.57, format: .currency(code: "EUR"))
+            Text(monthlyAvailable, format: .currency(code: currencyCode))
                 .font(.system(size: 42, weight: .bold))
 
-            ProgressView(value: 2_228.25, total: 2_635.82)
-                .tint(.primary)
+            if monthlyLimit > 0 {
+                ProgressView(value: monthlyProgress)
+                    .tint(.primary)
+            }
 
             HStack {
-                Label(
-                    "2.228,25 € verwendet",
-                    systemImage: "arrow.up.right"
-                )
+                Label {
+                    HStack(spacing: 4) {
+                        Text(monthlyUsed, format: .currency(code: currencyCode))
+                        Text("verwendet")
+                    }
+                } icon: {
+                    Image(systemName: "arrow.up.right")
+                }
 
                 Spacer()
 
-                Text("Limit 2.635,82 €")
+                if monthlyLimit > 0 {
+                    Text("Limit \(monthlyLimit.formatted(.currency(code: currencyCode)))")
+                }
             }
             .font(.subheadline)
             .foregroundStyle(.secondary)

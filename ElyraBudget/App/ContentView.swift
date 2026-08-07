@@ -239,7 +239,10 @@ struct ContentView: View {
             .sheet(
                 isPresented: $showingTransactionEditor
             ) {
-                TransactionEditorView(initialDate: .now)
+                TransactionEditorView(
+                    initialDate: .now,
+                    group: selectedBudgetGroup
+                )
             }
         }
         .tint(effectiveAccentColor)
@@ -254,7 +257,7 @@ struct ContentView: View {
     #if os(iOS)
     private var overviewTab: some View {
         appBackground {
-            OverviewView()
+            OverviewView(selectedGroup: $selectedBudgetGroup)
         }
         .tabItem {
             Label(
@@ -646,7 +649,7 @@ struct ContentView: View {
     private var selectedSectionView: some View {
         switch selectedSection {
         case .overview:
-            OverviewView()
+            OverviewView(selectedGroup: $selectedBudgetGroup)
 
         case .transactions:
             TransactionsView(
