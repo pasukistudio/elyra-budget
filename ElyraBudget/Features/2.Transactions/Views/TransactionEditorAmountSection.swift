@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TransactionEditorAmountSection: View {
     @Environment(\.appCurrencyCode) private var currencyCode
+    @Environment(\.locale) private var locale
     @Binding var amount: Decimal?
     @Binding var selectedType: TransactionType
     let cardBackground: Color
@@ -18,7 +19,10 @@ struct TransactionEditorAmountSection: View {
         self.cardBackground = cardBackground
         _amountText = State(
             initialValue: amount.wrappedValue.map {
-                NSDecimalNumber(decimal: $0).stringValue
+                Self.formattedAmount(
+                    $0,
+                    separator: Locale.current.decimalSeparator ?? "."
+                )
             } ?? ""
         )
     }
@@ -40,17 +44,21 @@ struct TransactionEditorAmountSection: View {
             HStack(alignment: .center, spacing: 4) {
                 Spacer(minLength: 0)
 
-                CurrencyAmountTextField(text: $amountText, fontSize: amountFontSize)
+                CurrencyAmountTextField(
+                    text: $amountText,
+                    fontSize: amountFontSize,
+                    decimalSeparator: decimalSeparator
+                )
                     .frame(width: amountInputWidth)
                     .onChange(of: amountText) { _, newValue in
                         let normalized = newValue
-                            .replacingOccurrences(of: ",", with: ".")
+                            .replacingOccurrences(of: decimalSeparator, with: ".")
                         amount = Decimal(string: normalized)
                     }
                     .onChange(of: amount) { _, newValue in
                         guard !isEditingAmount else { return }
                         amountText = newValue.map {
-                            NSDecimalNumber(decimal: $0).stringValue
+                            Self.formattedAmount($0, separator: decimalSeparator)
                         } ?? ""
                     }
                 .padding(.vertical, 15)
@@ -76,6 +84,10 @@ struct TransactionEditorAmountSection: View {
         AppCurrency(rawValue: currencyCode)?.symbol ?? currencyCode
     }
 
+    private var decimalSeparator: String {
+        locale.decimalSeparator ?? "."
+    }
+
     private var amountDigitCount: Int {
         guard !amountText.isEmpty else { return 4 }
         return amountText
@@ -93,7 +105,21 @@ struct TransactionEditorAmountSection: View {
         return min(300, max(82, preferredWidth))
     }
 
+    private static func formattedAmount(
+        _ amount: Decimal,
+        separator: String
+    ) -> String {
+        let rawValue = NSDecimalNumber(decimal: amount)
+            .stringValue
+        let parts = rawValue.split(separator: ".", omittingEmptySubsequences: false)
+        let integer = parts.first.map(String.init) ?? "0"
+        let decimals = String(parts.dropFirst().first ?? "")
+            .padding(toLength: 2, withPad: "0", startingAt: 0)
+        return integer + separator + String(decimals.prefix(2))
+    }
+
     private var isEditingAmount: Bool {
-        amountText != (amount.map { NSDecimalNumber(decimal: $0).stringValue } ?? "")
+        let normalizedText = amountText.replacingOccurrences(of: decimalSeparator, with: ".")
+        return normalizedText != (amount.map { NSDecimalNumber(decimal: $0).stringValue } ?? "")
     }
 }

@@ -171,7 +171,7 @@ struct ContentView: View {
             .sheet(
                 isPresented: $showingTransactionEditor
             ) {
-                TransactionEditorView(initialDate: selectedDate)
+                TransactionEditorView(initialDate: .now)
             }
         }
         .tint(effectiveAccentColor)
@@ -304,7 +304,7 @@ struct ContentView: View {
                     .sheet(
                         isPresented: $showingTransactionEditor
                     ) {
-                        TransactionEditorView(initialDate: selectedDate)
+                        TransactionEditorView(initialDate: .now)
                     }
             }
         }
@@ -562,7 +562,7 @@ struct ContentView: View {
                 Budget.self,
                 Transaction.self
             ],
-            inMemory: true
+            inMemory: false
         )
         .environment(
             \.locale,

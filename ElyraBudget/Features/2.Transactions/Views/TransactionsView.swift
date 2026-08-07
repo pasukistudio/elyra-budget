@@ -27,11 +27,7 @@ struct TransactionsView: View {
     @State private var saveErrorMessage: String?
 
     private var displayedTransactions: [Transaction] {
-        guard let interval = Calendar.current.dateInterval(of: .month, for: selectedDate) else {
-            return []
-        }
-
-        return transactions.filter { interval.contains($0.date) }
+        transactions.filter { $0.date.isInSameMonth(as: selectedDate) }
     }
 
     var body: some View {

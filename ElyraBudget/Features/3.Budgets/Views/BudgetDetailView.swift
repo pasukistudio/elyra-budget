@@ -29,14 +29,16 @@ struct BudgetDetailView: View {
     @State private var editingTransaction: Transaction?
     @State private var transactionToDelete: Transaction?
 
-    init(budget: Budget) {
+    init(budget: Budget, selectedDate: Date = .now) {
         self.budget = budget
 
+        let monthStart = Calendar.current.dateInterval(
+            of: .month,
+            for: selectedDate
+        )?.start ?? selectedDate
+
         _selectedMonth = State(
-            initialValue: Calendar.current.dateInterval(
-                of: .month,
-                for: .now
-            )?.start ?? .now
+            initialValue: monthStart
         )
     }
 
@@ -83,7 +85,7 @@ struct BudgetDetailView: View {
         .sheet(isPresented: $showingNewTransaction) {
             TransactionEditorView(
                 preselectedBudget: budget,
-                initialDate: selectedMonth
+                initialDate: .now
             )
         }
         .sheet(isPresented: editingTransactionIsPresented) {
@@ -308,18 +310,8 @@ struct BudgetDetailView: View {
     }
 
     private var monthTransactions: [Transaction] {
-        guard let monthInterval =
-            Calendar.current.dateInterval(
-                of: .month,
-                for: selectedMonth
-            )
-        else {
-            return []
-        }
-
         return budgetTransactions.filter { transaction in
-            transaction.date >= monthInterval.start
-                && transaction.date < monthInterval.end
+            transaction.date.isInSameMonth(as: selectedMonth)
         }
     }
 

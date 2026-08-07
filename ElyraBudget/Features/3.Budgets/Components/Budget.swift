@@ -79,12 +79,8 @@ final class Budget {
     }
 
     func transactions(in month: Date, calendar: Calendar = .current) -> [Transaction] {
-        guard let interval = calendar.dateInterval(of: .month, for: month) else {
-            return []
-        }
-
         return (transactions ?? []).filter {
-            interval.contains($0.date)
+            $0.date.isInSameMonth(as: month, calendar: calendar)
         }
     }
 

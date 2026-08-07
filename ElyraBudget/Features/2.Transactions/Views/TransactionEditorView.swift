@@ -186,7 +186,6 @@ struct TransactionEditorView: View {
         }
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
-        .disabled(showingBudgetMenu)
     }
 
     // MARK: - Hintergrund
