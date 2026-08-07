@@ -16,4 +16,13 @@ enum AppCurrency: String, CaseIterable, Identifiable {
         case .chf: "Schweizer Franken (CHF)"
         }
     }
+
+    var symbol: String {
+        switch self {
+        case .eur: "€"
+        case .usd: "$"
+        case .gbp: "£"
+        case .chf: "CHF"
+        }
+    }
 }
