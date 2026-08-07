@@ -66,7 +66,11 @@ struct ContentView: View {
             #endif
         }
         .environment(\.appCurrencyCode, appCurrencyCode)
-        .sheet(isPresented: $showingBudgetGroupManagement) {
+        .sheet(isPresented: $showingBudgetGroupManagement, onDismiss: {
+            if selectedBudgetGroup?.isArchived == true {
+                selectedBudgetGroup = nil
+            }
+        }) {
             BudgetGroupManagementView()
         }
         .task {

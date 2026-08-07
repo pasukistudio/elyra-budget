@@ -198,6 +198,7 @@ struct ElyraBudgetTests {
     @Test func savingsGoalAutomaticBookingCarriesBudgetAndPreventsDuplicates() throws {
         let container = try ModelContainer(
             for: UserSettings.self,
+            BudgetGroup.self,
             Budget.self,
             Transaction.self,
             FixedCost.self,
@@ -206,15 +207,18 @@ struct ElyraBudgetTests {
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         let context = ModelContext(container)
-        let budget = Budget(name: "Sparen")
+        let group = BudgetGroup(name: "Privat")
+        let budget = Budget(name: "Sparen", group: group)
         let goal = SavingsGoal(
             name: "Notgroschen",
             contributionAmount: 100,
             frequency: .monthly,
             anchorDate: Calendar.current.startOfDay(for: .now),
             automaticBooking: true,
-            budget: budget
+            budget: budget,
+            group: group
         )
+        context.insert(group)
         context.insert(budget)
         context.insert(goal)
 
@@ -228,6 +232,7 @@ struct ElyraBudgetTests {
         let firstTransactions = try context.fetch(FetchDescriptor<Transaction>())
         #expect(firstTransactions.count == 1)
         #expect(firstTransactions.first?.budget?.persistentModelID == budget.persistentModelID)
+        #expect(firstTransactions.first?.group?.persistentModelID == group.persistentModelID)
 
         try SavingsGoalScheduler.processAutomaticBookings(
             goals: [goal],
