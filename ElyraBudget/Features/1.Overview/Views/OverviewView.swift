@@ -3,6 +3,7 @@ import SwiftUI
 
 struct OverviewView: View {
     @Binding var selectedGroup: BudgetGroup?
+    @Binding var selectedDate: Date
 
     @Environment(\.appCurrencyCode) private var currencyCode
 
@@ -18,8 +19,18 @@ struct OverviewView: View {
     @Query(sort: [SortDescriptor<Transaction>(\.date)])
     private var transactions: [Transaction]
 
-    init(selectedGroup: Binding<BudgetGroup?> = .constant(nil)) {
+    @Query(
+        filter: #Predicate<BudgetGroup> { !$0.isArchived },
+        sort: [SortDescriptor<BudgetGroup>(\.sortOrder)]
+    )
+    private var budgetGroups: [BudgetGroup]
+
+    init(
+        selectedGroup: Binding<BudgetGroup?> = .constant(nil),
+        selectedDate: Binding<Date> = .constant(.now)
+    ) {
         _selectedGroup = selectedGroup
+        _selectedDate = selectedDate
     }
 
     private var visibleBudgets: [Budget] {
@@ -36,12 +47,30 @@ struct OverviewView: View {
         }
     }
 
-    private var currentMonth: Date { .now }
+    private var currentMonth: Date { selectedDate }
 
     private var monthlyLimit: Decimal {
-        visibleBudgets.reduce(into: Decimal.zero) { result, budget in
-            result += budget.limit
+        if let selectedGroup {
+            return effectiveMonthlyBudget(for: selectedGroup)
         }
+
+        var total = budgetGroups.reduce(into: Decimal.zero) { result, group in
+            result += effectiveMonthlyBudget(for: group)
+        }
+
+        total += visibleBudgets
+            .filter { $0.group == nil }
+            .reduce(into: Decimal.zero) { $0 += $1.limit }
+        return total
+    }
+
+    private func effectiveMonthlyBudget(for group: BudgetGroup) -> Decimal {
+        let configured = group.monthlyBudget(for: currentMonth)
+        guard configured <= 0 else { return configured }
+
+        return budgets
+            .filter { $0.group === group }
+            .reduce(into: Decimal.zero) { $0 += $1.limit }
     }
 
     private var monthlyUsed: Decimal {
