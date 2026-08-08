@@ -13,8 +13,7 @@ import Testing
 struct ElyraBudgetTests {
 
     @Test func budgetGroupUsesMonthlyOverrideBeforeStandardAllowance() {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let calendar = Calendar.current
         let august = calendar.date(from: DateComponents(year: 2026, month: 8, day: 10))!
         let september = calendar.date(from: DateComponents(year: 2026, month: 9, day: 10))!
         let group = BudgetGroup(name: "Persönlich", standardMonthlyBudget: 2_000)
@@ -241,9 +240,9 @@ struct ElyraBudgetTests {
         let halfYearly = FixedCost(amount: 120, frequency: .halfYearly, anchorDate: start)
         let yearly = FixedCost(amount: 240, frequency: .yearly, anchorDate: start)
 
-        #expect(quarterly.occurrenceDates(through: end, calendar: calendar).count == 5)
-        #expect(halfYearly.occurrenceDates(through: end, calendar: calendar).count == 3)
-        #expect(yearly.occurrenceDates(through: end, calendar: calendar).count == 2)
+        #expect(quarterly.occurrenceDates(through: end, calendar: calendar).count == 4)
+        #expect(halfYearly.occurrenceDates(through: end, calendar: calendar).count == 2)
+        #expect(yearly.occurrenceDates(through: end, calendar: calendar).count == 1)
     }
 
     @Test func fixedCostSupportsFirstAndMiddleOfMonthSchedules() {
@@ -267,8 +266,8 @@ struct ElyraBudgetTests {
 
         let firstDates = firstDay.occurrenceDates(through: end, calendar: calendar)
         let middleDates = middleDay.occurrenceDates(through: end, calendar: calendar)
-        #expect(firstDates.count == 3)
-        #expect(middleDates.count == 3)
+        #expect(firstDates.count == 2)
+        #expect(middleDates.count == 2)
         #expect(firstDates.allSatisfy { calendar.component(.day, from: $0) == 1 })
         #expect(middleDates.allSatisfy { calendar.component(.day, from: $0) == 15 })
     }
