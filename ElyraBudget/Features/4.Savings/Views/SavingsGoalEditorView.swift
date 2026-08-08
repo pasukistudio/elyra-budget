@@ -437,6 +437,12 @@ struct SavingsGoalEditorView: View {
 
     private func save() {
         guard canSave else { return }
+        guard BudgetGroupRelationshipValidator.isValid(budget: selectedBudget, in: group),
+              BudgetGroupRelationshipValidator.isValid(fixedCost: selectedFixedCost, in: group)
+        else {
+            saveErrorMessage = "Die Zuordnung gehört zu einem anderen Budgetbereich."
+            return
+        }
 
         let value = goal ?? SavingsGoal()
         value.name = name.trimmingCharacters(in: .whitespacesAndNewlines)

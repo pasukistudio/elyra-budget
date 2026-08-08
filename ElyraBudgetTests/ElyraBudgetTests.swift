@@ -43,6 +43,63 @@ struct ElyraBudgetTests {
         #expect(transaction.group === group)
     }
 
+    @Test func budgetGroupRelationshipsRejectCrossGroupAssignments() {
+        let personal = BudgetGroup(name: "Persönlich")
+        let shared = BudgetGroup(name: "Gemeinsam")
+        let budget = Budget(name: "Versicherung", group: shared)
+        let fixedCost = FixedCost(title: "Hausrat", group: shared)
+
+        #expect(!BudgetGroupRelationshipValidator.isValid(budget: budget, in: personal))
+        #expect(!BudgetGroupRelationshipValidator.isValid(fixedCost: fixedCost, in: personal))
+        #expect(BudgetGroupRelationshipValidator.isValid(budget: budget, in: nil))
+        #expect(BudgetGroupRelationshipValidator.isValid(fixedCost: nil, in: personal))
+    }
+
+    @Test func budgetGroupMigrationAssignsOrphanedDataEvenWhenAGroupExists() throws {
+        let container = try ModelContainer(
+            for: UserSettings.self,
+            BudgetGroup.self,
+            BudgetGroupMonthlyAllocation.self,
+            Budget.self,
+            Transaction.self,
+            FixedCost.self,
+            SavingsGoal.self,
+            SavingsContribution.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = ModelContext(container)
+        let existingGroup = BudgetGroup(name: "Persönlich")
+        let orphanedBudget = Budget(name: "Versicherung")
+        let orphanedFixedCost = FixedCost(title: "Hausrat", budget: orphanedBudget)
+        let orphanedGoal = SavingsGoal(name: "Urlaub", budget: orphanedBudget)
+        let orphanedTransaction = Transaction(
+            title: "Hausrat",
+            amount: 25,
+            type: .expense,
+            budget: orphanedBudget
+        )
+
+        context.insert(existingGroup)
+        context.insert(orphanedBudget)
+        context.insert(orphanedFixedCost)
+        context.insert(orphanedGoal)
+        context.insert(orphanedTransaction)
+        try context.save()
+
+        let migratedGroup = try BudgetGroupMigration.ensureDefaultGroupAndMigrate(in: context)
+
+        #expect(migratedGroup.persistentModelID == existingGroup.persistentModelID)
+        #expect(orphanedBudget.group?.persistentModelID == existingGroup.persistentModelID)
+        #expect(orphanedFixedCost.group?.persistentModelID == existingGroup.persistentModelID)
+        #expect(orphanedGoal.group?.persistentModelID == existingGroup.persistentModelID)
+        #expect(orphanedTransaction.group?.persistentModelID == existingGroup.persistentModelID)
+
+        let secondRunGroup = try BudgetGroupMigration.ensureDefaultGroupAndMigrate(in: context)
+        let groups = try context.fetch(FetchDescriptor<BudgetGroup>())
+        #expect(secondRunGroup.persistentModelID == existingGroup.persistentModelID)
+        #expect(groups.count == 1)
+    }
+
     @Test func expenseImpactsBudgetAsPositiveAmount() {
         let transaction = Transaction(
             amount: 42.50,

@@ -190,6 +190,10 @@ struct FixedCostEditorView: View {
 
     private func save() {
         guard let amount else { return }
+        guard BudgetGroupRelationshipValidator.isValid(budget: selectedBudget, in: group) else {
+            saveErrorMessage = "Das ausgewählte Budget gehört zu einem anderen Budgetbereich."
+            return
+        }
         let value = fixedCost ?? FixedCost()
         value.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         value.amount = abs(amount)
