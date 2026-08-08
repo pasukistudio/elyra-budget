@@ -65,6 +65,10 @@ struct FixedCostEditorView: View {
                         .listRowBackground(Color.clear)
                     }
 
+                    Section("Budgetbereich") {
+                        BudgetGroupContextRow(group: group)
+                    }
+
                     Section("Intervall") {
                         Picker("Häufigkeit", selection: $frequency) {
                             ForEach(FixedCostFrequency.allCases) { Text($0.title).tag($0) }

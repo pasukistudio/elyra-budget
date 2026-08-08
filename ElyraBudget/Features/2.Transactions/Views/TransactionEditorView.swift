@@ -184,6 +184,8 @@ struct TransactionEditorView: View {
                     footerText: budgetFooterText,
                     cardBackground: cardBackground
                 )
+                BudgetGroupContextRow(group: group)
+                    .padding(.horizontal, 4)
                 TransactionEditorNoteSection(
                     note: $note,
                     cardBackground: cardBackground
