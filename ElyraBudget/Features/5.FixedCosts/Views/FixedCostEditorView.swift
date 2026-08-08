@@ -177,7 +177,7 @@ struct FixedCostEditorView: View {
                     goal: nil,
                     budgets: budgets,
                     type: .goal,
-                    group: group,
+                    group: effectiveGroup,
                     linkedFixedCost: fixedCost
                 )
             }
