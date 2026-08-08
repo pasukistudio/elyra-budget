@@ -39,6 +39,7 @@ struct SavingsView: View {
     @State private var showingManagement = false
     @State private var showingArchived = false
     @State private var contributingGoal: SavingsGoal?
+    @State private var goalToArchive: SavingsGoal?
     @State private var goalToDelete: SavingsGoal?
     @State private var saveErrorMessage: String?
 
@@ -109,13 +110,23 @@ struct SavingsView: View {
         }
         .alert(
             "In den Archiv verschieben?",
+            isPresented: archiveConfirmationIsPresented,
+            presenting: goalToArchive
+        ) { goal in
+            Button("Archivieren") { archive(goal) }
+            Button("Abbrechen", role: .cancel) { goalToArchive = nil }
+        } message: { goal in
+            Text("„\(goal.name)“ bleibt erhalten und kann später im Archiv wiederhergestellt werden.")
+        }
+        .alert(
+            "Sparziel löschen?",
             isPresented: deleteConfirmationIsPresented,
             presenting: goalToDelete
         ) { goal in
-            Button("Archivieren") { archive(goal) }
+            Button("Löschen", role: .destructive) { delete(goal) }
             Button("Abbrechen", role: .cancel) { goalToDelete = nil }
         } message: { goal in
-            Text("„\(goal.name)“ bleibt erhalten und kann später im Archiv wiederhergestellt werden.")
+            Text("„\(goal.name)“ und seine Einzahlungen werden dauerhaft gelöscht.")
         }
         .saveErrorAlert(message: $saveErrorMessage)
         .task {
@@ -185,9 +196,32 @@ struct SavingsView: View {
             editorType = goal.type
             showingEditor = true
         }
+        .contextMenu {
+            Button {
+                editingGoal = goal
+                editorType = goal.type
+                showingEditor = true
+            } label: {
+                Label("Bearbeiten", systemImage: "pencil")
+            }
+
+            Button {
+                goalToArchive = goal
+            } label: {
+                Label("Archivieren", systemImage: "archivebox")
+            }
+
+            Divider()
+
+            Button(role: .destructive) {
+                goalToDelete = goal
+            } label: {
+                Label("Löschen", systemImage: "trash")
+            }
+        }
         .swipeActions {
             Button {
-                goalToDelete = goal
+                goalToArchive = goal
             } label: {
                 Label("Archivieren", systemImage: "archivebox")
             }
@@ -206,6 +240,13 @@ struct SavingsView: View {
             }
             .buttonStyle(.borderedProminent)
         }
+    }
+
+    private var archiveConfirmationIsPresented: Binding<Bool> {
+        Binding(
+            get: { goalToArchive != nil },
+            set: { if !$0 { goalToArchive = nil } }
+        )
     }
 
     private var deleteConfirmationIsPresented: Binding<Bool> {
@@ -246,6 +287,13 @@ struct SavingsView: View {
     private func archive(_ goal: SavingsGoal) {
         goal.isArchived = true
         goal.updatedAt = .now
+        do { try modelContext.save() }
+        catch { saveErrorMessage = error.localizedDescription }
+        goalToArchive = nil
+    }
+
+    private func delete(_ goal: SavingsGoal) {
+        modelContext.delete(goal)
         do { try modelContext.save() }
         catch { saveErrorMessage = error.localizedDescription }
         goalToDelete = nil
