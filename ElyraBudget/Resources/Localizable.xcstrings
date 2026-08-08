@@ -272,6 +272,9 @@
     "Fällig" : {
 
     },
+    "Fehler ausblenden" : {
+
+    },
     "Fertig" : {
 
     },
@@ -648,6 +651,9 @@
 
     },
     "Ziel" : {
+
+    },
+    "Zuletzt aktualisiert: %@" : {
 
     },
     "Zuordnung" : {
