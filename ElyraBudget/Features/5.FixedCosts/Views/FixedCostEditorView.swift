@@ -42,6 +42,10 @@ struct FixedCostEditorView: View {
         _selectedBudget = State(initialValue: fixedCost?.budget)
     }
 
+    private var effectiveGroup: BudgetGroup? {
+        group ?? selectedBudget?.group
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -66,7 +70,7 @@ struct FixedCostEditorView: View {
                     }
 
                     Section("Budgetbereich") {
-                        BudgetGroupContextRow(group: group)
+                        BudgetGroupContextRow(group: effectiveGroup)
                     }
 
                     Section("Intervall") {
@@ -194,7 +198,7 @@ struct FixedCostEditorView: View {
 
     private func save() {
         guard let amount else { return }
-        guard BudgetGroupRelationshipValidator.isValid(budget: selectedBudget, in: group) else {
+        guard BudgetGroupRelationshipValidator.isValid(budget: selectedBudget, in: effectiveGroup) else {
             saveErrorMessage = "Das ausgewählte Budget gehört zu einem anderen Budgetbereich."
             return
         }
@@ -213,7 +217,7 @@ struct FixedCostEditorView: View {
         value.pauseUntil = isPaused ? Calendar.autoupdatingCurrent.startOfDay(for: pauseUntil) : nil
         value.note = note
         value.budget = selectedBudget
-        value.group = group ?? selectedBudget?.group
+        value.group = effectiveGroup
         value.updatedAt = .now
         if fixedCost == nil { modelContext.insert(value) }
         do {

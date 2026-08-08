@@ -88,13 +88,17 @@ struct SavingsGoalEditorView: View {
         _selectedColorHex = State(initialValue: goal?.iconColorHex ?? "#34C759")
     }
 
+    private var effectiveGroup: BudgetGroup? {
+        group ?? selectedBudget?.group ?? selectedFixedCost?.group
+    }
+
     var body: some View {
         NavigationStack {
             Form {
                 previewSection
                 goalSection
                 Section("Budgetbereich") {
-                    BudgetGroupContextRow(group: group)
+                    BudgetGroupContextRow(group: effectiveGroup)
                 }
                 appearanceSection
                 intervalSection
@@ -440,7 +444,7 @@ struct SavingsGoalEditorView: View {
 
     private func save() {
         guard canSave else { return }
-        guard BudgetGroupRelationshipValidator.isValid(budget: selectedBudget, in: group),
+        guard BudgetGroupRelationshipValidator.isValid(budget: selectedBudget, in: effectiveGroup),
               BudgetGroupRelationshipValidator.isValid(fixedCost: selectedFixedCost, in: group)
         else {
             saveErrorMessage = "Die Zuordnung gehört zu einem anderen Budgetbereich."
@@ -462,7 +466,7 @@ struct SavingsGoalEditorView: View {
         value.note = note
         value.budget = selectedBudget
         value.fixedCost = type == .goal ? selectedFixedCost : nil
-        value.group = group ?? selectedBudget?.group
+        value.group = effectiveGroup
         value.updatedAt = .now
 
         if goal == nil { modelContext.insert(value) }

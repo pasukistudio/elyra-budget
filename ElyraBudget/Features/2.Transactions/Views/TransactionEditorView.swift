@@ -101,6 +101,10 @@ struct TransactionEditorView: View {
         }
     }
 
+    private var effectiveGroup: BudgetGroup? {
+        group ?? selectedBudget?.group
+    }
+
     // MARK: - Hauptansicht
 
     var body: some View {
@@ -184,7 +188,7 @@ struct TransactionEditorView: View {
                     footerText: budgetFooterText,
                     cardBackground: cardBackground
                 )
-                BudgetGroupContextRow(group: group)
+                BudgetGroupContextRow(group: effectiveGroup)
                     .padding(.horizontal, 4)
                 TransactionEditorNoteSection(
                     note: $note,
@@ -318,7 +322,7 @@ struct TransactionEditorView: View {
                 selectedBudget
 
             existingTransaction.group =
-                group ?? selectedBudget?.group
+                effectiveGroup
 
             existingTransaction.updatedAt =
                 .now
@@ -330,7 +334,7 @@ struct TransactionEditorView: View {
                 note: cleanedNote,
                 type: selectedType,
                 budget: selectedBudget,
-                group: group ?? selectedBudget?.group
+                group: effectiveGroup
             )
 
             modelContext.insert(
