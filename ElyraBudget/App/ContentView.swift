@@ -55,7 +55,8 @@ struct ContentView: View {
     @State private var selectedBudgetGroup: BudgetGroup?
     @State private var showingBudgetGroupManagement = false
     @State private var showingSettings = false
-    @State private var cloudKitSyncMonitor = CloudKitSyncMonitor()
+    @Environment(CloudKitSyncMonitor.self)
+    private var cloudKitSyncMonitor
 
     // MARK: - Hauptansicht
 
@@ -488,10 +489,6 @@ struct ContentView: View {
 
     @ToolbarContentBuilder
     private var sharedToolbar: some ToolbarContent {
-        ToolbarItem(placement: .secondaryAction) {
-            CloudKitSyncStatusView(monitor: cloudKitSyncMonitor)
-        }
-
         ToolbarItem(placement: budgetGroupToolbarPlacement) {
             BudgetGroupMenu(
                 selection: $selectedBudgetGroup,
@@ -771,6 +768,7 @@ struct ContentView: View {
         .environment(
             ProAccessManager()
         )
+        .environment(CloudKitSyncMonitor(environment: ["ELYRA_BUDGET_USE_CLOUDKIT": "NO"]))
         .modelContainer(
             for: [
                 UserSettings.self,
@@ -795,6 +793,7 @@ struct ContentView: View {
 
     return ContentView()
         .environment(proAccess)
+        .environment(CloudKitSyncMonitor(environment: ["ELYRA_BUDGET_USE_CLOUDKIT": "NO"]))
         .modelContainer(
             for: [
                 UserSettings.self,
@@ -818,6 +817,7 @@ struct ContentView: View {
         .environment(
             ProAccessManager()
         )
+        .environment(CloudKitSyncMonitor(environment: ["ELYRA_BUDGET_USE_CLOUDKIT": "NO"]))
         .modelContainer(
             for: [
                 UserSettings.self,
@@ -842,6 +842,7 @@ struct ContentView: View {
 
     return ContentView()
         .environment(proAccess)
+        .environment(CloudKitSyncMonitor(environment: ["ELYRA_BUDGET_USE_CLOUDKIT": "NO"]))
         .modelContainer(
             for: [
                 UserSettings.self,
