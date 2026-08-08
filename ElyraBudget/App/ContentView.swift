@@ -373,6 +373,7 @@ struct ContentView: View {
                 reserveRequested: $requestingSavingsReserveEditor,
                 managementRequested: $showingSavingsManagement,
                 archiveRequested: $showingArchivedSavings,
+                selectedDate: $selectedDate,
                 selectedGroup: $selectedBudgetGroup
             )
         }
@@ -723,6 +724,7 @@ struct ContentView: View {
                 reserveRequested: $requestingSavingsReserveEditor,
                 managementRequested: $showingSavingsManagement,
                 archiveRequested: $showingArchivedSavings,
+                selectedDate: $selectedDate,
                 selectedGroup: $selectedBudgetGroup
             )
 
