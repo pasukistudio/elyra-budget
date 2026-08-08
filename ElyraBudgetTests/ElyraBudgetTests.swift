@@ -218,6 +218,154 @@ struct ElyraBudgetTests {
         #expect(fixedCost.occurrenceDates(through: february, calendar: calendar).count == 2)
     }
 
+    @Test func fixedCostSupportsDailyAndWeeklyRecurrence() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let start = calendar.date(from: DateComponents(year: 2026, month: 8, day: 1))!
+        let end = calendar.date(from: DateComponents(year: 2026, month: 8, day: 15))!
+
+        let daily = FixedCost(amount: 5, frequency: .daily, anchorDate: start)
+        let weekly = FixedCost(amount: 10, frequency: .weekly, anchorDate: start)
+
+        #expect(daily.occurrenceDates(through: end, calendar: calendar).count == 15)
+        #expect(weekly.occurrenceDates(through: end, calendar: calendar).count == 3)
+    }
+
+    @Test func fixedCostSupportsQuarterlyHalfYearlyAndYearlyRecurrence() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let start = calendar.date(from: DateComponents(year: 2026, month: 1, day: 15))!
+        let end = calendar.date(from: DateComponents(year: 2027, month: 1, day: 15))!
+
+        let quarterly = FixedCost(amount: 90, frequency: .quarterly, anchorDate: start)
+        let halfYearly = FixedCost(amount: 120, frequency: .halfYearly, anchorDate: start)
+        let yearly = FixedCost(amount: 240, frequency: .yearly, anchorDate: start)
+
+        #expect(quarterly.occurrenceDates(through: end, calendar: calendar).count == 5)
+        #expect(halfYearly.occurrenceDates(through: end, calendar: calendar).count == 3)
+        #expect(yearly.occurrenceDates(through: end, calendar: calendar).count == 2)
+    }
+
+    @Test func fixedCostSupportsFirstAndMiddleOfMonthSchedules() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let start = calendar.date(from: DateComponents(year: 2026, month: 8, day: 20))!
+        let end = calendar.date(from: DateComponents(year: 2026, month: 10, day: 31))!
+
+        let firstDay = FixedCost(
+            amount: 10,
+            frequency: .monthly,
+            schedule: .firstDayOfMonth,
+            anchorDate: start
+        )
+        let middleDay = FixedCost(
+            amount: 10,
+            frequency: .monthly,
+            schedule: .middleOfMonth,
+            anchorDate: start
+        )
+
+        let firstDates = firstDay.occurrenceDates(through: end, calendar: calendar)
+        let middleDates = middleDay.occurrenceDates(through: end, calendar: calendar)
+        #expect(firstDates.count == 3)
+        #expect(middleDates.count == 3)
+        #expect(firstDates.allSatisfy { calendar.component(.day, from: $0) == 1 })
+        #expect(middleDates.allSatisfy { calendar.component(.day, from: $0) == 15 })
+    }
+
+    @Test func pausedFixedCostSkipsOccurrencesUntilPauseEnds() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let start = calendar.date(from: DateComponents(year: 2026, month: 8, day: 1))!
+        let pauseUntil = calendar.date(from: DateComponents(year: 2026, month: 8, day: 20))!
+        let end = calendar.date(from: DateComponents(year: 2026, month: 10, day: 1))!
+        let fixedCost = FixedCost(
+            amount: 10,
+            frequency: .monthly,
+            anchorDate: start
+        )
+        fixedCost.isPaused = true
+        fixedCost.pauseUntil = pauseUntil
+
+        let dates = fixedCost.occurrenceDates(through: end, calendar: calendar)
+        #expect(dates.count == 2)
+        #expect(calendar.component(.month, from: dates[0]) == 9)
+        #expect(calendar.component(.month, from: dates[1]) == 10)
+    }
+
+    @Test func fixedCostAutomaticBookingPreservesBudgetAndPreventsDuplicates() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let date = calendar.date(from: DateComponents(year: 2026, month: 8, day: 1))!
+        let container = try ModelContainer(
+            for: BudgetGroup.self,
+            Budget.self,
+            Transaction.self,
+            FixedCost.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = ModelContext(container)
+        let group = BudgetGroup(name: "Persönlich")
+        let budget = Budget(name: "Versicherung", group: group)
+        let fixedCost = FixedCost(
+            title: "Hausrat",
+            amount: 25,
+            frequency: .monthly,
+            anchorDate: date,
+            automaticBooking: true,
+            budget: budget,
+            group: group
+        )
+        context.insert(group)
+        context.insert(budget)
+        context.insert(fixedCost)
+
+        try FixedCostScheduler.processAutomaticBookings(
+            fixedCosts: [fixedCost],
+            transactions: [],
+            modelContext: context,
+            through: date,
+            calendar: calendar
+        )
+        let firstTransactions = try context.fetch(FetchDescriptor<Transaction>())
+        #expect(firstTransactions.count == 1)
+        #expect(firstTransactions.first?.budget?.persistentModelID == budget.persistentModelID)
+        #expect(firstTransactions.first?.group?.persistentModelID == group.persistentModelID)
+
+        try FixedCostScheduler.processAutomaticBookings(
+            fixedCosts: [fixedCost],
+            transactions: firstTransactions,
+            modelContext: context,
+            through: date,
+            calendar: calendar
+        )
+        #expect(try context.fetch(FetchDescriptor<Transaction>()).count == 1)
+    }
+
+    @Test func manualFixedCostProducesPendingBooking() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let date = calendar.date(from: DateComponents(year: 2026, month: 8, day: 1))!
+        let fixedCost = FixedCost(
+            title: "Hausrat",
+            amount: 25,
+            frequency: .monthly,
+            anchorDate: date,
+            automaticBooking: false
+        )
+
+        let pending = FixedCostScheduler.pendingManualBookings(
+            fixedCosts: [fixedCost],
+            transactions: [],
+            through: date,
+            calendar: calendar
+        )
+
+        #expect(pending.count == 1)
+        #expect(pending.first?.fixedCost.id == fixedCost.id)
+        #expect(pending.first?.dueDate == date)
+    }
+
     @Test func savingsGoalWithoutTargetHasNoRemainingAmount() {
         let goal = SavingsGoal(name: "Notgroschen")
         goal.contributions = [
