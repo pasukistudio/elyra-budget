@@ -78,7 +78,18 @@ final class SavingsGoal {
     }
 
     var savedAmount: Decimal {
-        (contributions ?? []).reduce(.zero) { $0 + $1.amount }
+        savedAmount(asOf: .distantFuture)
+    }
+
+    func savedAmount(
+        asOf date: Date,
+        calendar: Calendar = .autoupdatingCurrent
+    ) -> Decimal {
+        let endOfDay = calendar.dateInterval(of: .day, for: date)?.end
+            .addingTimeInterval(-1) ?? date
+        return (contributions ?? [])
+            .filter { $0.date <= endOfDay }
+            .reduce(.zero) { $0 + $1.amount }
     }
 
     var remainingAmount: Decimal? {

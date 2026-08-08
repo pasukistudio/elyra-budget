@@ -439,6 +439,21 @@ struct ElyraBudgetTests {
         #expect(!goal.isCompleted)
     }
 
+    @Test func savingsGoalCalculatesHistoricalBalanceAtMonthEnd() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let january = calendar.date(from: DateComponents(year: 2026, month: 1, day: 31))!
+        let february = calendar.date(from: DateComponents(year: 2026, month: 2, day: 1))!
+        let goal = SavingsGoal(name: "Urlaub", targetAmount: 1_000)
+        goal.contributions = [
+            SavingsContribution(amount: 100, date: january, goal: goal),
+            SavingsContribution(amount: 50, date: february, goal: goal)
+        ]
+
+        #expect(goal.savedAmount(asOf: january, calendar: calendar) == 100)
+        #expect(goal.savedAmount(asOf: february, calendar: calendar) == 150)
+    }
+
     @Test func savingsGoalUsesConfiguredMonthlySchedule() {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!

@@ -6,6 +6,7 @@ struct SavingsView: View {
     @Binding private var reserveRequested: Bool
     @Binding private var managementRequested: Bool
     @Binding private var archiveRequested: Bool
+    @Binding private var selectedDate: Date
     @Binding private var selectedGroup: BudgetGroup?
 
     @Environment(\.modelContext) private var modelContext
@@ -46,18 +47,30 @@ struct SavingsView: View {
         reserveRequested: Binding<Bool> = .constant(false),
         managementRequested: Binding<Bool> = .constant(false),
         archiveRequested: Binding<Bool> = .constant(false),
+        selectedDate: Binding<Date> = .constant(.now),
         selectedGroup: Binding<BudgetGroup?> = .constant(nil)
     ) {
         _addRequested = addRequested
         _reserveRequested = reserveRequested
         _managementRequested = managementRequested
         _archiveRequested = archiveRequested
+        _selectedDate = selectedDate
         _selectedGroup = selectedGroup
     }
 
-    private var visibleGoals: [SavingsGoal] {
+    private var selectedMonthEnd: Date {
+        let calendar = Calendar.autoupdatingCurrent
+        let interval = calendar.dateInterval(of: .month, for: selectedDate)
+        return interval?.end.addingTimeInterval(-1) ?? selectedDate
+    }
+
+    private var groupedGoals: [SavingsGoal] {
         guard let selectedGroup else { return goals }
         return goals.filter { $0.group === selectedGroup }
+    }
+
+    private var visibleGoals: [SavingsGoal] {
+        groupedGoals.filter { $0.createdAt <= selectedMonthEnd }
     }
 
     private var visibleArchivedGoals: [SavingsGoal] {
@@ -86,7 +99,7 @@ struct SavingsView: View {
             }
         }
         .sheet(isPresented: $showingManagement) {
-            SavingsManagementView(goals: visibleGoals, archivedGoals: visibleArchivedGoals, budgets: visibleBudgets)
+            SavingsManagementView(goals: groupedGoals, archivedGoals: visibleArchivedGoals, budgets: visibleBudgets)
         }
         .sheet(isPresented: $showingArchived) {
             ArchivedSavingsView(goals: visibleArchivedGoals)
@@ -163,6 +176,7 @@ struct SavingsView: View {
         SavingsGoalCardView(
             goal: goal,
             currencyCode: currencyCode,
+            asOf: selectedMonthEnd,
             contribute: { contributingGoal = goal }
         )
         .contentShape(Rectangle())
@@ -340,7 +354,17 @@ private struct ArchivedSavingsView: View {
 private struct SavingsGoalCardView: View {
     let goal: SavingsGoal
     let currencyCode: String
+    let asOf: Date
     let contribute: () -> Void
+
+    private var savedAmount: Decimal {
+        goal.savedAmount(asOf: asOf)
+    }
+
+    private var historicalProgress: Double {
+        guard let target = goal.targetAmount, target > 0 else { return 0 }
+        return min(max(NSDecimalNumber(decimal: savedAmount / target).doubleValue, 0), 1)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -359,8 +383,8 @@ private struct SavingsGoalCardView: View {
 
                 Spacer(minLength: 8)
 
-                VStack(alignment: .trailing, spacing: 3) {
-                    Text(goal.savedAmount, format: .currency(code: currencyCode))
+                    VStack(alignment: .trailing, spacing: 3) {
+                    Text(savedAmount, format: .currency(code: currencyCode))
                         .font(.headline)
                     if let target = goal.targetAmount, target > 0 {
                         Text("von \(target, format: .currency(code: currencyCode))")
@@ -371,8 +395,8 @@ private struct SavingsGoalCardView: View {
             }
 
             if goal.type == .goal {
-                ProgressView(value: goal.visualProgress)
-                    .tint(goal.isCompleted ? .green : .accentColor)
+                ProgressView(value: historicalProgress)
+                    .tint(historicalProgress >= 1 ? .green : .accentColor)
             }
 
             HStack {
