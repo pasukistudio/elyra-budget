@@ -5,6 +5,17 @@ struct SavingsContributionEditorView: View {
     let goal: SavingsGoal
     let budgets: [Budget]
 
+    private var effectiveGroup: BudgetGroup? {
+        goal.group ?? selectedBudget?.group
+    }
+
+    private var availableBudgets: [Budget] {
+        budgets.filter { budget in
+            guard let group = goal.group else { return true }
+            return budget.group === group
+        }
+    }
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.appCurrencyCode) private var currencyCode
@@ -36,7 +47,7 @@ struct SavingsContributionEditorView: View {
                         Spacer()
                         Menu {
                             Button("Kein Budget") { selectedBudget = nil }
-                            ForEach(budgets, id: \.persistentModelID) { budget in
+                            ForEach(availableBudgets, id: \.persistentModelID) { budget in
                                 Button {
                                     selectedBudget = budget
                                 } label: {
@@ -75,6 +86,14 @@ struct SavingsContributionEditorView: View {
 
     private func save() {
         guard let amount, amount > 0 else { return }
+        guard BudgetGroupRelationshipValidator.isValid(budget: selectedBudget, in: effectiveGroup) else {
+            saveErrorMessage = "Die Zuordnung gehört zu einem anderen Budgetbereich."
+            return
+        }
+
+        if goal.group == nil {
+            goal.group = effectiveGroup
+        }
 
         let contribution = SavingsContribution(amount: amount, goal: goal)
         modelContext.insert(contribution)
@@ -85,7 +104,7 @@ struct SavingsContributionEditorView: View {
             note: goal.note,
             type: .expense,
             budget: selectedBudget,
-            group: goal.group ?? selectedBudget?.group
+            group: effectiveGroup
         )
         transaction.savingsGoalID = goal.id
         modelContext.insert(transaction)
