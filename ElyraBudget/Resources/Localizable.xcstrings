@@ -65,6 +65,12 @@
     "Archivierte Budgets werden hier angezeigt und können wiederhergestellt werden." : {
 
     },
+    "Art" : {
+
+    },
+    "Auf Budget buchen" : {
+
+    },
     "Aus dieser Fixkostenposition wird ein vorausgefülltes Sparziel erstellt." : {
 
     },
@@ -72,6 +78,9 @@
 
     },
     "Ausgaben: 0,00 %@" : {
+
+    },
+    "Auszahlung" : {
 
     },
     "Automatisch %@" : {
@@ -229,6 +238,9 @@
     "Details" : {
 
     },
+    "Die Auszahlung wird als Einnahme im ausgewählten Budget erfasst." : {
+
+    },
     "Die Buchung „%@“ wird dauerhaft gelöscht." : {
 
     },
@@ -264,9 +276,6 @@
       }
     },
     "Einzahlen" : {
-
-    },
-    "Einzahlungen" : {
 
     },
     "Endgültig löschen" : {
@@ -657,6 +666,9 @@
 
     },
     "Verfügbar in diesem Monat" : {
+
+    },
+    "Verlauf" : {
 
     },
     "Verwalten" : {
