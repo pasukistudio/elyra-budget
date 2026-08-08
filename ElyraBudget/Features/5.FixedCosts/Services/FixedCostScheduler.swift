@@ -23,6 +23,10 @@ enum FixedCostScheduler {
         )
 
         for fixedCost in fixedCosts where fixedCost.automaticBooking {
+            guard BudgetGroupRelationshipValidator.isValid(budget: fixedCost.budget, in: fixedCost.group) else {
+                continue
+            }
+
             for dueDate in fixedCost.occurrenceDates(through: date, calendar: calendar) {
                 let marker = marker(for: fixedCost.id, date: dueDate, calendar: calendar)
                 guard !existing.contains(marker) else { continue }
