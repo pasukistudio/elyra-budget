@@ -17,14 +17,30 @@ struct ElyraBudgetApp: App {
             SavingsContribution.self
         ])
 
-        let configuration = ModelConfiguration(
-            "ElyraBudget",
-            schema: schema,
-            isStoredInMemoryOnly: false,
-            cloudKitDatabase: .private(
-                "iCloud.de.pascal.ElyraBudgetNew"
+        let processInfo = ProcessInfo.processInfo
+        let isRunningUnderXCTest = processInfo.arguments.contains("-XCTest")
+            || processInfo.environment["XCTestConfigurationFilePath"] != nil
+            || processInfo.environment["XCTestSessionIdentifier"] != nil
+        let useCloudKit = !isRunningUnderXCTest
+            && processInfo.environment["ELYRA_BUDGET_USE_CLOUDKIT"] != "NO"
+
+        let configuration: ModelConfiguration
+        if useCloudKit {
+            configuration = ModelConfiguration(
+                "ElyraBudget",
+                schema: schema,
+                isStoredInMemoryOnly: false,
+                cloudKitDatabase: .private(
+                    "iCloud.de.pascal.ElyraBudgetNew"
+                )
             )
-        )
+        } else {
+            configuration = ModelConfiguration(
+                "ElyraBudgetTests",
+                schema: schema,
+                isStoredInMemoryOnly: true
+            )
+        }
 
         do {
             return try ModelContainer(
