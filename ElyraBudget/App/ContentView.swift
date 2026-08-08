@@ -127,6 +127,7 @@ struct ContentView: View {
             )) ?? []
 
             if !existingGroups.isEmpty {
+                ensureDefaultBudgetGroup()
                 return
             }
 
@@ -151,63 +152,15 @@ struct ContentView: View {
     }
 
     private func ensureDefaultBudgetGroup() {
-        let existingGroups = (try? modelContext.fetch(FetchDescriptor<BudgetGroup>())) ?? []
-
-        if let personalGroup = existingGroups.first(where: {
-            $0.name.trimmingCharacters(
-                in: .whitespacesAndNewlines
-            ).localizedCaseInsensitiveCompare("Persönlich") == .orderedSame
-        }) {
-            if selectedBudgetGroup == nil, !personalGroup.isArchived {
-                selectedBudgetGroup = personalGroup
-            }
-            return
-        }
-
-        guard existingGroups.isEmpty else {
-            if selectedBudgetGroup == nil {
-                selectedBudgetGroup = existingGroups.first { !$0.isArchived }
-            }
-            return
-        }
-
-        let personalGroup = BudgetGroup(
-            name: "Persönlich",
-            iconName: "person.fill",
-            iconColorHex: ColorPreset.blue.hex,
-            sortOrder: 0
-        )
-        modelContext.insert(personalGroup)
-
-        assignUngroupedData(to: personalGroup)
-
         do {
-            try modelContext.save()
-            selectedBudgetGroup = personalGroup
+            let group = try BudgetGroupMigration.ensureDefaultGroupAndMigrate(in: modelContext)
+            if selectedBudgetGroup == nil, !group.isArchived {
+                selectedBudgetGroup = group
+            }
         } catch {
             AppLogger.persistence.error(
                 "Standard-Budgetbereich konnte nicht erstellt werden: \(error)"
             )
-        }
-    }
-
-    private func assignUngroupedData(to group: BudgetGroup) {
-        let budgets = (try? modelContext.fetch(FetchDescriptor<Budget>())) ?? []
-        let fixedCosts = (try? modelContext.fetch(FetchDescriptor<FixedCost>())) ?? []
-        let savingsGoals = (try? modelContext.fetch(FetchDescriptor<SavingsGoal>())) ?? []
-        let transactions = (try? modelContext.fetch(FetchDescriptor<Transaction>())) ?? []
-
-        for budget in budgets where budget.group == nil {
-            budget.group = group
-        }
-        for fixedCost in fixedCosts where fixedCost.group == nil {
-            fixedCost.group = fixedCost.budget?.group ?? group
-        }
-        for savingsGoal in savingsGoals where savingsGoal.group == nil {
-            savingsGoal.group = savingsGoal.budget?.group ?? group
-        }
-        for transaction in transactions where transaction.group == nil {
-            transaction.group = transaction.budget?.group ?? group
         }
     }
 
