@@ -406,5 +406,5 @@ private struct SavingsGoalCardView: View {
 
 #Preview {
     SavingsView()
-        .modelContainer(for: [UserSettings.self, BudgetGroup.self, Budget.self, Transaction.self, FixedCost.self, SavingsGoal.self, SavingsContribution.self], inMemory: true)
+        .modelContainer(for: [UserSettings.self, BudgetGroup.self, BudgetGroupMonthlyAllocation.self, Budget.self, Transaction.self, FixedCost.self, SavingsGoal.self, SavingsContribution.self], inMemory: true)
 }

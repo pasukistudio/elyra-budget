@@ -363,7 +363,7 @@ struct ContentView: View {
     #if os(iOS)
     private var overviewTab: some View {
         appBackground {
-            OverviewView(selectedGroup: $selectedBudgetGroup)
+            OverviewView(selectedGroup: $selectedBudgetGroup, selectedDate: $selectedDate)
         }
         .tabItem {
             Label(
@@ -746,7 +746,7 @@ struct ContentView: View {
     private var selectedSectionView: some View {
         switch selectedSection {
         case .overview:
-            OverviewView(selectedGroup: $selectedBudgetGroup)
+            OverviewView(selectedGroup: $selectedBudgetGroup, selectedDate: $selectedDate)
 
         case .transactions:
             TransactionsView(

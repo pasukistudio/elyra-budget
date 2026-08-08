@@ -13,6 +13,16 @@ final class BudgetGroup {
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
 
+    /// The fallback monthly allowance used when a month has no override.
+    /// A value of `0` means that no group allowance has been configured yet.
+    var standardMonthlyBudget: Decimal = 0
+
+    @Relationship(
+        deleteRule: .cascade,
+        inverse: \BudgetGroupMonthlyAllocation.group
+    )
+    var monthlyAllocations: [BudgetGroupMonthlyAllocation]? = []
+
     @Relationship(
         deleteRule: .nullify,
         inverse: \Budget.group
@@ -41,13 +51,51 @@ final class BudgetGroup {
         name: String = "",
         iconName: String = "person.2.fill",
         iconColorHex: String = "#007AFF",
-        sortOrder: Int = 0
+        sortOrder: Int = 0,
+        standardMonthlyBudget: Decimal = 0
     ) {
         self.id = UUID()
         self.name = name
         self.iconName = iconName
         self.iconColorHex = iconColorHex
         self.sortOrder = sortOrder
+        self.standardMonthlyBudget = standardMonthlyBudget
+        self.createdAt = .now
+        self.updatedAt = .now
+    }
+
+    func monthlyBudget(for month: Date, calendar: Calendar = .current) -> Decimal {
+        let monthStart = calendar.dateInterval(of: .month, for: month)?.start ?? month
+        if let override = (monthlyAllocations ?? []).first(where: {
+            calendar.isDate($0.monthStart, equalTo: monthStart, toGranularity: .month)
+        }) {
+            return override.amount
+        }
+        return standardMonthlyBudget
+    }
+
+    func monthlyAllocation(for month: Date, calendar: Calendar = .current) -> BudgetGroupMonthlyAllocation? {
+        let monthStart = calendar.dateInterval(of: .month, for: month)?.start ?? month
+        return (monthlyAllocations ?? []).first {
+            calendar.isDate($0.monthStart, equalTo: monthStart, toGranularity: .month)
+        }
+    }
+}
+
+/// A month-specific override for a budget group's monthly allowance.
+@Model
+final class BudgetGroupMonthlyAllocation {
+    var monthStart: Date = Date()
+    var amount: Decimal = 0
+    var createdAt: Date = Date()
+    var updatedAt: Date = Date()
+
+    var group: BudgetGroup?
+
+    init(monthStart: Date, amount: Decimal, group: BudgetGroup? = nil) {
+        self.monthStart = Calendar.current.dateInterval(of: .month, for: monthStart)?.start ?? monthStart
+        self.amount = amount
+        self.group = group
         self.createdAt = .now
         self.updatedAt = .now
     }

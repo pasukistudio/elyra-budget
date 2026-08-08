@@ -36,7 +36,7 @@ struct SavingsContributionEditorView: View {
                         Spacer()
                         Menu {
                             Button("Kein Budget") { selectedBudget = nil }
-                            ForEach(budgets) { budget in
+                            ForEach(budgets, id: \.persistentModelID) { budget in
                                 Button {
                                     selectedBudget = budget
                                 } label: {

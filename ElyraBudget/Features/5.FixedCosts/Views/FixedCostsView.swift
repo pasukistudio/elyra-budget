@@ -297,5 +297,5 @@ private struct FixedCostRowView: View {
 
 #Preview {
     FixedCostsView()
-        .modelContainer(for: [UserSettings.self, BudgetGroup.self, Budget.self, Transaction.self, FixedCost.self], inMemory: true)
+        .modelContainer(for: [UserSettings.self, BudgetGroup.self, BudgetGroupMonthlyAllocation.self, Budget.self, Transaction.self, FixedCost.self], inMemory: true)
 }

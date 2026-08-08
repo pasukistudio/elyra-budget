@@ -206,9 +206,14 @@ private struct BudgetGroupEditorView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.appCurrencyCode) private var currencyCode
     @State private var name: String
     @State private var selectedIcon: String
     @State private var selectedColorHex: String
+    @State private var standardMonthlyBudget: Decimal?
+    @State private var selectedMonth: Date
+    @State private var hasMonthlyOverride: Bool
+    @State private var monthlyOverride: Decimal?
     @State private var showingIconPicker = false
     @State private var saveErrorMessage: String?
 
@@ -229,6 +234,11 @@ private struct BudgetGroupEditorView: View {
         _name = State(initialValue: group?.name ?? "")
         _selectedIcon = State(initialValue: group?.iconName ?? "person.2.fill")
         _selectedColorHex = State(initialValue: group?.iconColorHex ?? ColorPreset.blue.hex)
+        _standardMonthlyBudget = State(initialValue: group.flatMap { $0.standardMonthlyBudget > 0 ? $0.standardMonthlyBudget : nil })
+        let month = Calendar.current.dateInterval(of: .month, for: .now)?.start ?? .now
+        _selectedMonth = State(initialValue: month)
+        _hasMonthlyOverride = State(initialValue: group?.monthlyAllocation(for: month) != nil)
+        _monthlyOverride = State(initialValue: group?.monthlyAllocation(for: month)?.amount)
     }
 
     var body: some View {
@@ -236,6 +246,39 @@ private struct BudgetGroupEditorView: View {
             Form {
                 Section("Budgetbereich") {
                     TextField("Bezeichnung", text: $name)
+                }
+
+                Section {
+                    HStack {
+                        Text("Standard pro Monat")
+                        Spacer()
+                        TextField("Kein Kontingent", value: $standardMonthlyBudget, format: .number.precision(.fractionLength(0 ... 2)))
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: 130)
+                        Text(currencySymbol)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    DatePicker("Monat", selection: $selectedMonth, displayedComponents: [.date])
+                        .datePickerStyle(.compact)
+
+                    Toggle("Individuellen Monatswert verwenden", isOn: $hasMonthlyOverride)
+
+                    if hasMonthlyOverride {
+                        HStack {
+                            Text("Kontingent für diesen Monat")
+                            Spacer()
+                            TextField("Betrag", value: $monthlyOverride, format: .number.precision(.fractionLength(0 ... 2)))
+                                .multilineTextAlignment(.trailing)
+                                .frame(maxWidth: 130)
+                            Text(currencySymbol)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } header: {
+                    Text("Monatliches Kontingent")
+                } footer: {
+                    Text("Nicht angepasste Monate verwenden automatisch den Standardwert.")
                 }
 
                 Section("Darstellung") {
@@ -298,9 +341,27 @@ private struct BudgetGroupEditorView: View {
         value.iconName = selectedIcon
         value.iconColorHex = selectedColorHex
         value.updatedAt = .now
+        value.standardMonthlyBudget = normalizedStandardMonthlyBudget
         if group == nil {
             value.sortOrder = 0
             modelContext.insert(value)
+        }
+
+        let monthStart = Calendar.current.dateInterval(of: .month, for: selectedMonth)?.start ?? selectedMonth
+        if hasMonthlyOverride {
+            if let existing = value.monthlyAllocation(for: monthStart) {
+                existing.amount = normalizedMonthlyOverride
+                existing.updatedAt = .now
+            } else {
+                let allocation = BudgetGroupMonthlyAllocation(
+                    monthStart: monthStart,
+                    amount: normalizedMonthlyOverride,
+                    group: value
+                )
+                modelContext.insert(allocation)
+            }
+        } else if let existing = value.monthlyAllocation(for: monthStart) {
+            modelContext.delete(existing)
         }
 
         do {
@@ -313,6 +374,20 @@ private struct BudgetGroupEditorView: View {
 
     private var selectedColor: Color {
         Color(hexString: selectedColorHex)
+    }
+
+    private var currencySymbol: String {
+        AppCurrency(rawValue: currencyCode)?.symbol ?? currencyCode
+    }
+
+    private var normalizedStandardMonthlyBudget: Decimal {
+        guard let standardMonthlyBudget, standardMonthlyBudget > 0 else { return 0 }
+        return standardMonthlyBudget
+    }
+
+    private var normalizedMonthlyOverride: Decimal {
+        guard let monthlyOverride, monthlyOverride >= 0 else { return 0 }
+        return monthlyOverride
     }
 
     private func iconButton(_ iconName: String) -> some View {

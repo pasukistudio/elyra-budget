@@ -12,6 +12,19 @@ import Testing
 
 struct ElyraBudgetTests {
 
+    @Test func budgetGroupUsesMonthlyOverrideBeforeStandardAllowance() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let august = calendar.date(from: DateComponents(year: 2026, month: 8, day: 10))!
+        let september = calendar.date(from: DateComponents(year: 2026, month: 9, day: 10))!
+        let group = BudgetGroup(name: "Persönlich", standardMonthlyBudget: 2_000)
+        let override = BudgetGroupMonthlyAllocation(monthStart: august, amount: 2_500, group: group)
+        group.monthlyAllocations = [override]
+
+        #expect(group.monthlyBudget(for: august, calendar: calendar) == 2_500)
+        #expect(group.monthlyBudget(for: september, calendar: calendar) == 2_000)
+    }
+
     @Test func financialItemsCanShareBudgetGroup() {
         let group = BudgetGroup(name: "Gemeinschaftsbudget")
         let budget = Budget(name: "Versicherung", group: group)
@@ -226,6 +239,7 @@ struct ElyraBudgetTests {
         let container = try ModelContainer(
             for: UserSettings.self,
             BudgetGroup.self,
+            BudgetGroupMonthlyAllocation.self,
             Budget.self,
             Transaction.self,
             FixedCost.self,

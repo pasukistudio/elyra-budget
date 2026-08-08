@@ -14,7 +14,7 @@ struct BudgetSelectionView: View {
             List {
                 noBudgetRow
 
-                ForEach(budgets) { budget in
+                ForEach(budgets, id: \.persistentModelID) { budget in
                     budgetRow(budget)
                 }
             }
