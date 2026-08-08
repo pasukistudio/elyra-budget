@@ -4,6 +4,7 @@ import SwiftUI
 @main
 struct ElyraBudgetApp: App {
     @State private var proAccess = ProAccessManager()
+    @State private var cloudKitSyncMonitor = CloudKitSyncMonitor()
 
     private let sharedModelContainer: ModelContainer = {
         let schema = Schema([
@@ -59,6 +60,7 @@ struct ElyraBudgetApp: App {
             ContentView()
                 .dismissKeyboardOnTap()
                 .environment(proAccess)
+                .environment(cloudKitSyncMonitor)
         }
         .modelContainer(sharedModelContainer)
     }

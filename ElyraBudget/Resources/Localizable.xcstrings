@@ -272,6 +272,9 @@
     "Fällig" : {
 
     },
+    "Fehler ausblenden" : {
+
+    },
     "Fertig" : {
 
     },
@@ -351,6 +354,9 @@
 
     },
     "Hinzufügen" : {
+
+    },
+    "iCloud-Synchronisierung" : {
 
     },
     "Icon" : {
@@ -648,6 +654,12 @@
 
     },
     "Ziel" : {
+
+    },
+    "Zuletzt aktualisiert" : {
+
+    },
+    "Zuletzt aktualisiert: %@" : {
 
     },
     "Zuordnung" : {

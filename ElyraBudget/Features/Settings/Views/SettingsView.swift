@@ -4,6 +4,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(ProAccessManager.self) private var proAccess
+    @Environment(CloudKitSyncMonitor.self) private var cloudKitSyncMonitor
     @Environment(\.modelContext) private var modelContext
 
     @State private var draftName = ""
@@ -26,6 +27,7 @@ struct SettingsView: View {
             currencySection
             accentColorSection
             generalSection
+            cloudKitSyncSection
 
             #if DEBUG
                 developerSection
@@ -50,6 +52,39 @@ struct SettingsView: View {
                 saveName()
             }
             .saveErrorAlert(message: $saveErrorMessage)
+    }
+
+    // MARK: - iCloud
+
+    private var cloudKitSyncSection: some View {
+        Section("iCloud-Synchronisierung") {
+            HStack(spacing: 12) {
+                Label(
+                    cloudKitSyncMonitor.status.title,
+                    systemImage: cloudKitSyncMonitor.status.systemImage
+                )
+                Spacer()
+                if cloudKitSyncMonitor.status == .syncing {
+                    ProgressView()
+                }
+            }
+
+            if let lastSyncDate = cloudKitSyncMonitor.lastSyncDate {
+                LabeledContent("Zuletzt aktualisiert") {
+                    Text(lastSyncDate, format: .dateTime.day().month().year().hour().minute())
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if let errorMessage = cloudKitSyncMonitor.errorMessage {
+                Text(errorMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                Button("Fehler ausblenden") {
+                    cloudKitSyncMonitor.clearError()
+                }
+            }
+        }
     }
 
     // MARK: - Währung
@@ -417,6 +452,7 @@ struct SettingsView: View {
         SettingsView()
     }
     .environment(ProAccessManager())
+    .environment(CloudKitSyncMonitor(environment: ["ELYRA_BUDGET_USE_CLOUDKIT": "NO"]))
     .modelContainer(
         for: UserSettings.self,
         inMemory: true
@@ -431,6 +467,7 @@ struct SettingsView: View {
         SettingsView()
     }
     .environment(proAccess)
+    .environment(CloudKitSyncMonitor(environment: ["ELYRA_BUDGET_USE_CLOUDKIT": "NO"]))
     .modelContainer(
         for: UserSettings.self,
         inMemory: true

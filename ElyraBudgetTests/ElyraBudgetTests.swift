@@ -6,11 +6,58 @@
 //
 
 import Foundation
+import CoreData
 import SwiftData
 import Testing
 @testable import ElyraBudget
 
 struct ElyraBudgetTests {
+
+    @Test func cloudKitSyncMonitorDisablesItselfForLocalTestStorage() {
+        let monitor = CloudKitSyncMonitor(environment: ["ELYRA_BUDGET_USE_CLOUDKIT": "NO"])
+
+        #expect(monitor.status == .unavailable)
+        #expect(monitor.lastSyncDate == nil)
+    }
+
+    @Test func cloudKitSyncMonitorReportsSyncFailure() {
+        let monitor = CloudKitSyncMonitor(environment: ["CloudKit": "YES"])
+
+        monitor.handle(
+            type: .export,
+            isFinished: false,
+            succeeded: false,
+            error: nil
+        )
+        #expect(monitor.status == .syncing)
+
+        monitor.handle(
+            type: .export,
+            isFinished: true,
+            succeeded: false,
+            error: NSError(domain: "CloudKit", code: 1, userInfo: [
+                NSLocalizedDescriptionKey: "Test synchronization failed"
+            ])
+        )
+
+        #expect(monitor.status == .failed)
+        #expect(monitor.errorMessage == "Test synchronization failed")
+    }
+
+    @Test func cloudKitSyncMonitorRecordsSuccessfulSync() {
+        let monitor = CloudKitSyncMonitor(environment: ["CloudKit": "YES"])
+
+        monitor.handle(
+            type: .import,
+            isFinished: true,
+            succeeded: true,
+            error: nil
+        )
+
+        #expect(monitor.status == .succeeded)
+        #expect(monitor.lastSyncDate != nil)
+        #expect(monitor.errorMessage == nil)
+    }
 
     @Test func budgetGroupUsesMonthlyOverrideBeforeStandardAllowance() {
         let calendar = Calendar.current
