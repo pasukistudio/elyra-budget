@@ -562,4 +562,40 @@ struct ElyraBudgetTests {
         #expect(goal.savedAmount == 100)
     }
 
+    @Test func automaticSavingsBookingSkipsCrossGroupBudgetAssignments() throws {
+        let container = try ModelContainer(
+            for: BudgetGroup.self,
+            Budget.self,
+            Transaction.self,
+            SavingsGoal.self,
+            SavingsContribution.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = ModelContext(container)
+        let personal = BudgetGroup(name: "Persönlich")
+        let shared = BudgetGroup(name: "Gemeinsam")
+        let personalBudget = Budget(name: "Sparen", group: personal)
+        let goal = SavingsGoal(
+            name: "Ungültige Zuordnung",
+            contributionAmount: 25,
+            anchorDate: Calendar.current.startOfDay(for: .now),
+            automaticBooking: true,
+            budget: personalBudget,
+            group: shared
+        )
+        context.insert(personal)
+        context.insert(shared)
+        context.insert(personalBudget)
+        context.insert(goal)
+
+        try SavingsGoalScheduler.processAutomaticBookings(
+            goals: [goal],
+            transactions: [],
+            modelContext: context,
+            through: .now
+        )
+
+        #expect(try context.fetch(FetchDescriptor<Transaction>()).isEmpty)
+    }
+
 }

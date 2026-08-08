@@ -14,6 +14,10 @@ enum SavingsGoalScheduler {
         )
 
         for goal in goals where !goal.isArchived && goal.automaticBooking && goal.contributionAmount > 0 {
+            guard BudgetGroupRelationshipValidator.isValid(budget: goal.budget, in: goal.group) else {
+                continue
+            }
+
             for occurrenceDate in goal.occurrenceDates(through: date, calendar: calendar) {
                 let marker = marker(for: goal.id, date: occurrenceDate, calendar: calendar)
                 guard !existing.contains(marker) else { continue }
