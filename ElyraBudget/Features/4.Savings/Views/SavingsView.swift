@@ -39,6 +39,7 @@ struct SavingsView: View {
     @State private var showingManagement = false
     @State private var showingArchived = false
     @State private var contributingGoal: SavingsGoal?
+    @State private var detailGoal: SavingsGoal?
     @State private var goalToArchive: SavingsGoal?
     @State private var goalToDelete: SavingsGoal?
     @State private var saveErrorMessage: String?
@@ -107,6 +108,22 @@ struct SavingsView: View {
         }
         .sheet(item: $contributingGoal) { goal in
             SavingsContributionEditorView(goal: goal, budgets: visibleBudgets)
+        }
+        .sheet(item: $detailGoal) { goal in
+            SavingsGoalDetailView(
+                goal: goal,
+                currencyCode: currencyCode,
+                onEdit: {
+                    detailGoal = nil
+                    editingGoal = goal
+                    editorType = goal.type
+                    showingEditor = true
+                },
+                onContribute: {
+                    detailGoal = nil
+                    contributingGoal = goal
+                }
+            )
         }
         .alert(
             "In den Archiv verschieben?",
@@ -192,9 +209,7 @@ struct SavingsView: View {
         )
         .contentShape(Rectangle())
         .onTapGesture {
-            editingGoal = goal
-            editorType = goal.type
-            showingEditor = true
+            detailGoal = goal
         }
         .contextMenu {
             Button {
@@ -393,6 +408,103 @@ private struct ArchivedSavingsView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Fertig") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+private struct SavingsGoalDetailView: View {
+    let goal: SavingsGoal
+    let currencyCode: String
+    let onEdit: () -> Void
+    let onContribute: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    private var savedAmount: Decimal {
+        goal.savedAmount
+    }
+
+    private var contributions: [SavingsContribution] {
+        (goal.contributions ?? []).sorted { $0.date > $1.date }
+    }
+
+    private var progress: Double {
+        guard let target = goal.targetAmount, target > 0 else { return 0 }
+        return min(max(NSDecimalNumber(decimal: savedAmount / target).doubleValue, 0), 1)
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Übersicht") {
+                    LabeledContent("Gespart") {
+                        Text(savedAmount, format: .currency(code: currencyCode))
+                            .font(.headline)
+                    }
+
+                    if let target = goal.targetAmount, target > 0 {
+                        LabeledContent("Zielbetrag") {
+                            Text(target, format: .currency(code: currencyCode))
+                        }
+                        LabeledContent("Verbleibend") {
+                            Text(max(target - savedAmount, .zero), format: .currency(code: currencyCode))
+                        }
+                        ProgressView(value: progress)
+                            .tint(progress >= 1 ? .green : .accentColor)
+                    } else {
+                        Text("Freie Rücklage ohne festen Zielbetrag")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Section("Einzahlungen") {
+                    if contributions.isEmpty {
+                        ContentUnavailableView(
+                            "Noch keine Einzahlungen",
+                            systemImage: "tray",
+                            description: Text("Füge die erste Einzahlung für dieses \(goal.type == .goal ? "Sparziel" : "Rücklage") hinzu.")
+                        )
+                        .listRowBackground(Color.clear)
+                    } else {
+                        ForEach(contributions, id: \.persistentModelID) { contribution in
+                            HStack {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(contribution.date, format: .dateTime.day().month().year())
+                                        .font(.headline)
+                                    Text(contribution.automatic ? "Automatische Einzahlung" : "Manuelle Einzahlung")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    if !contribution.note.isEmpty {
+                                        Text(contribution.note)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                Spacer()
+                                Text(contribution.amount, format: .currency(code: currencyCode))
+                                    .font(.headline)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle(goal.name)
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Schließen") { dismiss() }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        Button("Einzahlen", action: onContribute)
+                        Button("Bearbeiten", action: onEdit)
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                    }
                 }
             }
         }
