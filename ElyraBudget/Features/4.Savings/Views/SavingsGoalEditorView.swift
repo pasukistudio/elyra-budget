@@ -93,6 +93,9 @@ struct SavingsGoalEditorView: View {
             Form {
                 previewSection
                 goalSection
+                Section("Budgetbereich") {
+                    BudgetGroupContextRow(group: group)
+                }
                 appearanceSection
                 intervalSection
                 fixedCostSection

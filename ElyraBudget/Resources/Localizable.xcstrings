@@ -171,6 +171,9 @@
     "Budgetbereich" : {
 
     },
+    "Budgetbereich %@" : {
+
+    },
     "Budgetbereich auswählen" : {
 
     },
@@ -399,7 +402,13 @@
     "Jetzt buchen" : {
 
     },
+    "Kein Bereich" : {
+
+    },
     "Kein Budget" : {
+
+    },
+    "Kein Budgetbereich" : {
 
     },
     "Kein Kontingent" : {

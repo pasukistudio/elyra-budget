@@ -91,6 +91,9 @@ struct BudgetEditorView: View {
             Form {
                 previewSection
                 budgetSection
+                Section("Zuordnung") {
+                    BudgetGroupContextRow(group: group)
+                }
                 appearanceSection
                 calculationSection
             }
