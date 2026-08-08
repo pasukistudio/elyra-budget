@@ -130,7 +130,8 @@ struct BudgetsView: View {
                         BudgetCardView(
                             budget: budget,
                             currencyCode: currencyCode,
-                            selectedMonth: selectedDate
+                            selectedMonth: selectedDate,
+                            showsGroupContext: selectedGroup == nil
                         )
                     }
                     .buttonStyle(.plain)

@@ -4,6 +4,19 @@ struct BudgetCardView: View {
     let budget: Budget
     let currencyCode: String
     let selectedMonth: Date
+    let showsGroupContext: Bool
+
+    init(
+        budget: Budget,
+        currencyCode: String,
+        selectedMonth: Date,
+        showsGroupContext: Bool = false
+    ) {
+        self.budget = budget
+        self.currencyCode = currencyCode
+        self.selectedMonth = selectedMonth
+        self.showsGroupContext = showsGroupContext
+    }
 
     private var spentAmount: Decimal {
         budget.spentAmount(in: selectedMonth)
@@ -19,10 +32,19 @@ struct BudgetCardView: View {
             HStack(spacing: 12) {
                 BudgetIconView(budget: budget)
 
-                Text(budget.name)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(budget.name)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+
+                    if showsGroupContext, let group = budget.group {
+                        Text(group.name)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
 
                 Spacer()
 
@@ -65,7 +87,7 @@ struct BudgetCardView: View {
                     .tint(Color(hexString: budget.iconColorHex))
             }
         }
-        .padding(16)
+            .padding(16)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
