@@ -30,7 +30,7 @@ struct TransactionsView: View {
     private var displayedTransactions: [Transaction] {
         transactions.filter {
             $0.date.isInSameMonth(as: selectedDate)
-                && (selectedGroup == nil || $0.group === selectedGroup)
+                && (selectedGroup == nil || $0.effectiveGroup === selectedGroup)
         }
     }
 

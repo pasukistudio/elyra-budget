@@ -41,9 +41,7 @@ struct OverviewView: View {
 
     private var visibleTransactions: [Transaction] {
         transactions.filter { transaction in
-            selectedGroup == nil
-                || transaction.group === selectedGroup
-                || transaction.budget?.group === selectedGroup
+            selectedGroup == nil || transaction.effectiveGroup === selectedGroup
         }
     }
 

@@ -89,6 +89,15 @@ struct ElyraBudgetTests {
         #expect(transaction.group === group)
     }
 
+    @Test func transactionResolvesGroupFromAssignedBudget() {
+        let group = BudgetGroup(name: "Gemeinsam")
+        let budget = Budget(name: "Versicherung", group: group)
+        let transaction = Transaction(title: "Hausrat", budget: budget)
+
+        #expect(transaction.group == nil)
+        #expect(transaction.effectiveGroup === group)
+    }
+
     @Test func budgetGroupRelationshipsRejectCrossGroupAssignments() {
         let personal = BudgetGroup(name: "Persönlich")
         let shared = BudgetGroup(name: "Gemeinsam")

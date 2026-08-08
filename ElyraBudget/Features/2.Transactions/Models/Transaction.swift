@@ -108,6 +108,13 @@ final class Transaction {
         }
     }
 
+    /// Resolves the transaction's budget context for filtering and aggregation.
+    /// Older records may not have an explicit group but still belong to the
+    /// group of their assigned budget.
+    var effectiveGroup: BudgetGroup? {
+        group ?? budget?.group
+    }
+
     private var absoluteAmount: Decimal {
         amount < 0
             ? -amount
