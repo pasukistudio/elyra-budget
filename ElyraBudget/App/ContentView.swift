@@ -55,6 +55,7 @@ struct ContentView: View {
     @State private var selectedBudgetGroup: BudgetGroup?
     @State private var showingBudgetGroupManagement = false
     @State private var showingSettings = false
+    @State private var cloudKitSyncMonitor = CloudKitSyncMonitor()
 
     // MARK: - Hauptansicht
 
@@ -487,6 +488,10 @@ struct ContentView: View {
 
     @ToolbarContentBuilder
     private var sharedToolbar: some ToolbarContent {
+        ToolbarItem(placement: .secondaryAction) {
+            CloudKitSyncStatusView(monitor: cloudKitSyncMonitor)
+        }
+
         ToolbarItem(placement: budgetGroupToolbarPlacement) {
             BudgetGroupMenu(
                 selection: $selectedBudgetGroup,
