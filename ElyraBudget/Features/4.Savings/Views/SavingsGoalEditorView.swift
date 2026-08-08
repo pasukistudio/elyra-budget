@@ -38,6 +38,9 @@ struct SavingsGoalEditorView: View {
     @Query(sort: [SortDescriptor<FixedCost>(\.createdAt)])
     private var fixedCosts: [FixedCost]
 
+    @Query(filter: #Predicate<SavingsGoal> { !$0.isArchived })
+    private var activeSavingsGoals: [SavingsGoal]
+
     @State private var name: String
     @State private var targetAmount: Decimal?
     @State private var contributionAmount: Decimal?
@@ -405,8 +408,11 @@ struct SavingsGoalEditorView: View {
     }
 
     private var availableFixedCosts: [FixedCost] {
-        fixedCosts.filter { fixedCost in
-            guard fixedCost.group === group || (group == nil && fixedCost.group == nil) else { return false }
+        let requiredGroup = group ?? selectedBudget?.group
+        return fixedCosts.filter { fixedCost in
+            let belongsToRequiredGroup = fixedCost.group === requiredGroup
+                || (requiredGroup == nil && fixedCost.group == nil)
+            guard fixedCost === selectedFixedCost || belongsToRequiredGroup else { return false }
             return fixedCost === selectedFixedCost || !(fixedCost.savingsGoals ?? []).contains { $0 !== goal && !$0.isArchived }
         }
     }
@@ -445,9 +451,16 @@ struct SavingsGoalEditorView: View {
     private func save() {
         guard canSave else { return }
         guard BudgetGroupRelationshipValidator.isValid(budget: selectedBudget, in: effectiveGroup),
-              BudgetGroupRelationshipValidator.isValid(fixedCost: selectedFixedCost, in: group)
+              BudgetGroupRelationshipValidator.isValid(fixedCost: selectedFixedCost, in: effectiveGroup)
         else {
             saveErrorMessage = "Die Zuordnung gehört zu einem anderen Budgetbereich."
+            return
+        }
+
+        if goal == nil,
+           let selectedFixedCost,
+           activeSavingsGoals.contains(where: { $0.fixedCost === selectedFixedCost }) {
+            saveErrorMessage = "Für diese Fixkostenposition existiert bereits ein aktives Sparziel."
             return
         }
 
