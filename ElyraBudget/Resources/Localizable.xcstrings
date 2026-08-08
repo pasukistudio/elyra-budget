@@ -7,6 +7,9 @@
     "„%@“ bleibt erhalten und kann später im Archiv wiederhergestellt werden." : {
 
     },
+    "„%@“ und seine Einzahlungen werden dauerhaft gelöscht." : {
+
+    },
     "„%@“ wird dauerhaft gelöscht." : {
 
     },
@@ -597,6 +600,9 @@
 
     },
     "Sparziel bearbeiten" : {
+
+    },
+    "Sparziel löschen?" : {
 
     },
     "Sparziele" : {
