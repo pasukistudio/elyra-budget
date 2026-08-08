@@ -83,6 +83,9 @@
     "Automatisch sparen" : {
 
     },
+    "Automatische Einzahlung" : {
+
+    },
     "Automatische Rücklage" : {
 
     },
@@ -263,6 +266,9 @@
     "Einzahlen" : {
 
     },
+    "Einzahlungen" : {
+
+    },
     "Endgültig löschen" : {
 
     },
@@ -305,10 +311,19 @@
     "Fixkosten pausieren" : {
 
     },
+    "Freie Rücklage ohne festen Zielbetrag" : {
+
+    },
     "Freie Rücklagen" : {
 
     },
+    "Füge die erste Einzahlung für dieses %@ hinzu." : {
+
+    },
     "Gesamt belegt" : {
+
+    },
+    "Gespart" : {
 
     },
     "Grau" : {
@@ -539,6 +554,9 @@
     "Noch keine Budgets" : {
 
     },
+    "Noch keine Einzahlungen" : {
+
+    },
     "Noch keine Fixkosten" : {
 
     },
@@ -582,6 +600,9 @@
 
     },
     "Rot" : {
+
+    },
+    "Schließen" : {
 
     },
     "Sparaktionen" : {
@@ -669,6 +690,9 @@
 
     },
     "Ziel" : {
+
+    },
+    "Zielbetrag" : {
 
     },
     "Zuletzt aktualisiert" : {
