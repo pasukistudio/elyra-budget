@@ -33,6 +33,9 @@ final class Transaction {
     /// Identifies transactions generated from a fixed cost.
     var fixedCostID: UUID?
     var fixedCostOccurrenceDate: Date?
+    /// Indicates whether a fixed-cost transaction was created by the scheduler
+    /// or confirmed manually by the user.
+    var fixedCostBookingAutomatic: Bool?
     /// Amount of this fixed-cost booking covered by a linked savings goal.
     var savingsGoalCoveredAmount: Decimal?
 
@@ -67,6 +70,7 @@ final class Transaction {
         self.group = group
         self.fixedCostID = nil
         self.fixedCostOccurrenceDate = nil
+        self.fixedCostBookingAutomatic = nil
         self.savingsGoalCoveredAmount = nil
         self.savingsGoalID = nil
         self.savingsGoalOccurrenceDate = nil

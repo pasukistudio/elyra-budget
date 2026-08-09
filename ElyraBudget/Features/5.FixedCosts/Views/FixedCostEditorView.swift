@@ -206,18 +206,43 @@ struct FixedCostEditorView: View {
             return
         }
         let value = fixedCost ?? FixedCost()
+        let normalizedAnchorDate = Calendar.autoupdatingCurrent.startOfDay(for: anchorDate)
+        let normalizedPauseDate = isPaused
+            ? Calendar.autoupdatingCurrent.startOfDay(for: pauseUntil)
+            : nil
+        let normalizedDayOfMonth = min(
+            max(Calendar.autoupdatingCurrent.component(.day, from: anchorDate), 1),
+            31
+        )
+        let configurationChanged = fixedCost.map {
+            $0.amount != abs(amount)
+                || $0.frequency != frequency
+                || $0.schedule != schedule
+                || $0.anchorDate != normalizedAnchorDate
+                || $0.dayOfMonth != normalizedDayOfMonth
+                || $0.automaticBooking != automaticBooking
+                || $0.isPaused != isPaused
+                || $0.pauseUntil != normalizedPauseDate
+                || $0.budget !== selectedBudget
+                || $0.group !== effectiveGroup
+        } ?? false
         value.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         value.amount = abs(amount)
         value.frequency = frequency
         value.schedule = schedule
-        value.anchorDate = Calendar.autoupdatingCurrent.startOfDay(for: anchorDate)
-        value.dayOfMonth = min(
-            max(Calendar.autoupdatingCurrent.component(.day, from: anchorDate), 1),
-            31
-        )
+        value.anchorDate = normalizedAnchorDate
+        value.dayOfMonth = normalizedDayOfMonth
+        if fixedCost == nil {
+            value.configurationEffectiveDate = normalizedAnchorDate
+        } else if configurationChanged {
+            value.configurationEffectiveDate = max(
+                Calendar.autoupdatingCurrent.startOfDay(for: .now),
+                normalizedAnchorDate
+            )
+        }
         value.automaticBooking = automaticBooking
         value.isPaused = isPaused
-        value.pauseUntil = isPaused ? Calendar.autoupdatingCurrent.startOfDay(for: pauseUntil) : nil
+        value.pauseUntil = normalizedPauseDate
         value.note = note
         value.budget = selectedBudget
         value.group = effectiveGroup

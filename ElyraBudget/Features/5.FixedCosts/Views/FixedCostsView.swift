@@ -31,6 +31,7 @@ struct FixedCostsView: View {
     @State private var savingsGoalFromFixedCost: FixedCost?
     @State private var showingSavingsGoalEditor = false
     @State private var fixedCostToDelete: FixedCost?
+    @State private var historyFixedCost: FixedCost?
     @State private var saveErrorMessage: String?
 
     init(
@@ -97,6 +98,9 @@ struct FixedCostsView: View {
                 linkedFixedCost: savingsGoalFromFixedCost
             )
         }
+        .sheet(item: $historyFixedCost) { fixedCost in
+            FixedCostHistoryView(fixedCost: fixedCost, transactions: transactions)
+        }
         .alert(
             "Fixkosten löschen?",
             isPresented: deleteConfirmationIsPresented,
@@ -147,6 +151,11 @@ struct FixedCostsView: View {
                         }
                         .contextMenu {
                             Button {
+                                historyFixedCost = fixedCost
+                            } label: {
+                                Label("Verlauf anzeigen", systemImage: "clock.arrow.circlepath")
+                            }
+                            Button {
                                 savingsGoalFromFixedCost = fixedCost
                                 showingSavingsGoalEditor = true
                             } label: {
@@ -171,6 +180,11 @@ struct FixedCostsView: View {
                                 showingEditor = true
                             }
                             .contextMenu {
+                                Button {
+                                    historyFixedCost = fixedCost
+                                } label: {
+                                    Label("Verlauf anzeigen", systemImage: "clock.arrow.circlepath")
+                                }
                                 Button {
                                     savingsGoalFromFixedCost = fixedCost
                                     showingSavingsGoalEditor = true
@@ -291,6 +305,98 @@ private struct FixedCostRowView: View {
         .opacity(fixedCost.isPaused ? 0.6 : 1)
     }
 
+}
+
+private struct FixedCostHistoryView: View {
+    let fixedCost: FixedCost
+    let transactions: [Transaction]
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.appCurrencyCode) private var currencyCode
+
+    private var occurrences: [FixedCostOccurrence] {
+        FixedCostScheduler.history(for: fixedCost, transactions: transactions)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if occurrences.isEmpty {
+                    ContentUnavailableView(
+                        "Noch keine Vorkommen",
+                        systemImage: "clock.arrow.circlepath",
+                        description: Text("Für diese Fixkosten wurden noch keine Buchungen oder geplanten Termine gefunden.")
+                    )
+                } else {
+                    List(occurrences) { occurrence in
+                        HStack(spacing: 12) {
+                            Image(systemName: iconName(for: occurrence))
+                                .foregroundStyle(color(for: occurrence))
+                                .frame(width: 24)
+
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(occurrence.dueDate, format: .dateTime.day().month().year())
+                                    .font(.headline)
+                                Text(statusText(for: occurrence))
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+
+                            if let transaction = occurrence.transaction {
+                                Text(transaction.amount, format: .currency(code: currencyCode))
+                                    .font(.headline)
+                            } else {
+                                Text(fixedCost.amount, format: .currency(code: currencyCode))
+                                    .font(.headline)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .listStyle(.insetGrouped)
+                }
+            }
+            .navigationTitle(fixedCost.title)
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fertig") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func iconName(for occurrence: FixedCostOccurrence) -> String {
+        switch occurrence.status {
+        case .booked: "checkmark.circle.fill"
+        case .due: "exclamationmark.circle.fill"
+        case .scheduled: "calendar"
+        }
+    }
+
+    private func color(for occurrence: FixedCostOccurrence) -> Color {
+        switch occurrence.status {
+        case .booked: .green
+        case .due: .orange
+        case .scheduled: .secondary
+        }
+    }
+
+    private func statusText(for occurrence: FixedCostOccurrence) -> String {
+        switch occurrence.status {
+        case .due: "Fällig – manuelle Buchung ausstehend"
+        case .scheduled: "Geplant"
+        case .booked:
+            switch occurrence.transaction?.fixedCostBookingAutomatic {
+            case true: "Automatisch gebucht"
+            case false: "Manuell gebucht"
+            case nil: "Gebucht"
+            }
+        }
+    }
 }
 
 #Preview {
