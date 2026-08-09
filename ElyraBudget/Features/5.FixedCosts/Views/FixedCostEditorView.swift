@@ -12,6 +12,9 @@ struct FixedCostEditorView: View {
     @Query(sort: [SortDescriptor<Transaction>(\.date)])
     private var transactions: [Transaction]
 
+    @Query(sort: [SortDescriptor<SavingsGoal>(\.createdAt)])
+    private var savingsGoals: [SavingsGoal]
+
     @State private var title: String
     @State private var amount: Decimal?
     @State private var frequency: FixedCostFrequency
@@ -226,6 +229,7 @@ struct FixedCostEditorView: View {
             if value.automaticBooking {
                 try FixedCostScheduler.processAutomaticBookings(
                     fixedCosts: [value],
+                    savingsGoals: savingsGoals,
                     transactions: transactions,
                     modelContext: modelContext
                 )

@@ -65,6 +65,9 @@
     "Archivierte Budgets werden hier angezeigt und können wiederhergestellt werden." : {
 
     },
+    "Archivierten Eintrag löschen?" : {
+
+    },
     "Art" : {
 
     },
@@ -219,6 +222,9 @@
     "Das Limit ist optional. Ohne Limit dient das Budget nur als Kategorie für deine Buchungen." : {
 
     },
+    "Daten übernehmen" : {
+
+    },
     "Datum" : {
 
     },
@@ -318,6 +324,9 @@
 
     },
     "Fixkosten pausieren" : {
+
+    },
+    "Freie Rücklage" : {
 
     },
     "Freie Rücklage ohne festen Zielbetrag" : {
@@ -584,6 +593,9 @@
     "Notiz (optional)" : {
 
     },
+    "Nur verknüpfen" : {
+
+    },
     "OK" : {
 
     },
@@ -633,6 +645,9 @@
 
     },
     "Sparziel anlegen" : {
+
+    },
+    "Sparziel automatisch ausfüllen?" : {
 
     },
     "Sparziel bearbeiten" : {
@@ -707,13 +722,13 @@
     "Ziehe den Griff links, um die Reihenfolge der Budgets zu ändern." : {
 
     },
-    "Ziehe die Zeilen am Griff, um die Reihenfolge zu ändern." : {
-
-    },
     "Ziel" : {
 
     },
     "Zielbetrag" : {
+
+    },
+    "Zielbetrag, Monatsbetrag und automatische Buchung werden aus „%@“ übernommen." : {
 
     },
     "Zuletzt aktualisiert" : {

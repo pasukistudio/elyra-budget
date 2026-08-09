@@ -509,18 +509,42 @@ private struct ArchivedSavingsView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @State private var goalToDelete: SavingsGoal?
+    @State private var saveErrorMessage: String?
 
     var body: some View {
         NavigationStack {
             List(goals) { goal in
                 HStack {
-                    Text(goal.name)
-                    Spacer()
-                    Button("Wiederherstellen") {
-                        goal.isArchived = false
-                        try? modelContext.save()
+                    IconBadgeView(
+                        iconName: goal.iconName,
+                        color: Color(hexString: goal.iconColorHex),
+                        size: 36
+                    )
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(goal.name)
+                            .lineLimit(1)
+                        Text(goal.type == .goal ? "Sparziel" : "Freie Rücklage")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
-                    .buttonStyle(.bordered)
+                    Spacer()
+                    Menu {
+                        Button {
+                            restore(goal)
+                        } label: {
+                            Label("Wiederherstellen", systemImage: "arrow.uturn.backward")
+                        }
+                        Divider()
+                        Button(role: .destructive) {
+                            goalToDelete = goal
+                        } label: {
+                            Label("Löschen", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .imageScale(.large)
+                    }
                 }
             }
             .navigationTitle("Archiv")
@@ -532,6 +556,44 @@ private struct ArchivedSavingsView: View {
                     Button("Fertig") { dismiss() }
                 }
             }
+            .alert(
+                "Archivierten Eintrag löschen?",
+                isPresented: deleteConfirmationIsPresented,
+                presenting: goalToDelete
+            ) { goal in
+                Button("Löschen", role: .destructive) { delete(goal) }
+                Button("Abbrechen", role: .cancel) { goalToDelete = nil }
+            } message: { goal in
+                Text("„\(goal.name)“ und seine Einzahlungen werden dauerhaft gelöscht.")
+            }
+            .saveErrorAlert(message: $saveErrorMessage)
+        }
+    }
+
+    private var deleteConfirmationIsPresented: Binding<Bool> {
+        Binding(
+            get: { goalToDelete != nil },
+            set: { if !$0 { goalToDelete = nil } }
+        )
+    }
+
+    private func restore(_ goal: SavingsGoal) {
+        goal.isArchived = false
+        goal.updatedAt = .now
+        saveChanges()
+    }
+
+    private func delete(_ goal: SavingsGoal) {
+        modelContext.delete(goal)
+        saveChanges()
+        goalToDelete = nil
+    }
+
+    private func saveChanges() {
+        do {
+            try modelContext.save()
+        } catch {
+            saveErrorMessage = error.localizedDescription
         }
     }
 }

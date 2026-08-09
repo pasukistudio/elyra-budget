@@ -78,14 +78,14 @@ struct ContentView: View {
         }
         .task {
             await ensureDefaultBudgetGroupAfterCloudKitSync()
-            processAutomaticFixedCosts()
             processAutomaticSavingsGoals()
+            processAutomaticFixedCosts()
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
             selectExistingBudgetGroupIfNeeded()
-            processAutomaticFixedCosts()
             processAutomaticSavingsGoals()
+            processAutomaticFixedCosts()
         }
     }
 
@@ -93,6 +93,7 @@ struct ContentView: View {
         do {
             try FixedCostScheduler.processAutomaticBookings(
                 fixedCosts: fixedCosts,
+                savingsGoals: savingsGoals,
                 transactions: transactions,
                 modelContext: modelContext
             )

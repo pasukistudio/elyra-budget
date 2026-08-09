@@ -51,6 +51,7 @@ struct SavingsGoalEditorView: View {
     @State private var note: String
     @State private var selectedBudget: Budget?
     @State private var selectedFixedCost: FixedCost?
+    @State private var fixedCostToApply: FixedCost?
     @State private var selectedIcon: String
     @State private var selectedColorHex: String
     @State private var showingIconPicker = false
@@ -76,9 +77,9 @@ struct SavingsGoalEditorView: View {
         _name = State(initialValue: goal?.name ?? prefill?.title ?? "")
         _targetAmount = State(initialValue: goal?.targetAmount ?? prefill?.amount)
         _contributionAmount = State(
-            initialValue: goal?.contributionAmount == 0
+            initialValue: goal == nil
                 ? prefill.map { recommendedSavingsContribution(for: $0) }
-                : goal?.contributionAmount
+                : (goal?.contributionAmount == 0 ? nil : goal?.contributionAmount)
         )
         _frequency = State(initialValue: goal?.frequency ?? (prefill == nil ? .monthly : .monthly))
         _schedule = State(initialValue: goal?.schedule ?? .fixedDay)
@@ -126,6 +127,16 @@ struct SavingsGoalEditorView: View {
                 }
             }
             .saveErrorAlert(message: $saveErrorMessage)
+            .alert(
+                "Sparziel automatisch ausfüllen?",
+                isPresented: fixedCostPrefillConfirmationIsPresented,
+                presenting: fixedCostToApply
+            ) { fixedCost in
+                Button("Daten übernehmen") { applyFixedCostPrefill(fixedCost) }
+                Button("Nur verknüpfen", role: .cancel) { fixedCostToApply = nil }
+            } message: { fixedCost in
+                Text("Zielbetrag, Monatsbetrag und automatische Buchung werden aus „\(fixedCost.title)“ übernommen.")
+            }
         }
     }
 
@@ -379,7 +390,7 @@ struct SavingsGoalEditorView: View {
                         Button("Keine Fixkosten") { selectedFixedCost = nil }
                         ForEach(availableFixedCosts) { fixedCost in
                             Button {
-                                selectedFixedCost = fixedCost
+                                selectFixedCost(fixedCost)
                             } label: {
                                 Label(fixedCost.title, systemImage: "calendar.badge.clock")
                             }
@@ -446,6 +457,30 @@ struct SavingsGoalEditorView: View {
             Text("Kein Budget")
                 .foregroundStyle(.tint)
         }
+    }
+
+    private var fixedCostPrefillConfirmationIsPresented: Binding<Bool> {
+        Binding(
+            get: { fixedCostToApply != nil },
+            set: { if !$0 { fixedCostToApply = nil } }
+        )
+    }
+
+    private func selectFixedCost(_ fixedCost: FixedCost) {
+        guard selectedFixedCost !== fixedCost else { return }
+        selectedFixedCost = fixedCost
+        fixedCostToApply = fixedCost
+    }
+
+    private func applyFixedCostPrefill(_ fixedCost: FixedCost) {
+        name = fixedCost.title
+        targetAmount = fixedCost.amount
+        contributionAmount = recommendedSavingsContribution(for: fixedCost)
+        automaticBooking = true
+        frequency = .monthly
+        schedule = .fixedDay
+        anchorDate = .now
+        fixedCostToApply = nil
     }
 
     private func save() {
