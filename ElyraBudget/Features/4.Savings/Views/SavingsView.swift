@@ -329,68 +329,41 @@ private struct SavingsManagementView: View {
     @State private var goalToDelete: SavingsGoal?
     @State private var saveErrorMessage: String?
 
+    private var activeGoals: [SavingsGoal] {
+        goals.filter { $0.type == .goal }
+    }
+
+    private var activeReserves: [SavingsGoal] {
+        goals.filter { $0.type == .reserve }
+    }
+
     var body: some View {
         NavigationStack {
             List {
-                Section {
-                    ForEach(goals) { goal in
-                        HStack(spacing: 12) {
-                            IconBadgeView(
-                                iconName: goal.iconName,
-                                color: Color(hexString: goal.iconColorHex),
-                                size: 38
-                            )
-
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(goal.name)
-                                    .font(.headline)
-                                    .lineLimit(1)
-                                Text(goal.type.title)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-
-                            Spacer()
-
-                            Menu {
-                                Button {
-                                    editingGoal = goal
-                                    editorType = goal.type
-                                    showingEditor = true
-                                } label: {
-                                    Label("Bearbeiten", systemImage: "pencil")
-                                }
-
-                                Button {
-                                    archive(goal)
-                                } label: {
-                                    Label("Archivieren", systemImage: "archivebox")
-                                }
-
-                                Divider()
-
-                                Button(role: .destructive) {
-                                    goalToDelete = goal
-                                } label: {
-                                    Label("Löschen", systemImage: "trash")
-                                }
-                            } label: {
-                                Image(systemName: "ellipsis.circle")
-                                    .font(.title3)
-                                    .foregroundStyle(.secondary)
-                                    .frame(width: 36, height: 36)
-                                    .contentShape(Rectangle())
-                            }
-                            .menuOrder(.fixed)
+                if !activeGoals.isEmpty {
+                    Section {
+                        ForEach(activeGoals) { goal in
+                            managementRow(for: goal)
                         }
+                        .onMove { source, destination in
+                            move(source, to: destination, within: activeGoals)
+                        }
+                    } header: {
+                        Text("Sparziele")
                     }
-                    .onMove(perform: move)
-                    .listRowSeparator(.visible)
-                } header: {
-                    Text("Aktiv")
-                } footer: {
-                    Text("Ziehe die Zeilen am Griff, um die Reihenfolge zu ändern.")
-                        .font(.caption)
+                }
+
+                if !activeReserves.isEmpty {
+                    Section {
+                        ForEach(activeReserves) { goal in
+                            managementRow(for: goal)
+                        }
+                        .onMove { source, destination in
+                            move(source, to: destination, within: activeReserves)
+                        }
+                    } header: {
+                        Text("Freie Rücklagen")
+                    }
                 }
 
                 if goals.isEmpty {
@@ -425,7 +398,7 @@ private struct SavingsManagementView: View {
                 Button("Löschen", role: .destructive) { delete(goal) }
                 Button("Abbrechen", role: .cancel) { goalToDelete = nil }
             } message: { goal in
-                Text("„(goal.name)“ und seine Einzahlungen werden dauerhaft gelöscht.")
+                Text("„\(goal.name)“ und seine Einzahlungen werden dauerhaft gelöscht.")
             }
             .saveErrorAlert(message: $saveErrorMessage)
             .sheet(isPresented: $showingEditor) {
@@ -448,8 +421,55 @@ private struct SavingsManagementView: View {
         )
     }
 
-    private func move(from source: IndexSet, to destination: Int) {
-        var reordered = goals
+    @ViewBuilder
+    private func managementRow(for goal: SavingsGoal) -> some View {
+        HStack(spacing: 12) {
+            IconBadgeView(
+                iconName: goal.iconName,
+                color: Color(hexString: goal.iconColorHex),
+                size: 38
+            )
+            VStack(alignment: .leading, spacing: 3) {
+                Text(goal.name)
+                    .font(.headline)
+                    .lineLimit(1)
+                Text(goal.type.title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Menu {
+                Button {
+                    editingGoal = goal
+                    editorType = goal.type
+                    showingEditor = true
+                } label: {
+                    Label("Bearbeiten", systemImage: "pencil")
+                }
+                Button { archive(goal) } label: {
+                    Label("Archivieren", systemImage: "archivebox")
+                }
+                Divider()
+                Button(role: .destructive) { goalToDelete = goal } label: {
+                    Label("Löschen", systemImage: "trash")
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 36, height: 36)
+                    .contentShape(Rectangle())
+            }
+            .menuOrder(.fixed)
+        }
+    }
+
+    private func move(
+        _ source: IndexSet,
+        to destination: Int,
+        within items: [SavingsGoal]
+    ) {
+        var reordered = items
         reordered.move(fromOffsets: source, toOffset: destination)
         for (index, goal) in reordered.enumerated() {
             goal.sortOrder = index

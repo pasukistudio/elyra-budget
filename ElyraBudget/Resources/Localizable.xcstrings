@@ -444,6 +444,9 @@
     "Kein Limit" : {
 
     },
+    "Keine aktiven Einträge" : {
+
+    },
     "Keine archivierten Budgets" : {
 
     },
@@ -463,6 +466,9 @@
 
     },
     "Lege Sparziele oder freie Rücklagen an und behalte deine Fortschritte im Blick." : {
+
+    },
+    "Lege zuerst ein Sparziel oder eine freie Rücklage an." : {
 
     },
     "Lila" : {
@@ -699,6 +705,9 @@
 
     },
     "Ziehe den Griff links, um die Reihenfolge der Budgets zu ändern." : {
+
+    },
+    "Ziehe die Zeilen am Griff, um die Reihenfolge zu ändern." : {
 
     },
     "Ziel" : {
