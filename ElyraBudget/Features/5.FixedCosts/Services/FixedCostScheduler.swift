@@ -10,6 +10,20 @@ struct FixedCostDueItem: Identifiable {
     }
 }
 
+enum FixedCostOccurrenceStatus: Equatable {
+    case booked
+    case due
+    case scheduled
+}
+
+struct FixedCostOccurrence: Identifiable {
+    let dueDate: Date
+    let transaction: Transaction?
+    let status: FixedCostOccurrenceStatus
+
+    var id: String { dueDate.ISO8601Format() }
+}
+
 enum FixedCostScheduler {
     static func processAutomaticBookings(
         fixedCosts: [FixedCost],
@@ -36,6 +50,7 @@ enum FixedCostScheduler {
                     for: fixedCost,
                     dueDate: dueDate,
                     savingsGoals: savingsGoals,
+                    automatic: true,
                     modelContext: modelContext
                 )
                 existing.insert(marker)
@@ -55,6 +70,7 @@ enum FixedCostScheduler {
             for: fixedCost,
             dueDate: dueDate,
             savingsGoals: savingsGoals,
+            automatic: false,
             modelContext: modelContext
         )
         try modelContext.save()
@@ -64,6 +80,7 @@ enum FixedCostScheduler {
         for fixedCost: FixedCost,
         dueDate: Date,
         savingsGoals: [SavingsGoal],
+        automatic: Bool,
         modelContext: ModelContext
     ) {
         let linkedGoal = savingsGoals.first {
@@ -95,6 +112,7 @@ enum FixedCostScheduler {
         )
         transaction.fixedCostID = fixedCost.id
         transaction.fixedCostOccurrenceDate = dueDate
+        transaction.fixedCostBookingAutomatic = automatic
         transaction.savingsGoalCoveredAmount = coveredAmount > 0 ? coveredAmount : nil
         modelContext.insert(transaction)
     }
@@ -121,6 +139,53 @@ enum FixedCostScheduler {
                     .map { FixedCostDueItem(fixedCost: fixedCost, dueDate: $0) }
             }
             .sorted { $0.dueDate < $1.dueDate }
+    }
+
+    static func history(
+        for fixedCost: FixedCost,
+        transactions: [Transaction],
+        through date: Date = .now,
+        calendar: Calendar = .autoupdatingCurrent
+    ) -> [FixedCostOccurrence] {
+        let linkedTransactions = transactions
+            .filter { $0.fixedCostID == fixedCost.id && $0.fixedCostOccurrenceDate != nil }
+            .sorted { ($0.fixedCostOccurrenceDate ?? .distantPast) < ($1.fixedCostOccurrenceDate ?? .distantPast) }
+
+        var transactionByDate: [String: Transaction] = [:]
+        for transaction in linkedTransactions {
+            guard let occurrenceDate = transaction.fixedCostOccurrenceDate else { continue }
+            let key = dayKey(for: occurrenceDate, calendar: calendar)
+            transactionByDate[key] = transactionByDate[key] ?? transaction
+        }
+        let futureEnd = calendar.date(byAdding: .year, value: 1, to: date) ?? date
+        let scheduledDates = fixedCost.occurrenceDates(
+            from: calendar.startOfDay(for: date),
+            through: futureEnd,
+            calendar: calendar
+        )
+        let allKeys = Set(transactionByDate.keys).union(
+            scheduledDates.map { dayKey(for: $0, calendar: calendar) }
+        )
+
+        return allKeys.compactMap { key in
+            guard let occurrenceDate = (
+                transactionByDate[key]?.fixedCostOccurrenceDate
+                    ?? scheduledDates.first(where: { dayKey(for: $0, calendar: calendar) == key })
+            ) else { return nil }
+
+            if let transaction = transactionByDate[key] {
+                return FixedCostOccurrence(dueDate: occurrenceDate, transaction: transaction, status: .booked)
+            }
+
+            return FixedCostOccurrence(
+                dueDate: occurrenceDate,
+                transaction: nil,
+                status: occurrenceDate <= calendar.startOfDay(for: date) && !fixedCost.automaticBooking
+                    ? .due
+                    : .scheduled
+            )
+        }
+        .sorted { $0.dueDate > $1.dueDate }
     }
 
     static func marker(

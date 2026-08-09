@@ -377,6 +377,7 @@ struct ElyraBudgetTests {
 
         try FixedCostScheduler.processAutomaticBookings(
             fixedCosts: [fixedCost],
+            savingsGoals: [],
             transactions: [],
             modelContext: context,
             through: date,
@@ -389,12 +390,63 @@ struct ElyraBudgetTests {
 
         try FixedCostScheduler.processAutomaticBookings(
             fixedCosts: [fixedCost],
+            savingsGoals: [],
             transactions: firstTransactions,
             modelContext: context,
             through: date,
             calendar: calendar
         )
         #expect(try context.fetch(FetchDescriptor<Transaction>()).count == 1)
+    }
+
+    @Test func fixedCostChangesApplyOnlyToFutureOccurrences() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let january = calendar.date(from: DateComponents(year: 2026, month: 1, day: 1))!
+        let august = calendar.date(from: DateComponents(year: 2026, month: 8, day: 1))!
+        let december = calendar.date(from: DateComponents(year: 2026, month: 12, day: 31))!
+        let fixedCost = FixedCost(
+            amount: 25,
+            frequency: .monthly,
+            anchorDate: january
+        )
+        fixedCost.configurationEffectiveDate = august
+
+        let dates = fixedCost.occurrenceDates(through: december, calendar: calendar)
+
+        #expect(dates.count == 5)
+        #expect(dates.first == august)
+        #expect(dates.last == calendar.date(from: DateComponents(year: 2026, month: 12, day: 1))!)
+    }
+
+    @Test func fixedCostHistoryDistinguishesBookedDueAndScheduledOccurrences() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let start = calendar.date(from: DateComponents(year: 2026, month: 8, day: 1))!
+        let today = calendar.date(from: DateComponents(year: 2026, month: 8, day: 10))!
+        let fixedCost = FixedCost(
+            title: "Hausrat",
+            amount: 25,
+            frequency: .monthly,
+            anchorDate: start,
+            automaticBooking: false
+        )
+        let transaction = Transaction(title: "Hausrat", amount: 25, date: start, type: .expense)
+        transaction.fixedCostID = fixedCost.id
+        transaction.fixedCostOccurrenceDate = start
+        transaction.fixedCostBookingAutomatic = false
+
+        let history = FixedCostScheduler.history(
+            for: fixedCost,
+            transactions: [transaction],
+            through: today,
+            calendar: calendar
+        )
+
+        #expect(history.count == 2)
+        #expect(history.first?.status == .scheduled)
+        #expect(history.last?.status == .booked)
+        #expect(history.last?.transaction?.fixedCostBookingAutomatic == false)
     }
 
     @Test func manualFixedCostProducesPendingBooking() {

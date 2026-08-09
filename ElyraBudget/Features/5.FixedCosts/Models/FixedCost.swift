@@ -9,6 +9,9 @@ final class FixedCost {
     var frequencyRawValue: String = FixedCostFrequency.monthly.rawValue
     var scheduleRawValue: String = FixedCostSchedule.fixedDay.rawValue
     var anchorDate: Date = Date()
+    /// Start date of the active configuration. Historical bookings before
+    /// this date are never recalculated or rewritten.
+    var configurationEffectiveDate: Date?
     var dayOfMonth: Int = 1
     var automaticBooking: Bool = true
     var isPaused: Bool = false
@@ -42,6 +45,7 @@ final class FixedCost {
         self.frequencyRawValue = frequency.rawValue
         self.scheduleRawValue = schedule.rawValue
         self.anchorDate = anchorDate
+        self.configurationEffectiveDate = anchorDate
         self.dayOfMonth = min(max(dayOfMonth, 1), 31)
         self.automaticBooking = automaticBooking
         self.budget = budget
@@ -85,16 +89,22 @@ final class FixedCost {
     }
 
     func occurrenceDates(
+        from startDate: Date? = nil,
         through endDate: Date,
         calendar: Calendar = .autoupdatingCurrent
     ) -> [Date] {
         let endOfDay = calendar.startOfDay(for: endDate)
+        let configuredStart = configurationEffectiveDate ?? anchorDate
+        let lowerBound = [anchorDate, configuredStart, startDate]
+            .compactMap { $0 }
+            .map(calendar.startOfDay(for:))
+            .max() ?? calendar.startOfDay(for: anchorDate)
         var occurrences: [Date] = []
         var occurrence = firstOccurrenceDate(calendar: calendar)
         var guardCounter = 0
 
         while occurrence <= endOfDay && guardCounter < 5000 {
-            if occurrence >= calendar.startOfDay(for: anchorDate), isActive(on: occurrence, calendar: calendar) {
+            if occurrence >= lowerBound, isActive(on: occurrence, calendar: calendar) {
                 occurrences.append(occurrence)
             }
             guardCounter += 1
