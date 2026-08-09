@@ -632,6 +632,11 @@ private struct SavingsGoalDetailView: View {
                         LabeledContent("Zielbetrag") {
                             Text(target, format: .currency(code: currencyCode))
                         }
+                        if let targetDate = goal.targetDate {
+                            LabeledContent("Zieldatum") {
+                                Text(targetDate, format: .dateTime.day().month().year())
+                            }
+                        }
                         LabeledContent("Verbleibend") {
                             Text(max(target - savedAmount, .zero), format: .currency(code: currencyCode))
                         }
@@ -743,6 +748,12 @@ private struct SavingsGoalCardView: View {
             if goal.type == .goal {
                 ProgressView(value: historicalProgress)
                     .tint(historicalProgress >= 1 ? .green : .accentColor)
+
+                if let targetDate = goal.targetDate {
+                    Text("Ziel bis \(targetDate, format: .dateTime.day().month().year())")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             HStack {
