@@ -1,11 +1,13 @@
 import SwiftData
 import SwiftUI
+import Charts
 
 struct OverviewView: View {
     @Binding var selectedGroup: BudgetGroup?
     @Binding var selectedDate: Date
 
     @Environment(\.appCurrencyCode) private var currencyCode
+    @State private var dashboardPage = 0
 
     @Query(
         filter: #Predicate<Budget> { !$0.isArchived },
@@ -24,6 +26,18 @@ struct OverviewView: View {
         sort: [SortDescriptor<BudgetGroup>(\.sortOrder)]
     )
     private var budgetGroups: [BudgetGroup]
+
+    @Query(
+        filter: #Predicate<FixedCost> { !$0.isPaused },
+        sort: [SortDescriptor<FixedCost>(\.createdAt)]
+    )
+    private var fixedCosts: [FixedCost]
+
+    @Query(
+        filter: #Predicate<SavingsGoal> { !$0.isArchived },
+        sort: [SortDescriptor<SavingsGoal>(\.sortOrder)]
+    )
+    private var savingsGoals: [SavingsGoal]
 
     init(
         selectedGroup: Binding<BudgetGroup?> = .constant(nil),
@@ -95,13 +109,124 @@ struct OverviewView: View {
         )
     }
 
+    private var statusColor: Color {
+        switch monthlyProgress {
+        case 0 ..< greenThreshold: return .green
+        case greenThreshold ..< orangeThreshold: return .orange
+        default: return .red
+        }
+    }
+
+    private var statusTitle: LocalizedStringKey {
+        switch monthlyProgress {
+        case 0 ..< greenThreshold: return "Im grünen Bereich"
+        case greenThreshold ..< orangeThreshold: return "Achte auf dein Budget"
+        default: return "Budget überschritten"
+        }
+    }
+
+    private var greenThreshold: Double {
+        Double(profiles.first?.greenBudgetThreshold ?? 70) / 100
+    }
+
+    private var orangeThreshold: Double {
+        Double(profiles.first?.orangeBudgetThreshold ?? 100) / 100
+    }
+
+    private var monthlyExpenseTransactions: [Transaction] {
+        visibleTransactions.filter {
+            $0.date.isInSameMonth(as: currentMonth)
+                && $0.type == .expense
+        }
+    }
+
+    private var todayTransactions: [Transaction] {
+        let calendar = Calendar.autoupdatingCurrent
+        return visibleTransactions
+            .filter { calendar.isDateInToday($0.date) }
+            .sorted { $0.date > $1.date }
+    }
+
+    private var budgetSpendings: [OverviewBudgetSpending] {
+        visibleBudgets
+            .map { budget in
+                OverviewBudgetSpending(
+                    name: budget.name,
+                    amount: budgetUsage(for: budget),
+                    color: Color(hexString: budget.iconColorHex)
+                )
+            }
+            .filter { $0.amount > 0 }
+            .sorted { $0.amount > $1.amount }
+    }
+
+    private func budgetUsage(for budget: Budget) -> Decimal {
+        visibleTransactions
+            .filter {
+                $0.budget === budget
+                    && $0.date.isInSameMonth(as: currentMonth)
+            }
+            .reduce(.zero) { $0 + $1.budgetImpact }
+    }
+
+    private var monthInterval: DateInterval {
+        Calendar.autoupdatingCurrent.dateInterval(of: .month, for: currentMonth)
+            ?? DateInterval(start: currentMonth, duration: 0)
+    }
+
+    private var visibleFixedCosts: [FixedCostDueItem] {
+        let bookedOccurrences = Set(
+            transactions.compactMap { transaction -> String? in
+                guard let fixedCostID = transaction.fixedCostID,
+                      let occurrenceDate = transaction.fixedCostOccurrenceDate else {
+                    return nil
+                }
+                return FixedCostScheduler.marker(for: fixedCostID, date: occurrenceDate)
+            }
+        )
+
+        return fixedCosts
+            .filter { cost in
+                (selectedGroup == nil || cost.group === selectedGroup)
+                    && cost.createdAt <= monthInterval.end
+            }
+            .flatMap { cost in
+                cost.occurrenceDates(
+                    from: monthInterval.start,
+                    through: monthInterval.end
+                )
+                .filter { occurrenceDate in
+                    !bookedOccurrences.contains(
+                        FixedCostScheduler.marker(for: cost.id, date: occurrenceDate)
+                    )
+                }
+                .map { FixedCostDueItem(fixedCost: cost, dueDate: $0) }
+            }
+            .sorted { $0.dueDate < $1.dueDate }
+    }
+
+    private var visibleSavingsGoals: [SavingsGoal] {
+        savingsGoals.filter { goal in
+            (selectedGroup == nil || goal.group === selectedGroup)
+                && goal.createdAt <= monthInterval.end
+        }
+    }
+
+    private var totalSaved: Decimal {
+        visibleSavingsGoals.reduce(.zero) { result, goal in
+            result + goal.savedAmount(asOf: monthInterval.end.addingTimeInterval(-1))
+        }
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 greetingSection
-                #if os(iOS)
-                    availableBudgetCard
-                #endif
+                dashboardCard
+                todayTransactionsCard
+                budgetSnapshot
+                fixedCostsSnapshot
+                savingsSnapshot
             }
             .padding()
         }
@@ -257,48 +382,379 @@ struct OverviewView: View {
         }
     }
 
-    // MARK: - Verfügbares Budget
+    // MARK: - Dashboard
 
-    private var availableBudgetCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Verfügbar in diesem Monat")
-                .font(.headline)
-                .foregroundStyle(.secondary)
+    private var dashboardCard: some View {
+        VStack(spacing: 8) {
+            TabView(selection: $dashboardPage) {
+                budgetSummaryPage
+                    .tag(0)
+                spendingDistributionPage
+                    .tag(1)
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .frame(height: 244)
+            .background(cardBackground, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(.primary.opacity(0.07), lineWidth: 1)
+            }
 
-            Text(monthlyAvailable, format: .currency(code: currencyCode))
-                .font(.system(size: 42, weight: .bold))
+            HStack(spacing: 6) {
+                ForEach(0 ..< 2, id: \.self) { page in
+                    Capsule(style: .continuous)
+                        .fill(page == dashboardPage ? statusColor : Color.secondary.opacity(0.25))
+                        .frame(width: page == dashboardPage ? 18 : 6, height: 6)
+                        .animation(.easeInOut(duration: 0.2), value: dashboardPage)
+                }
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Dashboard-Seite \(dashboardPage + 1) von 2")
+        }
+    }
+
+    private var budgetSummaryPage: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Label("Budgetstatus", systemImage: "chart.bar.fill")
+                    .font(.headline)
+                Spacer()
+                Text(selectedGroup?.name ?? "Alle Bereiche")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack(spacing: 18) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(statusTitle)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(statusColor)
+                    Text(monthlyAvailable, format: .currency(code: currencyCode))
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .minimumScaleFactor(0.75)
+                        .lineLimit(1)
+                    Text("verfügbar in diesem Monat")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 0)
+
+                Gauge(value: monthlyProgress, in: 0 ... 1) {
+                    EmptyView()
+                } currentValueLabel: {
+                    Text("\(Int(monthlyProgress * 100)) %")
+                        .font(.caption.weight(.bold))
+                }
+                .gaugeStyle(.accessoryCircularCapacity)
+                .tint(statusColor)
+                .frame(width: 78, height: 78)
+            }
 
             if monthlyLimit > 0 {
                 ProgressView(value: monthlyProgress)
-                    .tint(.primary)
+                    .tint(statusColor)
+                    .scaleEffect(y: 1.35)
+            } else {
+                Text("Für diesen Bereich ist noch kein Monatsbudget festgelegt.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
-            HStack {
-                Label {
-                    HStack(spacing: 4) {
-                        Text(monthlyUsed, format: .currency(code: currencyCode))
-                        Text("verwendet")
-                    }
-                } icon: {
-                    Image(systemName: "arrow.up.right")
-                }
-
+            HStack(spacing: 0) {
+                DashboardMetric(title: "Gesamt", value: monthlyLimit, currencyCode: currencyCode)
                 Spacer()
-
-                if monthlyLimit > 0 {
-                    Text("Limit \(monthlyLimit.formatted(.currency(code: currencyCode)))")
-                }
+                DashboardMetric(title: "Verwendet", value: monthlyUsed, currencyCode: currencyCode)
+                Spacer()
+                DashboardMetric(title: "Anteil", value: Decimal(monthlyProgress * 100), suffix: "%")
             }
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
         }
         .padding(20)
+    }
+
+    private var spendingDistributionPage: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Ausgabenverteilung", systemImage: "chart.pie.fill")
+                .font(.headline)
+
+            if budgetSpendings.isEmpty {
+                OverviewEmptyRow(text: "In diesem Monat gibt es noch keine Budgetausgaben.")
+                    .frame(maxHeight: .infinity, alignment: .center)
+            } else {
+                HStack(spacing: 18) {
+                    Chart(budgetSpendings) { spending in
+                        SectorMark(
+                            angle: .value("Ausgaben", NSDecimalNumber(decimal: spending.amount).doubleValue),
+                            innerRadius: .ratio(0.58),
+                            angularInset: 2
+                        )
+                        .foregroundStyle(spending.color)
+                    }
+                    .chartLegend(.hidden)
+                    .frame(width: 128, height: 128)
+
+                    VStack(alignment: .leading, spacing: 7) {
+                        ForEach(Array(budgetSpendings.prefix(4))) { spending in
+                            HStack(spacing: 7) {
+                                Circle()
+                                    .fill(spending.color)
+                                    .frame(width: 8, height: 8)
+                                Text(spending.name)
+                                    .font(.caption)
+                                    .lineLimit(1)
+                                Spacer(minLength: 4)
+                                Text(spending.amount, format: .currency(code: currencyCode))
+                                    .font(.caption.weight(.semibold))
+                            }
+                        }
+                    }
+                }
+                .frame(maxHeight: .infinity)
+            }
+        }
+        .padding(20)
+    }
+
+    private var cardBackground: Color {
+        #if os(iOS)
+        Color(uiColor: .secondarySystemGroupedBackground)
+        #else
+        Color(nsColor: .controlBackgroundColor)
+        #endif
+    }
+
+    private var todayTransactionsCard: some View {
+        OverviewCard(title: "Heute", systemImage: "calendar") {
+            if todayTransactions.isEmpty {
+                OverviewEmptyRow(text: "Heute gibt es noch keine Buchungen.")
+            } else {
+                ForEach(Array(todayTransactions.prefix(4)), id: \.persistentModelID) { transaction in
+                    HStack(spacing: 10) {
+                        Image(systemName: transaction.type.systemImage)
+                            .foregroundStyle(transaction.type == .expense ? Color.red : Color.green)
+                            .frame(width: 24)
+                        Text(transaction.title)
+                            .font(.subheadline)
+                            .lineLimit(1)
+                        Spacer()
+                        Text(transaction.signedAmount, format: .currency(code: currencyCode))
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(transaction.type == .expense ? Color.red : Color.green)
+                    }
+                }
+            }
+        }
+    }
+
+    private var budgetSnapshot: some View {
+        OverviewCard(title: "Budgets", systemImage: "chart.bar.fill") {
+            if visibleBudgets.isEmpty {
+                OverviewEmptyRow(text: "Noch keine Budgets angelegt.")
+            } else {
+                ForEach(Array(visibleBudgets.prefix(3)), id: \.persistentModelID) { budget in
+                    OverviewBudgetRow(
+                        budget: budget,
+                        transactions: visibleTransactions,
+                        month: currentMonth,
+                        currencyCode: currencyCode
+                    )
+                }
+            }
+        }
+    }
+
+    private var fixedCostsSnapshot: some View {
+        OverviewCard(title: "Nächste Fixkosten", systemImage: "calendar.badge.clock") {
+            if visibleFixedCosts.isEmpty {
+                OverviewEmptyRow(text: "In diesem Monat sind keine Fixkosten geplant.")
+            } else {
+                ForEach(Array(visibleFixedCosts.prefix(3))) { item in
+                    HStack(spacing: 12) {
+                        Image(systemName: "calendar.badge.clock")
+                            .foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(item.fixedCost.title).font(.subheadline.weight(.semibold))
+                            Text(item.dueDate, format: .dateTime.day().month(.abbreviated))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Text(item.fixedCost.amount, format: .currency(code: currencyCode))
+                            .font(.subheadline.weight(.semibold))
+                    }
+                }
+            }
+        }
+    }
+
+    private var savingsSnapshot: some View {
+        OverviewCard(title: "Sparen", systemImage: "banknote.fill") {
+            if visibleSavingsGoals.isEmpty {
+                OverviewEmptyRow(text: "Noch keine Sparziele oder Rücklagen angelegt.")
+            } else {
+                HStack {
+                    Text("Gespart")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(totalSaved, format: .currency(code: currencyCode))
+                        .font(.subheadline.weight(.semibold))
+                }
+
+                ForEach(Array(visibleSavingsGoals.prefix(3)), id: \.persistentModelID) { goal in
+                    HStack(spacing: 12) {
+                        IconBadgeView(
+                            iconName: goal.iconName,
+                            color: Color(hexString: goal.iconColorHex),
+                            size: 32
+                        )
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(goal.name).font(.subheadline.weight(.semibold))
+                            if let target = goal.targetAmount, target > 0 {
+                                Text("von \(target, format: .currency(code: currencyCode))")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                Text("Freie Rücklage")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        Spacer()
+                        Text(goal.savedAmount(asOf: monthInterval.end.addingTimeInterval(-1)), format: .currency(code: currencyCode))
+                            .font(.subheadline.weight(.semibold))
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct OverviewCard<Content: View>: View {
+    let title: LocalizedStringKey
+    let systemImage: String
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label(title, systemImage: systemImage)
+                .font(.headline)
+
+            content()
+        }
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            .orange.gradient,
-            in: RoundedRectangle(cornerRadius: 24)
-        )
-        .foregroundStyle(.white)
+        .background(cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(.primary.opacity(0.07), lineWidth: 1)
+        }
+    }
+
+    private var cardBackground: Color {
+        #if os(iOS)
+        Color(uiColor: .secondarySystemGroupedBackground)
+        #else
+        Color(nsColor: .controlBackgroundColor)
+        #endif
+    }
+}
+
+private struct DashboardMetric: View {
+    let title: LocalizedStringKey
+    let value: Decimal
+    let currencyCode: String?
+    let suffix: String?
+
+    init(
+        title: LocalizedStringKey,
+        value: Decimal,
+        currencyCode: String? = nil,
+        suffix: String? = nil
+    ) {
+        self.title = title
+        self.value = value
+        self.currencyCode = currencyCode
+        self.suffix = suffix
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if let currencyCode {
+                Text(value, format: .currency(code: currencyCode))
+                    .font(.caption.weight(.semibold))
+            } else {
+                Text("\(NSDecimalNumber(decimal: value).doubleValue, specifier: "%.0f")\(suffix ?? "")")
+                    .font(.caption.weight(.semibold))
+            }
+        }
+    }
+}
+
+private struct OverviewBudgetSpending: Identifiable {
+    let id = UUID()
+    let name: String
+    let amount: Decimal
+    let color: Color
+}
+
+private struct OverviewEmptyRow: View {
+    let text: LocalizedStringKey
+
+    var body: some View {
+        Text(text)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+    }
+}
+
+private struct OverviewBudgetRow: View {
+    let budget: Budget
+    let transactions: [Transaction]
+    let month: Date
+    let currencyCode: String
+
+    private var spent: Decimal {
+        transactions
+            .filter { $0.budget === budget && $0.date.isInSameMonth(as: month) }
+            .reduce(.zero) { $0 + $1.budgetImpact }
+    }
+    private var remaining: Decimal? { budget.limit > 0 ? budget.limit - spent : nil }
+    private var progress: Double {
+        guard budget.limit > 0 else { return 0 }
+        return min(max(NSDecimalNumber(decimal: spent / budget.limit).doubleValue, 0), 1)
+    }
+
+    var body: some View {
+        let remainingAmount = remaining ?? 0
+        let isWithinLimit = remainingAmount >= 0
+        let accentColor = Color(hexString: budget.iconColorHex)
+
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 10) {
+                BudgetIconView(budget: budget)
+                Text(budget.name).font(.subheadline.weight(.semibold)).lineLimit(1)
+                Spacer()
+                Text(spent, format: .currency(code: currencyCode))
+                    .font(.subheadline.weight(.semibold))
+            }
+
+            if budget.limit > 0 {
+                ProgressView(value: progress)
+                    .tint(isWithinLimit ? accentColor : .red)
+                Text(isWithinLimit
+                     ? "Verfügbar \(remainingAmount, format: .currency(code: currencyCode))"
+                     : "Über Limit \(abs(remainingAmount), format: .currency(code: currencyCode))")
+                    .font(.caption)
+                    .foregroundStyle(isWithinLimit ? Color.secondary : Color.red)
+            } else {
+                Text("Kein Limit")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 }
 

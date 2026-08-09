@@ -25,6 +25,7 @@ struct SettingsView: View {
             profileSection
             appearanceSection
             currencySection
+            budgetStatusSection
             accentColorSection
             generalSection
             cloudKitSyncSection
@@ -111,6 +112,58 @@ struct SettingsView: View {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - Budgetstatus
+
+    private var budgetStatusSection: some View {
+        Section {
+            if let profile = profiles.first {
+                Stepper {
+                    LabeledContent("Grün bis") {
+                        Text("\(profile.greenBudgetThreshold) %")
+                            .foregroundStyle(.green)
+                    }
+                } onIncrement: {
+                    profile.greenBudgetThreshold = min(
+                        profile.greenBudgetThreshold + 1,
+                        profile.orangeBudgetThreshold - 1
+                    )
+                    saveSettings()
+                } onDecrement: {
+                    profile.greenBudgetThreshold = max(
+                        profile.greenBudgetThreshold - 1,
+                        1
+                    )
+                    saveSettings()
+                }
+
+                Stepper {
+                    LabeledContent("Orange bis") {
+                        Text("\(profile.orangeBudgetThreshold) %")
+                            .foregroundStyle(.orange)
+                    }
+                } onIncrement: {
+                    profile.orangeBudgetThreshold += 1
+                    saveSettings()
+                } onDecrement: {
+                    profile.orangeBudgetThreshold = max(
+                        profile.orangeBudgetThreshold - 1,
+                        profile.greenBudgetThreshold + 1
+                    )
+                    saveSettings()
+                }
+
+                LabeledContent("Rot ab") {
+                    Text("\(profile.orangeBudgetThreshold + 1) %")
+                        .foregroundStyle(.red)
+                }
+            }
+        } header: {
+            Text("Budgetstatus")
+        } footer: {
+            Text("Die Farben zeigen, wie viel des Monatsbudgets bereits verwendet wurde.")
         }
     }
 

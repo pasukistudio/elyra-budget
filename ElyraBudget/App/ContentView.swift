@@ -55,6 +55,7 @@ struct ContentView: View {
     @State private var selectedBudgetGroup: BudgetGroup?
     @State private var showingBudgetGroupManagement = false
     @State private var showingSettings = false
+    @State private var showingOnboarding = false
     @Environment(CloudKitSyncMonitor.self)
     private var cloudKitSyncMonitor
 
@@ -78,6 +79,7 @@ struct ContentView: View {
         }
         .task {
             await ensureDefaultBudgetGroupAfterCloudKitSync()
+            presentOnboardingIfNeeded()
             processAutomaticSavingsGoals()
             processAutomaticFixedCosts()
         }
@@ -165,6 +167,12 @@ struct ContentView: View {
                 "Standard-Budgetbereich konnte nicht erstellt werden: \(error)"
             )
         }
+    }
+
+    private func presentOnboardingIfNeeded() {
+        let name = userSettings.first?.name.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard name.isEmpty else { return }
+        showingOnboarding = true
     }
 
     // MARK: - Hintergrund
@@ -275,6 +283,9 @@ struct ContentView: View {
             )
             .navigationDestination(isPresented: $showingSettings) {
                 SettingsView()
+            }
+            .sheet(isPresented: $showingOnboarding) {
+                OnboardingView(group: selectedBudgetGroup)
             }
             .sheet(
                 isPresented: $showingMonthPicker
@@ -424,6 +435,9 @@ struct ContentView: View {
                     .navigationDestination(isPresented: $showingSettings) {
                         SettingsView()
                     }
+                    .sheet(isPresented: $showingOnboarding) {
+                        OnboardingView(group: selectedBudgetGroup)
+                    }
                     .sheet(
                         isPresented:
                             $showingMonthPicker
@@ -521,7 +535,9 @@ struct ContentView: View {
         ToolbarItem(
             placement: .primaryAction
         ) {
-            if selectedSection == .budgets {
+            if selectedSection == .overview {
+                overviewActionsMenu
+            } else if selectedSection == .budgets {
                 budgetActionsMenu
             } else if selectedSection == .savings {
                 savingsActionsMenu
@@ -540,6 +556,31 @@ struct ContentView: View {
     }
 
     // MARK: - Budget-Menü
+
+    private var overviewActionsMenu: some View {
+        Menu {
+            Button { showingTransactionEditor = true } label: {
+                Label("Neue Buchung", systemImage: "arrow.up.right")
+            }
+            Button { showingBudgetEditor = true } label: {
+                Label("Neues Budget", systemImage: "chart.bar.fill")
+            }
+            Button { requestingFixedCostEditor = true } label: {
+                Label("Neue Fixkosten", systemImage: "calendar.badge.clock")
+            }
+            Button { requestingSavingsGoalEditor = true } label: {
+                Label("Neues Sparziel", systemImage: "target")
+            }
+            Button { requestingSavingsReserveEditor = true } label: {
+                Label("Neue freie Rücklage", systemImage: "banknote")
+            }
+        } label: {
+            Image(systemName: "plus")
+                .foregroundStyle(effectiveAccentColor)
+        }
+        .help("Schnellaktionen")
+        .accessibilityLabel("Schnellaktionen")
+    }
 
     private var budgetActionsMenu: some View {
         Menu {
