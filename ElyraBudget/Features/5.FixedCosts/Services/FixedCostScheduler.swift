@@ -13,6 +13,7 @@ struct FixedCostDueItem: Identifiable {
 enum FixedCostScheduler {
     static func processAutomaticBookings(
         fixedCosts: [FixedCost],
+        savingsGoals: [SavingsGoal],
         transactions: [Transaction],
         modelContext: ModelContext,
         through date: Date = .now,
@@ -31,23 +32,71 @@ enum FixedCostScheduler {
                 let marker = marker(for: fixedCost.id, date: dueDate, calendar: calendar)
                 guard !existing.contains(marker) else { continue }
 
-                let transaction = Transaction(
-                    title: fixedCost.title,
-                    amount: fixedCost.amount,
-                    date: dueDate,
-                    note: fixedCost.note,
-                    type: .expense,
-                    budget: fixedCost.budget,
-                    group: fixedCost.group ?? fixedCost.budget?.group
+                createBooking(
+                    for: fixedCost,
+                    dueDate: dueDate,
+                    savingsGoals: savingsGoals,
+                    modelContext: modelContext
                 )
-                transaction.fixedCostID = fixedCost.id
-                transaction.fixedCostOccurrenceDate = dueDate
-                modelContext.insert(transaction)
                 existing.insert(marker)
             }
         }
 
         try modelContext.save()
+    }
+
+    static func book(
+        fixedCost: FixedCost,
+        dueDate: Date,
+        savingsGoals: [SavingsGoal],
+        modelContext: ModelContext
+    ) throws {
+        createBooking(
+            for: fixedCost,
+            dueDate: dueDate,
+            savingsGoals: savingsGoals,
+            modelContext: modelContext
+        )
+        try modelContext.save()
+    }
+
+    private static func createBooking(
+        for fixedCost: FixedCost,
+        dueDate: Date,
+        savingsGoals: [SavingsGoal],
+        modelContext: ModelContext
+    ) {
+        let linkedGoal = savingsGoals.first {
+            !$0.isArchived && $0.type == .goal && $0.fixedCost === fixedCost
+        }
+        let availableAmount = linkedGoal?.savedAmount(asOf: dueDate) ?? 0
+        let coveredAmount = min(max(availableAmount, 0), fixedCost.amount)
+
+        if let linkedGoal, coveredAmount > 0 {
+            let redemption = SavingsContribution(
+                amount: -coveredAmount,
+                date: dueDate,
+                note: "Fixkosten bezahlt: \(fixedCost.title)",
+                automatic: true,
+                occurrenceDate: dueDate,
+                goal: linkedGoal
+            )
+            modelContext.insert(redemption)
+        }
+
+        let transaction = Transaction(
+            title: fixedCost.title,
+            amount: fixedCost.amount,
+            date: dueDate,
+            note: fixedCost.note,
+            type: .expense,
+            budget: fixedCost.budget,
+            group: fixedCost.group ?? fixedCost.budget?.group
+        )
+        transaction.fixedCostID = fixedCost.id
+        transaction.fixedCostOccurrenceDate = dueDate
+        transaction.savingsGoalCoveredAmount = coveredAmount > 0 ? coveredAmount : nil
+        modelContext.insert(transaction)
     }
 
     static func pendingManualBookings(

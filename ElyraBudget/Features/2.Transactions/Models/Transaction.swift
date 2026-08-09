@@ -33,6 +33,8 @@ final class Transaction {
     /// Identifies transactions generated from a fixed cost.
     var fixedCostID: UUID?
     var fixedCostOccurrenceDate: Date?
+    /// Amount of this fixed-cost booking covered by a linked savings goal.
+    var savingsGoalCoveredAmount: Decimal?
 
     // MARK: - Sparziel-Zuordnung
 
@@ -65,6 +67,7 @@ final class Transaction {
         self.group = group
         self.fixedCostID = nil
         self.fixedCostOccurrenceDate = nil
+        self.savingsGoalCoveredAmount = nil
         self.savingsGoalID = nil
         self.savingsGoalOccurrenceDate = nil
         self.createdAt = Date()
@@ -98,7 +101,7 @@ final class Transaction {
     var budgetImpact: Decimal {
         switch type {
         case .expense:
-            return absoluteAmount
+            return max(absoluteAmount - (savingsGoalCoveredAmount ?? 0), 0)
 
         case .refund:
             return -absoluteAmount

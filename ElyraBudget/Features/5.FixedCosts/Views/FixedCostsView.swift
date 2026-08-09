@@ -23,6 +23,9 @@ struct FixedCostsView: View {
     @Query(sort: [SortDescriptor<Transaction>(\.date)])
     private var transactions: [Transaction]
 
+    @Query(sort: [SortDescriptor<SavingsGoal>(\.createdAt)])
+    private var savingsGoals: [SavingsGoal]
+
     @State private var editingFixedCost: FixedCost?
     @State private var showingEditor = false
     @State private var savingsGoalFromFixedCost: FixedCost?
@@ -235,19 +238,14 @@ struct FixedCostsView: View {
     }
 
     private func book(_ item: FixedCostDueItem) {
-        let transaction = Transaction(
-            title: item.fixedCost.title,
-            amount: item.fixedCost.amount,
-            date: item.dueDate,
-            note: item.fixedCost.note,
-            type: .expense,
-            budget: item.fixedCost.budget,
-            group: item.fixedCost.group ?? item.fixedCost.budget?.group
-        )
-        transaction.fixedCostID = item.fixedCost.id
-        transaction.fixedCostOccurrenceDate = item.dueDate
-        modelContext.insert(transaction)
-        do { try modelContext.save() }
+        do {
+            try FixedCostScheduler.book(
+                fixedCost: item.fixedCost,
+                dueDate: item.dueDate,
+                savingsGoals: savingsGoals,
+                modelContext: modelContext
+            )
+        }
         catch { saveErrorMessage = error.localizedDescription }
     }
 }
