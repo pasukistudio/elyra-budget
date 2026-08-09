@@ -326,31 +326,80 @@ private struct SavingsManagementView: View {
     @State private var editorType: SavingsGoalType = .goal
     @State private var showingEditor = false
     @State private var showingArchived = false
+    @State private var goalToDelete: SavingsGoal?
+    @State private var saveErrorMessage: String?
 
     var body: some View {
         NavigationStack {
             List {
-                Section("Aktiv") {
+                Section {
                     ForEach(goals) { goal in
-                        Button {
-                            editingGoal = goal
-                            editorType = goal.type
-                            showingEditor = true
-                        } label: {
-                            HStack {
+                        HStack(spacing: 12) {
+                            IconBadgeView(
+                                iconName: goal.iconName,
+                                color: Color(hexString: goal.iconColorHex),
+                                size: 38
+                            )
+
+                            VStack(alignment: .leading, spacing: 3) {
                                 Text(goal.name)
-                                Spacer()
+                                    .font(.headline)
+                                    .lineLimit(1)
                                 Text(goal.type.title)
+                                    .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
+
+                            Spacer()
+
+                            Menu {
+                                Button {
+                                    editingGoal = goal
+                                    editorType = goal.type
+                                    showingEditor = true
+                                } label: {
+                                    Label("Bearbeiten", systemImage: "pencil")
+                                }
+
+                                Button {
+                                    archive(goal)
+                                } label: {
+                                    Label("Archivieren", systemImage: "archivebox")
+                                }
+
+                                Divider()
+
+                                Button(role: .destructive) {
+                                    goalToDelete = goal
+                                } label: {
+                                    Label("Löschen", systemImage: "trash")
+                                }
+                            } label: {
+                                Image(systemName: "ellipsis.circle")
+                                    .font(.title3)
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 36, height: 36)
+                                    .contentShape(Rectangle())
+                            }
+                            .menuOrder(.fixed)
                         }
-                        .foregroundStyle(.primary)
                     }
-                    .onMove { source, destination in
-                        var reordered = goals
-                        reordered.move(fromOffsets: source, toOffset: destination)
-                        for (index, goal) in reordered.enumerated() { goal.sortOrder = index }
-                        try? modelContext.save()
+                    .onMove(perform: move)
+                    .listRowSeparator(.visible)
+                } header: {
+                    Text("Aktiv")
+                } footer: {
+                    Text("Ziehe die Zeilen am Griff, um die Reihenfolge zu ändern.")
+                        .font(.caption)
+                }
+
+                if goals.isEmpty {
+                    Section {
+                        ContentUnavailableView(
+                            "Keine aktiven Einträge",
+                            systemImage: "arrow.up.arrow.down",
+                            description: Text("Lege zuerst ein Sparziel oder eine freie Rücklage an.")
+                        )
                     }
                 }
 
@@ -368,6 +417,17 @@ private struct SavingsManagementView: View {
                     Button("Fertig") { dismiss() }
                 }
             }
+            .alert(
+                "Sparziel löschen?",
+                isPresented: deleteConfirmationIsPresented,
+                presenting: goalToDelete
+            ) { goal in
+                Button("Löschen", role: .destructive) { delete(goal) }
+                Button("Abbrechen", role: .cancel) { goalToDelete = nil }
+            } message: { goal in
+                Text("„(goal.name)“ und seine Einzahlungen werden dauerhaft gelöscht.")
+            }
+            .saveErrorAlert(message: $saveErrorMessage)
             .sheet(isPresented: $showingEditor) {
                 if editorType == .goal {
                     SavingsGoalEditorView(goal: editingGoal, budgets: budgets, type: .goal, group: editingGoal?.group)
@@ -379,6 +439,48 @@ private struct SavingsManagementView: View {
                 ArchivedSavingsView(goals: archivedGoals)
             }
         }
+    }
+
+    private var deleteConfirmationIsPresented: Binding<Bool> {
+        Binding(
+            get: { goalToDelete != nil },
+            set: { if !$0 { goalToDelete = nil } }
+        )
+    }
+
+    private func move(from source: IndexSet, to destination: Int) {
+        var reordered = goals
+        reordered.move(fromOffsets: source, toOffset: destination)
+        for (index, goal) in reordered.enumerated() {
+            goal.sortOrder = index
+            goal.updatedAt = .now
+        }
+
+        do {
+            try modelContext.save()
+        } catch {
+            saveErrorMessage = error.localizedDescription
+        }
+    }
+
+    private func archive(_ goal: SavingsGoal) {
+        goal.isArchived = true
+        goal.updatedAt = .now
+        do {
+            try modelContext.save()
+        } catch {
+            saveErrorMessage = error.localizedDescription
+        }
+    }
+
+    private func delete(_ goal: SavingsGoal) {
+        modelContext.delete(goal)
+        do {
+            try modelContext.save()
+        } catch {
+            saveErrorMessage = error.localizedDescription
+        }
+        goalToDelete = nil
     }
 }
 
