@@ -20,7 +20,7 @@ final class SavingsContribution {
         goal: SavingsGoal? = nil
     ) {
         self.id = UUID()
-        self.amount = abs(amount)
+        self.amount = amount
         self.date = date
         self.note = note
         self.automatic = automatic

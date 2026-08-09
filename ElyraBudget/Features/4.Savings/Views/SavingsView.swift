@@ -459,7 +459,7 @@ private struct SavingsGoalDetailView: View {
                     }
                 }
 
-                Section("Einzahlungen") {
+                Section("Verlauf") {
                     if contributions.isEmpty {
                         ContentUnavailableView(
                             "Noch keine Einzahlungen",
@@ -473,7 +473,9 @@ private struct SavingsGoalDetailView: View {
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(contribution.date, format: .dateTime.day().month().year())
                                         .font(.headline)
-                                    Text(contribution.automatic ? "Automatische Einzahlung" : "Manuelle Einzahlung")
+                                    Text(contribution.amount >= 0
+                                        ? (contribution.automatic ? "Automatische Einzahlung" : "Manuelle Einzahlung")
+                                        : "Auszahlung")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                     if !contribution.note.isEmpty {

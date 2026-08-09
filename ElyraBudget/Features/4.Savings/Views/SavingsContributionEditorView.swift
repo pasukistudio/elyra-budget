@@ -1,6 +1,20 @@
 import SwiftData
 import SwiftUI
 
+private enum SavingsContributionKind: String, CaseIterable, Identifiable {
+    case deposit
+    case withdrawal
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .deposit: "Einzahlen"
+        case .withdrawal: "Auszahlen"
+        }
+    }
+}
+
 struct SavingsContributionEditorView: View {
     let goal: SavingsGoal
     let budgets: [Budget]
@@ -21,6 +35,9 @@ struct SavingsContributionEditorView: View {
     @Environment(\.appCurrencyCode) private var currencyCode
 
     @State private var amount: Decimal?
+    @State private var kind: SavingsContributionKind = .deposit
+    @State private var date = Date.now
+    @State private var note = ""
     @State private var selectedBudget: Budget?
     @State private var saveErrorMessage: String?
 
@@ -36,14 +53,23 @@ struct SavingsContributionEditorView: View {
             Form {
                 Section("Sparziel") {
                     Text(goal.name).font(.headline)
+                    Picker("Art", selection: $kind) {
+                        ForEach(SavingsContributionKind.allCases) { kind in
+                            Text(kind.title).tag(kind)
+                        }
+                    }
+                    .pickerStyle(.segmented)
                     FixedCostEditorAmountSection(amount: $amount)
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
+
+                    DatePicker("Datum", selection: $date, displayedComponents: .date)
+                    TextField("Notiz (optional)", text: $note, axis: .vertical)
                 }
 
                 Section {
                     HStack {
-                        Text("Vom Budget abziehen")
+                        Text(kind == .deposit ? "Vom Budget abziehen" : "Auf Budget buchen")
                         Spacer()
                         Menu {
                             Button("Kein Budget") { selectedBudget = nil }
@@ -64,7 +90,11 @@ struct SavingsContributionEditorView: View {
                         }
                     }
                 } footer: {
-                    Text("Die Einzahlung wird als Ausgabe vom ausgewählten Budget erfasst.")
+                    Text(
+                        kind == .deposit
+                            ? "Die Einzahlung wird als Ausgabe vom ausgewählten Budget erfasst."
+                            : "Die Auszahlung wird als Einnahme im ausgewählten Budget erfasst."
+                    )
                 }
             }
             .navigationTitle("Einzahlen")
@@ -86,6 +116,11 @@ struct SavingsContributionEditorView: View {
 
     private func save() {
         guard let amount, amount > 0 else { return }
+        let signedAmount = kind == .deposit ? amount : -amount
+        guard kind == .deposit || goal.savedAmount + signedAmount >= 0 else {
+            saveErrorMessage = "Die Auszahlung darf den aktuellen Sparstand nicht überschreiten."
+            return
+        }
         guard BudgetGroupRelationshipValidator.isValid(budget: selectedBudget, in: effectiveGroup) else {
             saveErrorMessage = "Die Zuordnung gehört zu einem anderen Budgetbereich."
             return
@@ -95,14 +130,20 @@ struct SavingsContributionEditorView: View {
             goal.group = effectiveGroup
         }
 
-        let contribution = SavingsContribution(amount: amount, goal: goal)
+        let contribution = SavingsContribution(
+            amount: signedAmount,
+            date: date,
+            note: note,
+            goal: goal
+        )
         modelContext.insert(contribution)
 
         let transaction = Transaction(
             title: goal.name,
             amount: amount,
-            note: goal.note,
-            type: .expense,
+            date: date,
+            note: note.isEmpty ? goal.note : note,
+            type: kind == .deposit ? .expense : .income,
             budget: selectedBudget,
             group: effectiveGroup
         )
