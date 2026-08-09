@@ -648,6 +648,35 @@ private struct SavingsGoalDetailView: View {
                     }
                 }
 
+                Section("Prognose") {
+                    let forecast = SavingsGoalForecast.calculate(for: goal)
+
+                    if let monthlyRate = forecast.monthlyRate {
+                        LabeledContent("Monatlicher Sparbetrag") {
+                            Text(monthlyRate, format: .currency(code: currencyCode))
+                        }
+                    }
+
+                    if let requiredMonthlyAmount = forecast.requiredMonthlyAmount,
+                       requiredMonthlyAmount > 0 {
+                        LabeledContent("Benötigt bis zum Zieldatum") {
+                            Text(requiredMonthlyAmount, format: .currency(code: currencyCode))
+                        }
+                    }
+
+                    if let completionDate = forecast.estimatedCompletionDate {
+                        LabeledContent("Voraussichtlich erreicht") {
+                            Text(completionDate, format: .dateTime.month(.wide).year())
+                        }
+                    }
+
+                    if let explanation = forecast.explanation {
+                        Label(explanation, systemImage: forecast.isOnTrack == false ? "exclamationmark.triangle" : "info.circle")
+                            .font(.footnote)
+                            .foregroundStyle(forecast.isOnTrack == false ? .orange : .secondary)
+                    }
+                }
+
                 Section("Verlauf") {
                     if contributions.isEmpty {
                         ContentUnavailableView(

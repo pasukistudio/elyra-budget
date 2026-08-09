@@ -500,6 +500,53 @@ struct ElyraBudgetTests {
         #expect(!goal.isCompleted)
     }
 
+    @Test func savingsGoalForecastUsesAutomaticMonthlyRate() {
+        let calendar = Calendar(identifier: .gregorian)
+        let date = calendar.date(from: DateComponents(year: 2026, month: 1, day: 10))!
+        let goal = SavingsGoal(
+            name: "Developer Account",
+            targetAmount: 99,
+            targetDate: calendar.date(from: DateComponents(year: 2026, month: 12, day: 1)),
+            contributionAmount: 10,
+            anchorDate: date,
+            automaticBooking: true
+        )
+
+        let forecast = SavingsGoalForecast.calculate(for: goal, asOf: date, calendar: calendar)
+
+        #expect(forecast.monthlyRate == 10)
+        #expect(forecast.requiredMonthlyAmount == 9)
+        #expect(forecast.estimatedCompletionDate != nil)
+    }
+
+    @Test func savingsGoalForecastUsesContributionHistoryWhenManual() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let january = calendar.date(from: DateComponents(year: 2026, month: 1, day: 10))!
+        let march = calendar.date(from: DateComponents(year: 2026, month: 3, day: 10))!
+        let goal = SavingsGoal(name: "Urlaub", targetAmount: 1_000)
+        goal.contributions = [
+            SavingsContribution(amount: 100, date: january, goal: goal),
+            SavingsContribution(amount: 100, date: march, goal: goal)
+        ]
+
+        let forecast = SavingsGoalForecast.calculate(for: goal, asOf: march, calendar: calendar)
+
+        #expect(forecast.monthlyRate == 100)
+        #expect(forecast.requiredMonthlyAmount == nil)
+    }
+
+    @Test func completedSavingsGoalForecastDoesNotProduceInvalidValues() {
+        let goal = SavingsGoal(name: "Erreicht", targetAmount: 100)
+        goal.contributions = [SavingsContribution(amount: 125, goal: goal)]
+
+        let forecast = SavingsGoalForecast.calculate(for: goal)
+
+        #expect(forecast.requiredMonthlyAmount == 0)
+        #expect(forecast.estimatedCompletionDate == nil)
+        #expect(forecast.isOnTrack == true)
+    }
+
     @Test func savingsGoalCalculatesHistoricalBalanceAtMonthEnd() {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
