@@ -43,6 +43,8 @@ struct SavingsGoalEditorView: View {
 
     @State private var name: String
     @State private var targetAmount: Decimal?
+    @State private var hasTargetDate: Bool
+    @State private var targetDate: Date
     @State private var contributionAmount: Decimal?
     @State private var frequency: SavingsFrequency
     @State private var schedule: SavingsSchedule
@@ -76,6 +78,8 @@ struct SavingsGoalEditorView: View {
         let prefill = linkedFixedCost
         _name = State(initialValue: goal?.name ?? prefill?.title ?? "")
         _targetAmount = State(initialValue: goal?.targetAmount ?? prefill?.amount)
+        _hasTargetDate = State(initialValue: goal?.targetDate != nil)
+        _targetDate = State(initialValue: goal?.targetDate ?? .now)
         _contributionAmount = State(
             initialValue: goal == nil
                 ? prefill.map { recommendedSavingsContribution(for: $0) }
@@ -183,6 +187,10 @@ struct SavingsGoalEditorView: View {
 
             if type == .goal {
                 SavingsAmountRow(title: "Zielbetrag", amount: $targetAmount, currencySymbol: currencySymbol)
+                Toggle("Zieldatum festlegen", isOn: $hasTargetDate)
+                if hasTargetDate {
+                    DatePicker("Zieldatum", selection: $targetDate, displayedComponents: .date)
+                }
             }
         } header: {
             Text(type.title)
@@ -505,6 +513,9 @@ struct SavingsGoalEditorView: View {
         value.iconName = selectedIcon
         value.iconColorHex = selectedColorHex
         value.targetAmount = type == .goal ? abs(targetAmount ?? 0) : nil
+        value.targetDate = type == .goal && hasTargetDate
+            ? Calendar.autoupdatingCurrent.startOfDay(for: targetDate)
+            : nil
         value.contributionAmount = abs(contributionAmount ?? 0)
         value.frequency = frequency
         value.schedule = schedule

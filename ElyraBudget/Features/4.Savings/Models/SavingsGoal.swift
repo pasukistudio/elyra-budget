@@ -7,6 +7,8 @@ final class SavingsGoal {
     var name: String = ""
     var typeRawValue: String = SavingsGoalType.goal.rawValue
     var targetAmount: Decimal?
+    /// Optional date by which a goal should be completed.
+    var targetDate: Date?
     var contributionAmount: Decimal = 0
     var frequencyRawValue: String = SavingsFrequency.monthly.rawValue
     var scheduleRawValue: String = SavingsSchedule.fixedDay.rawValue
@@ -36,6 +38,7 @@ final class SavingsGoal {
         name: String = "",
         type: SavingsGoalType = .goal,
         targetAmount: Decimal? = nil,
+        targetDate: Date? = nil,
         contributionAmount: Decimal = 0,
         frequency: SavingsFrequency = .monthly,
         schedule: SavingsSchedule = .fixedDay,
@@ -49,6 +52,7 @@ final class SavingsGoal {
         self.name = name
         self.typeRawValue = type.rawValue
         self.targetAmount = targetAmount
+        self.targetDate = targetDate
         self.contributionAmount = contributionAmount
         self.frequencyRawValue = frequency.rawValue
         self.scheduleRawValue = schedule.rawValue
