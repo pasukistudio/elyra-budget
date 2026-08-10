@@ -1,11 +1,12 @@
 import Foundation
 import Combine
 import SwiftUI
+import Auth
+import PostgREST
+import Supabase
 
 private enum FeedbackConfiguration {
-    static let apiBaseURL = URL(string: "https://feedback.pasukistudio.de/api/v1")!
     static let supportEmail = "support@pasukistudio.de"
-    static let installationIDKey = "feedback.installationID"
 }
 
 private enum FeedbackKind: String, Codable, CaseIterable, Identifiable {
@@ -60,15 +61,6 @@ private enum FeedbackState: String, Codable {
         }
     }
 
-    init(fiderStatus: String?) {
-        switch fiderStatus?.lowercased() {
-        case "planned", "open": self = .planned
-        case "started", "in_progress", "in-progress": self = .inProgress
-        case "completed", "done": self = .completed
-        case "under_review", "under-review": self = .underReview
-        default: self = .underReview
-        }
-    }
 }
 
 private struct FeedbackPost: Codable, Identifiable, Hashable {
@@ -93,107 +85,37 @@ private struct FeedbackPost: Codable, Identifiable, Hashable {
     }
 }
 
-private struct FeedbackListResponse: Codable {
-    let items: [FeedbackPost]
-}
-
-private struct FiderPostsResponse: Decodable {
-    let posts: [FiderPost]
-}
-
-private struct FiderPost: Decodable {
-    let number: Int
-    let title: String
-    let description: String
-    let status: String?
-    let votesCount: Int
-    let hasVoted: Bool?
-    let createdAt: Date?
-
-    private enum CodingKeys: String, CodingKey {
-        case number
-        case title
-        case description
-        case status
-        case votesCount
-        case hasVoted
-        case createdAt
-    }
-}
-
-private struct FiderPostRequest: Encodable {
-    let title: String
-    let description: String
-}
-
-private struct FeedbackSubmission: Codable {
-    let kind: FeedbackKind
+private struct SupabaseFeedbackRecord: Decodable {
+    let id: String
+    let kind: String
     let title: String
     let detail: String
-    let installationID: String
+    let status: String
+    let voteCount: Int
+    let createdAt: String
 
     private enum CodingKeys: String, CodingKey {
-        case kind = "type"
+        case id
+        case kind
         case title
         case detail
-        case installationID = "installationId"
+        case status
+        case voteCount = "vote_count"
+        case createdAt = "created_at"
     }
 }
 
-private struct FeedbackVoteRequest: Codable {
-    let installationID: String
+private struct SupabaseFeedbackInsert: Encodable {
+    let kind: String
+    let title: String
+    let detail: String
+}
+
+private struct SupabaseVoteRecord: Decodable {
+    let postID: String
 
     private enum CodingKeys: String, CodingKey {
-        case installationID = "installationId"
-    }
-}
-
-private enum FeedbackServiceError: LocalizedError {
-    case unauthorized
-    case unavailable
-
-    var errorDescription: String? {
-        switch self {
-        case .unauthorized:
-            "Der Feedback-Server erlaubt diese Aktion aktuell nur für angemeldete Nutzer."
-        case .unavailable:
-            "Der Feedback-Server ist gerade nicht erreichbar. Bitte versuche es später erneut."
-        }
-    }
-}
-
-private extension FeedbackKind {
-    var fiderTitlePrefix: String {
-        switch self {
-        case .feature: "[Feature]"
-        case .bug: "[Bug]"
-        }
-    }
-
-    static func fromFiderTitle(_ title: String) -> (kind: FeedbackKind, title: String) {
-        if title.hasPrefix("[Bug] ") {
-            return (.bug, String(title.dropFirst("[Bug] ".count)))
-        }
-        if title.hasPrefix("[Feature] ") {
-            return (.feature, String(title.dropFirst("[Feature] ".count)))
-        }
-        return (.feature, title)
-    }
-}
-
-private extension FeedbackPost {
-    init(fiderPost: FiderPost) {
-        let parsedTitle = FeedbackKind.fromFiderTitle(fiderPost.title)
-        self.init(
-            id: String(fiderPost.number),
-            kind: parsedTitle.kind,
-            title: parsedTitle.title,
-            detail: fiderPost.description,
-            state: FeedbackState(fiderStatus: fiderPost.status),
-            voteCount: fiderPost.votesCount,
-            hasVoted: fiderPost.hasVoted ?? false,
-            createdAt: fiderPost.createdAt ?? .now
-        )
+        case postID = "post_id"
     }
 }
 
@@ -203,88 +125,92 @@ private final class FeedbackService: ObservableObject {
     @Published private(set) var isLoading = false
     @Published var errorMessage: String?
 
-    private let session = URLSession.shared
-    private let encoder = JSONEncoder()
-    private let decoder: JSONDecoder = {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return decoder
-    }()
-
-    let installationID: String
-
-    init() {
-        if let storedID = UserDefaults.standard.string(forKey: FeedbackConfiguration.installationIDKey) {
-            installationID = storedID
-        } else {
-            let newID = UUID().uuidString
-            UserDefaults.standard.set(newID, forKey: FeedbackConfiguration.installationIDKey)
-            installationID = newID
-        }
-    }
-
     func load() async {
         isLoading = true
         defer { isLoading = false }
 
         do {
-            let request = makeRequest(path: "posts", method: "GET")
-            let (data, response) = try await session.data(for: request)
-            try validate(response)
+            let userID = try await ensureAnonymousUserID()
+            let records: [SupabaseFeedbackRecord] = try await SupabaseService.client
+                .from("feedback_posts")
+                .select()
+                .order("created_at", ascending: false)
+                .execute()
+                .value
 
-            let fiderPosts: [FiderPost]
-            if let response = try? decoder.decode(FiderPostsResponse.self, from: data) {
-                fiderPosts = response.posts
-            } else {
-                fiderPosts = try decoder.decode([FiderPost].self, from: data)
+            let votes: [SupabaseVoteRecord] = try await SupabaseService.client
+                .from("feedback_votes")
+                .select("post_id")
+                .eq("user_id", value: userID.uuidString)
+                .execute()
+                .value
+
+            let votedPostIDs = Set(votes.map(\.postID))
+            posts = records.map { record in
+                FeedbackPost(
+                    id: record.id,
+                    kind: FeedbackKind(rawValue: record.kind) ?? .feature,
+                    title: record.title,
+                    detail: record.detail,
+                    state: FeedbackState(rawValue: record.status) ?? .underReview,
+                    voteCount: record.voteCount,
+                    hasVoted: votedPostIDs.contains(record.id),
+                    createdAt: ISO8601DateFormatter().date(from: record.createdAt) ?? .now
+                )
             }
-            posts = fiderPosts.map(FeedbackPost.init(fiderPost:))
             errorMessage = nil
         } catch {
-            errorMessage = "Feedback konnte gerade nicht geladen werden. Bitte versuche es später erneut."
+            errorMessage = "Feedback konnte gerade nicht geladen werden. Bitte prüfe deine Internetverbindung und versuche es erneut."
         }
     }
 
     func submit(kind: FeedbackKind, title: String, detail: String) async throws {
-        let payload = FiderPostRequest(
-            title: "\(kind.fiderTitlePrefix) \(title)",
-            description: detail
-        )
-        var request = makeRequest(path: "posts", method: "POST")
-        request.httpBody = try encoder.encode(payload)
-
-        let (data, response) = try await session.data(for: request)
-        try validate(response)
-        _ = data
+        _ = try await ensureAnonymousUserID()
+        try await SupabaseService.client
+            .from("feedback_posts")
+            .insert(SupabaseFeedbackInsert(
+                kind: kind.rawValue,
+                title: title,
+                detail: detail
+            ))
+            .execute()
         await load()
     }
 
     func toggleVote(for post: FeedbackPost) async throws {
-        let request = makeRequest(path: "posts/\(post.id)/votes", method: "POST")
-        let (data, response) = try await session.data(for: request)
-        try validate(response)
-        _ = data
+        let userID = try await ensureAnonymousUserID()
+        if post.hasVoted {
+            try await SupabaseService.client
+                .from("feedback_votes")
+                .delete()
+                .eq("post_id", value: post.id)
+                .eq("user_id", value: userID.uuidString)
+                .execute()
+        } else {
+            try await SupabaseService.client
+                .from("feedback_votes")
+                .insert(SupabaseVoteInsert(postID: post.id, userID: userID.uuidString))
+                .execute()
+        }
         await load()
     }
 
-    private func makeRequest(path: String, method: String) -> URLRequest {
-        var request = URLRequest(url: FeedbackConfiguration.apiBaseURL.appendingPathComponent(path))
-        request.httpMethod = method
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        return request
+    private func ensureAnonymousUserID() async throws -> UUID {
+        if let session = SupabaseService.client.auth.currentSession {
+            return session.user.id
+        }
+        let session = try await SupabaseService.client.auth.signInAnonymously()
+        return session.user.id
     }
+}
 
-    private func validate(_ response: URLResponse) throws {
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw FeedbackServiceError.unavailable
-        }
-        guard (200..<300).contains(httpResponse.statusCode) else {
-            if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
-                throw FeedbackServiceError.unauthorized
-            }
-            throw FeedbackServiceError.unavailable
-        }
+private struct SupabaseVoteInsert: Encodable {
+    let postID: String
+    let userID: String
+
+    private enum CodingKeys: String, CodingKey {
+        case postID = "post_id"
+        case userID = "user_id"
     }
 }
 
@@ -310,16 +236,38 @@ struct FeedbackView: View {
     @State private var filter: Filter = .roadmap
     @State private var composerKind: FeedbackKind = .feature
     @State private var showingComposer = false
+    @State private var votingPostIDs: Set<String> = []
+    @State private var voteErrorMessage: String?
 
     private var visiblePosts: [FeedbackPost] {
         switch filter {
         case .roadmap:
-            service.posts
+            service.posts.filter { post in
+                post.state == .planned || post.state == .inProgress
+            }
         case .features:
             service.posts.filter { $0.kind == .feature }
         case .bugs:
             service.posts.filter { $0.kind == .bug }
         }
+    }
+
+    private var emptyStateIcon: String {
+        switch filter {
+        case .roadmap: "map"
+        case .features: "lightbulb"
+        case .bugs: "ladybug"
+        }
+    }
+
+    private var emptyStateTitle: String {
+        filter == .roadmap ? "Aktuell nichts geplant" : "Noch keine Beiträge"
+    }
+
+    private var emptyStateMessage: String {
+        filter == .roadmap
+            ? "Sobald neue Arbeiten geplant sind, erscheinen sie hier."
+            : "Sei die erste Person mit einem Vorschlag."
     }
 
     var body: some View {
@@ -354,7 +302,7 @@ struct FeedbackView: View {
                         Image(systemName: "wifi.exclamationmark")
                             .font(.title2)
                             .foregroundStyle(.secondary)
-                        Text(errorMessage)
+                            Text(errorMessage)
                             .multilineTextAlignment(.center)
                             .foregroundStyle(.secondary)
                         Button("Erneut laden") {
@@ -367,12 +315,12 @@ struct FeedbackView: View {
             } else if visiblePosts.isEmpty {
                 Section {
                     VStack(spacing: 8) {
-                        Image(systemName: filter == .bugs ? "ladybug" : "lightbulb")
+                        Image(systemName: emptyStateIcon)
                             .font(.title2)
                             .foregroundStyle(.secondary)
-                        Text("Noch keine Beiträge")
+                        Text(emptyStateTitle)
                             .font(.headline)
-                        Text("Sei die erste Person mit einem Vorschlag.")
+                        Text(emptyStateMessage)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -380,13 +328,15 @@ struct FeedbackView: View {
                     .padding(.vertical, 16)
                 }
             } else {
-                Section(filter == .roadmap ? "Aktuelle Beiträge" : filter.title) {
+                Section(filter == .roadmap ? "Geplante Arbeiten" : filter.title) {
                     ForEach(visiblePosts) { post in
-                        FeedbackPostRow(post: post) {
-                            Task {
-                                try? await service.toggleVote(for: post)
-                            }
-                        }
+                        FeedbackPostRow(
+                            post: post,
+                            onVote: {
+                                Task { await toggleVote(for: post) }
+                            },
+                            isVoting: votingPostIDs.contains(post.id)
+                        )
                     }
                 }
             }
@@ -440,10 +390,31 @@ struct FeedbackView: View {
             }
         }
         .task { await service.load() }
+        .refreshable { await service.load() }
+        .alert("Abstimmung nicht gespeichert", isPresented: Binding(
+            get: { voteErrorMessage != nil },
+            set: { if !$0 { voteErrorMessage = nil } }
+        )) {
+            Button("OK") { voteErrorMessage = nil }
+        } message: {
+            Text(voteErrorMessage ?? "Bitte versuche es später erneut.")
+        }
         .sheet(isPresented: $showingComposer) {
             FeedbackComposerView(kind: composerKind) { kind, title, detail in
                 try await service.submit(kind: kind, title: title, detail: detail)
             }
+        }
+    }
+
+    private func toggleVote(for post: FeedbackPost) async {
+        guard !votingPostIDs.contains(post.id) else { return }
+        votingPostIDs.insert(post.id)
+        defer { votingPostIDs.remove(post.id) }
+
+        do {
+            try await service.toggleVote(for: post)
+        } catch {
+            voteErrorMessage = "Bitte prüfe deine Internetverbindung und versuche es erneut."
         }
     }
 
@@ -468,6 +439,7 @@ struct FeedbackView: View {
 private struct FeedbackPostRow: View {
     let post: FeedbackPost
     let onVote: () -> Void
+    let isVoting: Bool
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -507,7 +479,9 @@ private struct FeedbackPostRow: View {
                 .frame(minWidth: 36)
             }
             .buttonStyle(.plain)
+            .disabled(isVoting)
             .accessibilityLabel(post.hasVoted ? "Stimme entfernen" : "Für Beitrag abstimmen")
+            .accessibilityValue(isVoting ? "Wird gespeichert" : "\(post.voteCount) Stimmen")
         }
         .padding(.vertical, 4)
     }
@@ -522,6 +496,28 @@ private struct FeedbackComposerView: View {
     @State private var detail = ""
     @State private var isSubmitting = false
     @State private var errorMessage: String?
+    @State private var showingSubmissionConfirmation = false
+
+    private let minimumTitleLength = 3
+    private let maximumTitleLength = 120
+    private let minimumDetailLength = 3
+    private let maximumDetailLength = 5_000
+
+    private var cleanedTitle: String {
+        title.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var cleanedDetail: String {
+        detail.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var canSubmit: Bool {
+        cleanedTitle.count >= minimumTitleLength &&
+        cleanedTitle.count <= maximumTitleLength &&
+        cleanedDetail.count >= minimumDetailLength &&
+        cleanedDetail.count <= maximumDetailLength &&
+        !isSubmitting
+    }
 
     var body: some View {
         NavigationStack {
@@ -531,7 +527,7 @@ private struct FeedbackComposerView: View {
                         .foregroundStyle(kind.tint)
                 }
 
-                Section("Dein Beitrag") {
+                Section {
                     TextField("Kurzer Titel", text: $title)
                     TextEditor(text: $detail)
                         .frame(minHeight: 130)
@@ -544,6 +540,10 @@ private struct FeedbackComposerView: View {
                                     .allowsHitTesting(false)
                             }
                         }
+                } header: {
+                    Text("Dein Beitrag")
+                } footer: {
+                    Text("Titel: 3–120 Zeichen · Beschreibung: 3–5.000 Zeichen")
                 }
 
                 if let errorMessage {
@@ -565,9 +565,7 @@ private struct FeedbackComposerView: View {
                     Button("Senden") {
                         Task { await submit() }
                     }
-                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-                              detail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-                              isSubmitting)
+                    .disabled(!canSubmit)
                 }
             }
             .overlay {
@@ -576,6 +574,11 @@ private struct FeedbackComposerView: View {
                         .padding(24)
                         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
                 }
+            }
+            .alert("Danke für deinen Beitrag", isPresented: $showingSubmissionConfirmation) {
+                Button("Fertig") { dismiss() }
+            } message: {
+                Text("Dein Beitrag wurde übermittelt und wird vor der Veröffentlichung geprüft.")
             }
         }
     }
@@ -587,10 +590,10 @@ private struct FeedbackComposerView: View {
         do {
             try await onSubmit(
                 kind,
-                title.trimmingCharacters(in: .whitespacesAndNewlines),
-                detail.trimmingCharacters(in: .whitespacesAndNewlines)
+                cleanedTitle,
+                cleanedDetail
             )
-            dismiss()
+            showingSubmissionConfirmation = true
         } catch {
             errorMessage = "Der Beitrag konnte nicht gesendet werden. Bitte versuche es später erneut."
         }

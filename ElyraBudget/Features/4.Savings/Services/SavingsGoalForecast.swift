@@ -101,20 +101,18 @@ struct SavingsGoalForecast {
 
         let contributions = (goal.contributions ?? [])
             .filter { $0.date <= date }
-        guard let firstDate = contributions.map(\.date).min(), !contributions.isEmpty else {
+        guard !contributions.isEmpty else {
             return nil
         }
 
         let total = contributions.reduce(.zero) { $0 + $1.amount }
         guard total > 0 else { return nil }
 
-        let firstMonth = calendar.dateInterval(of: .month, for: firstDate)?.start ?? firstDate
-        let currentMonth = calendar.dateInterval(of: .month, for: date)?.start ?? date
-        let monthCount = max(
-            calendar.dateComponents([.month], from: firstMonth, to: currentMonth).month ?? 0,
-            0
-        ) + 1
-        return total / Decimal(monthCount)
+        let contributionMonths = Set(
+            contributions.compactMap { calendar.dateInterval(of: .month, for: $0.date)?.start }
+        )
+        guard !contributionMonths.isEmpty else { return nil }
+        return total / Decimal(contributionMonths.count)
     }
 
     private static func requiredMonthlyAmount(
