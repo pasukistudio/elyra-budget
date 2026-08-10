@@ -13,7 +13,23 @@
     "„%@“ wird dauerhaft gelöscht." : {
 
     },
+    "%.0f%@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$.0f%2$@"
+          }
+        }
+      }
+    },
+    "%@ ist in Elyra Budget Pro enthalten." : {
+
+    },
     "%@ verschieben" : {
+
+    },
+    "%lld %%" : {
 
     },
     "0,00" : {
@@ -23,6 +39,9 @@
 
     },
     "Abbuchung" : {
+
+    },
+    "Achte auf dein Budget" : {
 
     },
     "Aktionen für %@" : {
@@ -44,7 +63,13 @@
     "Alle Bereiche" : {
 
     },
-    "Allgemein" : {
+    "Alle verfügbaren Pro-Funktionen sind aktiv." : {
+
+    },
+    "Alles Wichtige auf einen Blick" : {
+
+    },
+    "Anteil" : {
 
     },
     "Archiv" : {
@@ -83,6 +108,9 @@
     "Ausgaben: 0,00 %@" : {
 
     },
+    "Ausgabenverteilung" : {
+
+    },
     "Auszahlung" : {
 
     },
@@ -111,6 +139,7 @@
 
     },
     "Benachrichtigungen" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -119,6 +148,9 @@
           }
         }
       }
+    },
+    "Benötigt bis zum Zieldatum" : {
+
     },
     "Bereich bearbeiten" : {
 
@@ -183,6 +215,9 @@
     "Budget öffnen" : {
 
     },
+    "Budget überschritten" : {
+
+    },
     "Budgetaktionen" : {
 
     },
@@ -207,6 +242,9 @@
     "Budgets verwalten" : {
 
     },
+    "Budgetstatus" : {
+
+    },
     "Budgetübersicht" : {
 
     },
@@ -220,6 +258,12 @@
 
     },
     "Das Limit ist optional. Ohne Limit dient das Budget nur als Kategorie für deine Buchungen." : {
+
+    },
+    "Das Pro-Angebot ist noch nicht im App Store konfiguriert." : {
+
+    },
+    "Dashboard-Seite %lld von 2" : {
 
     },
     "Daten übernehmen" : {
@@ -238,7 +282,25 @@
         }
       }
     },
+    "Dein Name wird nur für die persönliche Begrüßung in der Übersicht verwendet." : {
+
+    },
+    "Deine Daten bleiben auf deinen Geräten synchron" : {
+
+    },
     "Deine Einnahmen und Ausgaben erscheinen hier." : {
+
+    },
+    "Deine Finanzen, einfach im Blick" : {
+
+    },
+    "Detaillierte Prognosen" : {
+
+    },
+    "Detaillierte Sparprognosen" : {
+
+    },
+    "Detaillierte Sparprognosen sind in Pro verfügbar." : {
 
     },
     "Details" : {
@@ -253,7 +315,22 @@
     "Die Einzahlung wird als Ausgabe vom ausgewählten Budget erfasst." : {
 
     },
+    "Die Farben zeigen, wie viel des Monatsbudgets bereits verwendet wurde." : {
+
+    },
+    "Du kannst Budgets, Währung und weitere Einstellungen später jederzeit ändern." : {
+
+    },
+    "Du kannst jederzeit zurückkommen und alles ändern." : {
+
+    },
+    "Du kannst Pro später jederzeit in deinen Apple‑Account-Einstellungen verwalten." : {
+
+    },
     "Dunkel" : {
+
+    },
+    "Eigene Akzentfarben" : {
 
     },
     "Eigene Farbe" : {
@@ -271,6 +348,9 @@
     "Eine verknüpfte Fixkostenposition bestimmt, wofür das Sparziel aufgebaut wird." : {
 
     },
+    "Einfach starten, jederzeit anpassen" : {
+
+    },
     "Einstellungen" : {
       "localizations" : {
         "en" : {
@@ -282,6 +362,12 @@
       }
     },
     "Einzahlen" : {
+
+    },
+    "Elyra Budget hilft dir, Budgets, Buchungen, Fixkosten und Sparziele an einem Ort zu organisieren." : {
+
+    },
+    "Elyra Budget Pro" : {
 
     },
     "Endgültig löschen" : {
@@ -338,6 +424,18 @@
     "Füge die erste Einzahlung für dieses %@ hinzu." : {
 
     },
+    "Für diese Fixkosten wurden noch keine Buchungen oder geplanten Termine gefunden." : {
+
+    },
+    "Für diesen Bereich ist noch kein Monatsbudget festgelegt." : {
+
+    },
+    "Gedrückt halten" : {
+
+    },
+    "Gesamt" : {
+
+    },
     "Gesamt belegt" : {
 
     },
@@ -348,6 +446,9 @@
 
     },
     "Grün" : {
+
+    },
+    "Grün bis" : {
 
     },
     "Grunddaten" : {
@@ -392,6 +493,12 @@
     "Hell" : {
 
     },
+    "Heute" : {
+
+    },
+    "Heute gibt es noch keine Buchungen." : {
+
+    },
     "Hinzufügen" : {
 
     },
@@ -410,7 +517,16 @@
     "Icons durchsuchen" : {
 
     },
+    "Im grünen Bereich" : {
+
+    },
     "In den Archiv verschieben?" : {
+
+    },
+    "In diesem Monat gibt es noch keine Budgetausgaben." : {
+
+    },
+    "In diesem Monat sind keine Fixkosten geplant." : {
 
     },
     "Indigo" : {
@@ -436,6 +552,12 @@
       }
     },
     "Jetzt buchen" : {
+
+    },
+    "Kauf nicht möglich" : {
+
+    },
+    "Käufe wiederherstellen" : {
 
     },
     "Kein Bereich" : {
@@ -486,7 +608,7 @@
     "Limit" : {
 
     },
-    "Limit %@" : {
+    "Los geht's" : {
 
     },
     "Löschen" : {
@@ -496,6 +618,24 @@
 
     },
     "Manuelle Rücklage" : {
+
+    },
+    "Mehr Funktionen" : {
+
+    },
+    "Mehr Kontrolle über deine Planung" : {
+
+    },
+    "Mehr Kontrolle, tiefere Einblicke und eigene Gestaltung." : {
+
+    },
+    "Mehr Überblick. Mehr Ruhe." : {
+
+    },
+    "Mit kleinen Gesten erreichst du die wichtigsten Funktionen deiner Karten." : {
+
+    },
+    "Mit Vorlagen starten" : {
 
     },
     "Monat" : {
@@ -511,13 +651,22 @@
     "Monat auswählen" : {
 
     },
+    "Monatlicher Sparbetrag" : {
+
+    },
     "Monatliches Kontingent" : {
 
     },
     "Nach diesem Datum wird die Fixkostenbuchung wieder fällig." : {
 
     },
+    "Nach links wischen" : {
+
+    },
     "Nach oben oder unten ziehen" : {
+
+    },
+    "Nächste Fixkosten" : {
 
     },
     "Nächster Monat" : {
@@ -578,6 +727,9 @@
     "Noch keine Budgets" : {
 
     },
+    "Noch keine Budgets angelegt." : {
+
+    },
     "Noch keine Einzahlungen" : {
 
     },
@@ -587,6 +739,12 @@
     "Noch keine Sparziele" : {
 
     },
+    "Noch keine Sparziele oder Rücklagen angelegt." : {
+
+    },
+    "Noch keine Vorkommen" : {
+
+    },
     "Notiz" : {
 
     },
@@ -594,6 +752,9 @@
 
     },
     "Nur verknüpfen" : {
+
+    },
+    "Öffnet weitere Optionen wie Bearbeiten und Verwalten." : {
 
     },
     "OK" : {
@@ -608,6 +769,9 @@
     "Orange" : {
 
     },
+    "Orange bis" : {
+
+    },
     "Pause" : {
 
     },
@@ -620,7 +784,28 @@
     "PRO" : {
 
     },
+    "Pro entdecken" : {
+
+    },
+    "Pro ist bereits freigeschaltet" : {
+
+    },
+    "Pro ist freigeschaltet" : {
+
+    },
+    "Pro kaufen – %@" : {
+
+    },
+    "Pro kennenlernen" : {
+
+    },
+    "Pro-Angebot wird geladen …" : {
+
+    },
     "Profil" : {
+
+    },
+    "Prognose" : {
 
     },
     "Rosa" : {
@@ -629,7 +814,16 @@
     "Rot" : {
 
     },
+    "Rot ab" : {
+
+    },
     "Schließen" : {
+
+    },
+    "Schnellaktionen" : {
+
+    },
+    "Schritt %lld von 4" : {
 
     },
     "Sparaktionen" : {
@@ -677,7 +871,16 @@
     "Türkis" : {
 
     },
+    "Über Limit" : {
+
+    },
+    "Über Limit %@" : {
+
+    },
     "Übersicht" : {
+
+    },
+    "Überspringen" : {
 
     },
     "Variable Buchungen" : {
@@ -686,16 +889,25 @@
     "Verbleibend" : {
 
     },
-    "Verfügbar in diesem Monat" : {
+    "Verfügbar" : {
+
+    },
+    "Verfügbar %@" : {
+
+    },
+    "verfügbar in diesem Monat" : {
 
     },
     "Verlauf" : {
 
     },
+    "Verlauf anzeigen" : {
+
+    },
     "Verwalten" : {
 
     },
-    "verwendet" : {
+    "Verwendet" : {
 
     },
     "Vom Budget abziehen" : {
@@ -704,19 +916,37 @@
     "von %@" : {
 
     },
+    "Voraussichtlich erreicht" : {
+
+    },
     "Vorheriger Monat" : {
 
     },
     "Vorschau" : {
 
     },
+    "Wähle häufige Budgets aus. Du kannst sie später bearbeiten oder löschen." : {
+
+    },
     "Währung" : {
+
+    },
+    "Weiter" : {
 
     },
     "Weitere Icons" : {
 
     },
+    "Wie dürfen wir dich nennen?" : {
+
+    },
     "Wiederherstellen" : {
+
+    },
+    "Willkommen bei Elyra Budget" : {
+
+    },
+    "Zeigt schnelle Aktionen wie Archivieren oder Löschen." : {
 
     },
     "Ziehe den Griff links, um die Reihenfolge der Budgets zu ändern." : {
@@ -725,10 +955,19 @@
     "Ziel" : {
 
     },
+    "Ziel bis %@" : {
+
+    },
     "Zielbetrag" : {
 
     },
     "Zielbetrag, Monatsbetrag und automatische Buchung werden aus „%@“ übernommen." : {
+
+    },
+    "Zieldatum" : {
+
+    },
+    "Zieldatum festlegen" : {
 
     },
     "Zuletzt aktualisiert" : {

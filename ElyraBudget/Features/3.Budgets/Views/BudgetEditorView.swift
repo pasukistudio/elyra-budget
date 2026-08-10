@@ -9,7 +9,6 @@ struct BudgetEditorView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @Environment(ProAccessManager.self) private var proAccess
 
     @State private var name: String
     @State private var limit: Decimal?
@@ -69,22 +68,12 @@ struct BudgetEditorView: View {
         count: 5
     )
 
-    private let colorColumns = Array(
-        repeating: GridItem(
-            .flexible(),
-            spacing: 8
-        ),
-        count: 5
-    )
-
     // MARK: - Häufige Budget-Icons
 
     private let featuredIcons =
         CategoryIconLibrary.budgetFeatured
 
     // MARK: - Verfügbare Farben
-
-    private let availableColors = ColorPreset.allCases
 
     var body: some View {
         NavigationStack {
@@ -270,24 +259,7 @@ struct BudgetEditorView: View {
             }
             .padding(.vertical, 6)
 
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Icon-Farbe")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                LazyVGrid(
-                    columns: colorColumns,
-                    spacing: 10
-                ) {
-                    ForEach(availableColors) { preset in
-                        colorButton(preset)
-                    }
-                }
-
-                customColorRow
-                    .padding(.top, 10)
-            }
-            .padding(.vertical, 6)
+            PresetColorSelectionView(selection: $selectedColorHex)
         }
     }
 
@@ -358,108 +330,6 @@ struct BudgetEditorView: View {
     }
 
     // MARK: - Farbauswahl
-
-    private func colorButton(
-        _ preset: ColorPreset
-    ) -> some View {
-        let isSelected =
-            selectedColorHex == preset.hex
-
-        return Button {
-            withAnimation(
-                .easeInOut(duration: 0.15)
-            ) {
-                selectedColorHex = preset.hex
-            }
-        } label: {
-            ZStack {
-                Circle()
-                    .fill(preset.color)
-                    .frame(
-                        width: 36,
-                        height: 36
-                    )
-
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(
-                            .system(
-                                size: 14,
-                                weight: .bold
-                            )
-                        )
-                        .foregroundStyle(.white)
-                }
-            }
-            .frame(
-                width: 44,
-                height: 44
-            )
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(preset.title)
-        .accessibilityAddTraits(
-            isSelected ? .isSelected : []
-        )
-    }
-
-    // MARK: - Eigene Farbe
-
-    @ViewBuilder
-    private var customColorRow: some View {
-        if proAccess.hasPro {
-            ColorPicker(
-                selection: customColorBinding,
-                supportsOpacity: false
-            ) {
-                Text("Eigene Farbe")
-            }
-            .padding(.trailing, 17)
-        } else {
-            Button {
-                // Später Pro-Ansicht öffnen
-            } label: {
-                HStack(spacing: 10) {
-                    Text("Eigene Farbe")
-                        .foregroundStyle(.primary)
-
-                    Spacer()
-
-                    Text("PRO")
-                        .font(.caption.bold())
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(
-                            .tint.opacity(0.15),
-                            in: Capsule()
-                        )
-
-                    Image(systemName: "lock.fill")
-                        .foregroundStyle(.secondary)
-                }
-                .contentShape(Rectangle())
-                .padding(.trailing, 22)
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    // MARK: - Eigene Farbauswahl
-
-    private var customColorBinding: Binding<Color> {
-        Binding(
-            get: {
-                selectedColor
-            },
-            set: { newColor in
-                guard let hex = newColor.toHex() else {
-                    return
-                }
-
-                selectedColorHex = hex
-            }
-        )
-    }
 
     // MARK: - Werte
 

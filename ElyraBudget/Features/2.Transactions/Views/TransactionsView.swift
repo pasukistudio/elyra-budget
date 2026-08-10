@@ -46,10 +46,13 @@ struct TransactionsView: View {
         Group {
             if displayedTransactions.isEmpty {
                 emptyState
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
             } else {
                 transactionList
+                    .transition(.opacity)
             }
         }
+        .animation(.snappy(duration: 0.3), value: displayedTransactions.isEmpty)
         .sheet(
             isPresented: editingTransactionIsPresented
         ) {

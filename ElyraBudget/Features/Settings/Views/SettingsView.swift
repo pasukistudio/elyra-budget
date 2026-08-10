@@ -8,6 +8,8 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var draftName = ""
+    @State private var showingProUpgrade = false
+    @State private var proUpgradeFeature = "Mehr Funktionen"
     @State private var saveErrorMessage: String?
 
     @Query(
@@ -27,7 +29,7 @@ struct SettingsView: View {
             currencySection
             budgetStatusSection
             accentColorSection
-            generalSection
+            proSection
             cloudKitSyncSection
 
             #if DEBUG
@@ -53,6 +55,9 @@ struct SettingsView: View {
                 saveName()
             }
             .saveErrorAlert(message: $saveErrorMessage)
+            .sheet(isPresented: $showingProUpgrade) {
+                ProUpgradeView(feature: proUpgradeFeature)
+            }
     }
 
     // MARK: - iCloud
@@ -364,7 +369,8 @@ struct SettingsView: View {
             }
         } else {
             Button {
-                // Später Pro-Ansicht öffnen
+                proUpgradeFeature = "Eigene Akzentfarben"
+                showingProUpgrade = true
             } label: {
                 HStack {
                     Label(
@@ -409,14 +415,40 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Allgemein
+    // MARK: - Pro
 
-    private var generalSection: some View {
-        Section("Allgemein") {
-            Toggle(
-                "Benachrichtigungen",
-                isOn: .constant(true)
-            )
+    private var proSection: some View {
+        Section("Elyra Budget Pro") {
+            Button {
+                proUpgradeFeature = "Mehr Funktionen"
+                showingProUpgrade = true
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: proAccess.hasPro ? "checkmark.seal.fill" : "sparkles")
+                        .foregroundStyle(proAccess.hasPro ? .green : .accentColor)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(proAccess.hasPro ? "Pro ist freigeschaltet" : "Pro entdecken")
+                            .foregroundStyle(.primary)
+                        Text(
+                            proAccess.hasPro
+                                ? "Alle verfügbaren Pro-Funktionen sind aktiv."
+                                : "Mehr Kontrolle, tiefere Einblicke und eigene Gestaltung."
+                        )
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    if !proAccess.hasPro {
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
         }
     }
 

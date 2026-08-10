@@ -52,19 +52,9 @@ struct SavingsContributionEditorView: View {
         NavigationStack {
             Form {
                 Section("Sparziel") {
-                    Text(goal.name).font(.headline)
-                    Picker("Art", selection: $kind) {
-                        ForEach(SavingsContributionKind.allCases) { kind in
-                            Text(kind.title).tag(kind)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    FixedCostEditorAmountSection(amount: $amount)
+                    contributionDetailsCard
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
-
-                    DatePicker("Datum", selection: $date, displayedComponents: .date)
-                    TextField("Notiz (optional)", text: $note, axis: .vertical)
                 }
 
                 Section {
@@ -112,6 +102,57 @@ struct SavingsContributionEditorView: View {
             }
             .saveErrorAlert(message: $saveErrorMessage)
         }
+    }
+
+    private var contributionDetailsCard: some View {
+        VStack(spacing: 0) {
+            Picker("Art", selection: $kind) {
+                ForEach(SavingsContributionKind.allCases) { kind in
+                    Text(kind.title).tag(kind)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 17)
+            .padding(.vertical, 15)
+
+            Divider()
+                .padding(.horizontal, 17)
+
+            Text(goal.name)
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 17)
+                .padding(.vertical, 16)
+
+            Divider()
+                .padding(.horizontal, 17)
+
+            FixedCostEditorAmountSection(amount: $amount)
+
+            Divider()
+                .padding(.horizontal, 17)
+
+            DatePicker("Datum", selection: $date, displayedComponents: .date)
+                .padding(.horizontal, 17)
+                .padding(.vertical, 4)
+
+            Divider()
+                .padding(.horizontal, 17)
+
+            TextField("Notiz (optional)", text: $note, axis: .vertical)
+                .padding(.horizontal, 17)
+                .padding(.vertical, 12)
+        }
+        .background(cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 27, style: .continuous))
+    }
+
+    private var cardBackground: Color {
+        #if os(iOS)
+        Color(uiColor: .secondarySystemGroupedBackground)
+        #else
+        Color.secondary.opacity(0.08)
+        #endif
     }
 
     private func save() {

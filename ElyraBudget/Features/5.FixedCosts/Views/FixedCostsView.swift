@@ -72,10 +72,13 @@ struct FixedCostsView: View {
         Group {
             if visibleFixedCosts.isEmpty {
                 emptyState
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
             } else {
                 content
+                    .transition(.opacity)
             }
         }
+        .animation(.snappy(duration: 0.3), value: visibleFixedCosts.isEmpty)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
