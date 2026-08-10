@@ -49,14 +49,30 @@ final class ProAccessManager {
 
     @MainActor
     func refreshEntitlement() async {
-        guard !hasPro else { return }
+        // Recalculate the entitlement from StoreKit instead of keeping a stale
+        // in-memory value after a restore, revocation, or account change.
+        hasPro = false
 
         for await result in StoreKit.Transaction.currentEntitlements(for: Self.productID) {
             guard case .verified(let transaction) = result else { continue }
-            if transaction.productID == Self.productID {
+            if transaction.productID == Self.productID,
+               transaction.revocationDate == nil {
                 hasPro = true
                 return
             }
+        }
+    }
+
+    @MainActor
+    func listenForTransactionUpdates() async {
+        for await result in StoreKit.Transaction.updates {
+            guard case .verified(let transaction) = result else { continue }
+
+            if transaction.productID == Self.productID {
+                hasPro = transaction.revocationDate == nil
+            }
+
+            await transaction.finish()
         }
     }
 

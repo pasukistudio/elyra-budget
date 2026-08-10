@@ -30,6 +30,7 @@ struct SettingsView: View {
             budgetStatusSection
             accentColorSection
             proSection
+            supportSection
             cloudKitSyncSection
 
             #if DEBUG
@@ -61,6 +62,16 @@ struct SettingsView: View {
     }
 
     // MARK: - iCloud
+
+    private var supportSection: some View {
+        Section("Hilfe & Feedback") {
+            NavigationLink {
+                FeedbackView()
+            } label: {
+                Label("Feedback & Roadmap", systemImage: "bubble.left.and.bubble.right.fill")
+            }
+        }
+    }
 
     private var cloudKitSyncSection: some View {
         Section("iCloud-Synchronisierung") {
