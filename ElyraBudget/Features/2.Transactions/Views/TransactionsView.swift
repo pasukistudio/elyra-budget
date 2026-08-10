@@ -1,11 +1,15 @@
 import SwiftData
 import OSLog
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct TransactionsView: View {
     @Binding var selectedDate: Date
     @Binding var selectedGroup: BudgetGroup?
+    @Binding var showingActions: Bool
+    let onNewTransaction: () -> Void
     @Environment(\.appCurrencyCode) private var currencyCode
+    @Environment(ProAccessManager.self) private var proAccess
     @Environment(\.modelContext)
     private var modelContext
 
@@ -22,10 +26,20 @@ struct TransactionsView: View {
         ]
     )
     private var transactions: [Transaction]
+    @Query private var budgets: [Budget]
+    @Query private var budgetGroups: [BudgetGroup]
 
     @State private var editingTransaction: Transaction?
     @State private var transactionToDelete: Transaction?
     @State private var saveErrorMessage: String?
+    @State private var showingProUpgrade = false
+    @State private var exportFile: ExportFile?
+    @State private var exportErrorMessage: String?
+    @State private var showingImporter = false
+    @State private var importRows: [CSVImportRow] = []
+    @State private var showingImportPreview = false
+    @State private var importErrorMessage: String?
+    @State private var showingRecurringTransactions = false
 
     private var displayedTransactions: [Transaction] {
         transactions.filter {
@@ -36,10 +50,14 @@ struct TransactionsView: View {
 
     init(
         selectedDate: Binding<Date>,
-        selectedGroup: Binding<BudgetGroup?> = .constant(nil)
+        selectedGroup: Binding<BudgetGroup?> = .constant(nil),
+        showingActions: Binding<Bool> = .constant(false),
+        onNewTransaction: @escaping () -> Void = {}
     ) {
         _selectedDate = selectedDate
         _selectedGroup = selectedGroup
+        _showingActions = showingActions
+        self.onNewTransaction = onNewTransaction
     }
 
     var body: some View {
@@ -53,6 +71,10 @@ struct TransactionsView: View {
             }
         }
         .animation(.snappy(duration: 0.3), value: displayedTransactions.isEmpty)
+        .popover(isPresented: $showingActions, arrowEdge: .top) {
+            transactionActionsPopover
+                .presentationCompactAdaptation(.popover)
+        }
         .sheet(
             isPresented: editingTransactionIsPresented
         ) {
@@ -87,6 +109,216 @@ struct TransactionsView: View {
             )
         }
         .saveErrorAlert(message: $saveErrorMessage)
+        .sheet(isPresented: $showingProUpgrade) {
+            ProUpgradeView(feature: "CSV- und PDF-Export")
+        }
+        .sheet(item: $exportFile) { file in
+            NavigationStack {
+                VStack(spacing: 18) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 44))
+                        .foregroundStyle(.green)
+                    Text("Export bereit")
+                        .font(.title3.bold())
+                    Text("Teile die Datei oder speichere sie in der Dateien-App.")
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(.secondary)
+                    ShareLink(item: file.url) {
+                        Label("Datei teilen", systemImage: "square.and.arrow.up")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                .padding(24)
+                .navigationTitle("Export")
+                #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
+            }
+        }
+        .alert("Export nicht möglich", isPresented: Binding(
+            get: { exportErrorMessage != nil },
+            set: { if !$0 { exportErrorMessage = nil } }
+        )) {
+            Button("OK") { exportErrorMessage = nil }
+        } message: {
+            Text(exportErrorMessage ?? "Die Datei konnte nicht erstellt werden.")
+        }
+        .fileImporter(
+            isPresented: $showingImporter,
+            allowedContentTypes: [.commaSeparatedText, .text, .data],
+            allowsMultipleSelection: false
+        ) { result in
+            handleImport(result)
+        }
+        .sheet(isPresented: $showingImportPreview) {
+            CSVImportPreviewView(
+                rows: importRows,
+                onImport: importRowsIntoStore,
+                onCancel: { showingImportPreview = false }
+            )
+        }
+        .sheet(isPresented: $showingRecurringTransactions) {
+            RecurringTransactionsView(selectedGroup: selectedGroup)
+        }
+        .alert("CSV-Import nicht möglich", isPresented: Binding(
+            get: { importErrorMessage != nil },
+            set: { if !$0 { importErrorMessage = nil } }
+        )) {
+            Button("OK") { importErrorMessage = nil }
+        } message: {
+            Text(importErrorMessage ?? "Die Datei konnte nicht importiert werden.")
+        }
+    }
+
+    private func export(format: TransactionExportFormat) {
+        guard proAccess.hasPro else {
+            showingProUpgrade = true
+            return
+        }
+
+        do {
+            let url = try TransactionExportService.write(
+                transactions: displayedTransactions,
+                month: selectedDate,
+                currencyCode: currencyCode,
+                format: format
+            )
+            exportFile = ExportFile(url: url)
+        } catch {
+            exportErrorMessage = error.localizedDescription
+        }
+    }
+
+    private var transactionActionsPopover: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Button {
+                showingActions = false
+                onNewTransaction()
+            } label: {
+                Label("Neue Buchung", systemImage: "plus.circle.fill")
+            }
+            Button {
+                showingActions = false
+                export(format: .csv)
+            } label: {
+                Label("CSV exportieren", systemImage: "tablecells")
+            }
+            Button {
+                showingActions = false
+                export(format: .pdf)
+            } label: {
+                Label("PDF exportieren", systemImage: "doc.richtext")
+            }
+            Button {
+                showingActions = false
+                beginImport()
+            } label: {
+                Label("CSV importieren", systemImage: "square.and.arrow.down")
+            }
+            Button {
+                showingActions = false
+                if proAccess.hasPro {
+                    showingRecurringTransactions = true
+                } else {
+                    showingProUpgrade = true
+                }
+            } label: {
+                Label("Wiederkehrende Buchungen", systemImage: "arrow.triangle.2.circlepath")
+            }
+        }
+        .buttonStyle(.plain)
+        .controlSize(.large)
+        .padding(14)
+        .frame(minWidth: 230, alignment: .leading)
+    }
+
+    private var transactionToolsMenu: some View {
+        Menu {
+            Button {
+                export(format: .csv)
+            } label: {
+                Label("CSV exportieren", systemImage: "tablecells")
+            }
+            Button {
+                export(format: .pdf)
+            } label: {
+                Label("PDF exportieren", systemImage: "doc.richtext")
+            }
+            Divider()
+            Button {
+                beginImport()
+            } label: {
+                Label("CSV importieren", systemImage: "square.and.arrow.down")
+            }
+            Button {
+                if proAccess.hasPro {
+                    showingRecurringTransactions = true
+                } else {
+                    showingProUpgrade = true
+                }
+            } label: {
+                Label("Wiederkehrende Buchungen", systemImage: "arrow.triangle.2.circlepath")
+            }
+        } label: {
+            Label("Import / Export", systemImage: "arrow.up.arrow.down")
+                .labelStyle(.titleAndIcon)
+        }
+        .buttonStyle(.borderedProminent)
+        .accessibilityLabel("Import und Export")
+    }
+
+    private func beginImport() {
+        guard proAccess.hasPro else {
+            showingProUpgrade = true
+            return
+        }
+        showingImporter = true
+    }
+
+    private func handleImport(_ result: Result<[URL], Error>) {
+        do {
+            guard let url = try result.get().first else { return }
+            let hasAccess = url.startAccessingSecurityScopedResource()
+            defer {
+                if hasAccess { url.stopAccessingSecurityScopedResource() }
+            }
+            importRows = try TransactionImportService.parse(data: Data(contentsOf: url))
+            showingImportPreview = true
+        } catch {
+            importErrorMessage = error.localizedDescription
+        }
+    }
+
+    private func importRowsIntoStore() {
+        for row in importRows {
+            let group = row.groupName.flatMap { name in
+                budgetGroups.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }
+            } ?? selectedGroup
+            let budget = row.budgetName.flatMap { name in
+                budgets.first {
+                    $0.name.caseInsensitiveCompare(name) == .orderedSame
+                        && (group == nil || $0.group === group)
+                }
+            }
+            modelContext.insert(Transaction(
+                title: row.title,
+                amount: row.amount,
+                date: row.date,
+                note: row.note,
+                type: row.type,
+                budget: budget,
+                group: group
+            ))
+        }
+
+        do {
+            try modelContext.save()
+            importRows = []
+            showingImportPreview = false
+        } catch {
+            importErrorMessage = "Die Buchungen konnten nicht gespeichert werden."
+        }
     }
 
     // MARK: - Leere Ansicht
@@ -226,6 +458,10 @@ struct TransactionsView: View {
     private func deleteTransaction(
         _ transaction: Transaction
     ) {
+        if let contributionID = transaction.savingsContributionID,
+           let contribution = (try? modelContext.fetch(FetchDescriptor<SavingsContribution>()))?.first(where: { $0.id == contributionID }) {
+            modelContext.delete(contribution)
+        }
         modelContext.delete(transaction)
 
         do {
@@ -271,6 +507,11 @@ struct TransactionsView: View {
 
     // MARK: - Währung
 
+}
+
+private struct ExportFile: Identifiable {
+    let url: URL
+    var id: URL { url }
 }
 
 // MARK: - Tagesgruppe

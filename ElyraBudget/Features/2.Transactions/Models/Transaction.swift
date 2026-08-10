@@ -12,10 +12,13 @@ import SwiftData
 final class Transaction {
     // MARK: - Grunddaten
 
+    var id: UUID = UUID()
+
     var title: String = ""
     var amount: Decimal = 0
     var date: Date = Date()
     var note: String = ""
+    var receiptFilename: String?
 
     // MARK: - Typ
 
@@ -43,6 +46,7 @@ final class Transaction {
 
     /// Identifies transactions generated from an automatic savings contribution.
     var savingsGoalID: UUID?
+    var savingsContributionID: UUID?
     var savingsGoalOccurrenceDate: Date?
 
     // MARK: - Zeitstempel
@@ -61,10 +65,12 @@ final class Transaction {
         budget: Budget? = nil,
         group: BudgetGroup? = nil
     ) {
+        self.id = UUID()
         self.title = title
         self.amount = amount
         self.date = date
         self.note = note
+        self.receiptFilename = nil
         self.typeRawValue = type.rawValue
         self.budget = budget
         self.group = group
@@ -73,6 +79,7 @@ final class Transaction {
         self.fixedCostBookingAutomatic = nil
         self.savingsGoalCoveredAmount = nil
         self.savingsGoalID = nil
+        self.savingsContributionID = nil
         self.savingsGoalOccurrenceDate = nil
         self.createdAt = Date()
         self.updatedAt = Date()

@@ -35,16 +35,31 @@
     "%lld %%" : {
 
     },
+    "%lld Buchungen · ungefähr monatlich" : {
+
+    },
+    "%lld Buchungen werden importiert. Bestehende Buchungen bleiben unverändert." : {
+
+    },
+    "%lld Stimmen" : {
+
+    },
     "•" : {
 
     },
     "0,00" : {
 
     },
+    "Ab %lld:00 Uhr" : {
+
+    },
     "Abbrechen" : {
 
     },
     "Abbuchung" : {
+
+    },
+    "Abstimmung nicht gespeichert" : {
 
     },
     "Achte auf dein Budget" : {
@@ -73,6 +88,12 @@
 
     },
     "Alles Wichtige auf einen Blick" : {
+
+    },
+    "Als Fixkosten übernehmen" : {
+
+    },
+    "An Fälligkeit erinnern" : {
 
     },
     "Ansicht" : {
@@ -114,6 +135,9 @@
     "Ausgaben" : {
 
     },
+    "Ausgaben nach Budget" : {
+
+    },
     "Ausgaben: 0,00 %@" : {
 
     },
@@ -147,8 +171,13 @@
     "Bearbeiten" : {
 
     },
+    "Beleg" : {
+
+    },
+    "Belege an Buchungen" : {
+
+    },
     "Benachrichtigungen" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -164,7 +193,16 @@
     "Bereich bearbeiten" : {
 
     },
+    "Bereich teilen" : {
+
+    },
     "Bereiche verwalten" : {
+
+    },
+    "Bericht nicht möglich" : {
+
+    },
+    "Bericht teilen" : {
 
     },
     "Beschreibung" : {
@@ -174,6 +212,9 @@
 
     },
     "Bezeichnung" : {
+
+    },
+    "Bis %lld:00 Uhr" : {
 
     },
     "Blau" : {
@@ -192,6 +233,9 @@
 
     },
     "Buchungen" : {
+
+    },
+    "Buchungsaktionen" : {
 
     },
     "Buchungstyp" : {
@@ -257,7 +301,28 @@
     "Budgetübersicht" : {
 
     },
+    "Budgetwarnungen" : {
+
+    },
+    "CSV exportieren" : {
+
+    },
+    "CSV importieren" : {
+
+    },
+    "CSV- und PDF-Export" : {
+
+    },
+    "CSV-Import" : {
+
+    },
+    "CSV-Import nicht möglich" : {
+
+    },
     "Cyan" : {
+
+    },
+    "Danke für deinen Beitrag" : {
 
     },
     "Darstellung" : {
@@ -275,6 +340,9 @@
     "Dashboard-Seite %lld von 2" : {
 
     },
+    "Datei teilen" : {
+
+    },
     "Daten übernehmen" : {
 
     },
@@ -282,6 +350,9 @@
 
     },
     "Dein Beitrag" : {
+
+    },
+    "Dein Beitrag wurde übermittelt und wird vor der Veröffentlichung geprüft." : {
 
     },
     "Dein Name" : {
@@ -301,6 +372,9 @@
 
     },
     "Deine Einnahmen und Ausgaben erscheinen hier." : {
+
+    },
+    "Deine Finanzdaten bleiben geschützt." : {
 
     },
     "Deine Finanzen, einfach im Blick" : {
@@ -330,6 +404,12 @@
     "Die Farben zeigen, wie viel des Monatsbudgets bereits verwendet wurde." : {
 
     },
+    "Du erhältst am Fälligkeitstag eine lokale Mitteilung." : {
+
+    },
+    "Du erhältst eine Mitteilung, sobald dein Beitrag geprüft, geplant oder umgesetzt wurde." : {
+
+    },
     "Du kannst Budgets, Währung und weitere Einstellungen später jederzeit ändern." : {
 
     },
@@ -340,6 +420,9 @@
 
     },
     "Dunkel" : {
+
+    },
+    "Eigene Akzentfarbe" : {
 
     },
     "Eigene Akzentfarben" : {
@@ -379,10 +462,19 @@
     "Elyra Budget hilft dir, Budgets, Buchungen, Fixkosten und Sparziele an einem Ort zu organisieren." : {
 
     },
+    "Elyra Budget ist gesperrt" : {
+
+    },
     "Elyra Budget Pro" : {
 
     },
+    "Elyra Budget wird beim Verlassen der App geschützt." : {
+
+    },
     "Endgültig löschen" : {
+
+    },
+    "Entfernen" : {
 
     },
     "Erneut laden" : {
@@ -395,6 +487,21 @@
 
     },
     "Erstelle zuerst ein Budget, um es hier verwalten zu können." : {
+
+    },
+    "Export" : {
+
+    },
+    "Export bereit" : {
+
+    },
+    "Export nicht möglich" : {
+
+    },
+    "Face ID-/Touch-ID-Sperre" : {
+
+    },
+    "Face ID-/Touch-ID-Sperre mit Pro" : {
 
     },
     "Fällig" : {
@@ -412,10 +519,16 @@
     "Feedback wird geladen …" : {
 
     },
+    "Feedback-Statusänderungen" : {
+
+    },
     "Fehler ausblenden" : {
 
     },
     "Fehler melden" : {
+
+    },
+    "Fehlgeschlagene automatische Buchungen" : {
 
     },
     "Fertig" : {
@@ -440,6 +553,15 @@
 
     },
     "Fixkosten pausieren" : {
+
+    },
+    "Fixkosten-Erinnerungen werden direkt bei der jeweiligen Fixkostenregel gesteuert." : {
+
+    },
+    "Foto oder PDF hinzufügen" : {
+
+    },
+    "Foto oder PDF hinzufügen · PRO" : {
 
     },
     "Freie Rücklage" : {
@@ -473,6 +595,9 @@
 
     },
     "Gespart" : {
+
+    },
+    "Geteilte Budgetbereiche" : {
 
     },
     "Grau" : {
@@ -538,7 +663,16 @@
     "Hinzufügen" : {
 
     },
+    "Hinzugefügt" : {
+
+    },
+    "iCloud wieder synchronisiert" : {
+
+    },
     "iCloud-Synchronisierung" : {
+
+    },
+    "iCloud-Synchronisierungsfehler" : {
 
     },
     "Icon" : {
@@ -554,6 +688,15 @@
 
     },
     "Im grünen Bereich" : {
+
+    },
+    "Import / Export" : {
+
+    },
+    "Import und Export" : {
+
+    },
+    "Importieren" : {
 
     },
     "In den Archiv verschieben?" : {
@@ -623,6 +766,9 @@
     "Keine Fixkosten" : {
 
     },
+    "Keine Muster gefunden" : {
+
+    },
     "Keine variablen Buchungen in diesem Monat" : {
 
     },
@@ -671,6 +817,9 @@
     "Mehr Überblick. Mehr Ruhe." : {
 
     },
+    "Mit Face ID oder Touch ID entsperren" : {
+
+    },
     "Mit kleinen Gesten erreichst du die wichtigsten Funktionen deiner Karten." : {
 
     },
@@ -690,10 +839,16 @@
     "Monat auswählen" : {
 
     },
+    "Monatlicher Finanzüberblick" : {
+
+    },
     "Monatlicher Sparbetrag" : {
 
     },
     "Monatliches Kontingent" : {
+
+    },
+    "Monatsbericht als PDF teilen" : {
 
     },
     "Nach diesem Datum wird die Fixkostenbuchung wieder fällig." : {
@@ -823,6 +978,9 @@
     "Pausiert bis" : {
 
     },
+    "PDF exportieren" : {
+
+    },
     "Privater Support" : {
 
     },
@@ -853,6 +1011,9 @@
     "Prognose" : {
 
     },
+    "Prüfe Identität …" : {
+
+    },
     "Rosa" : {
 
     },
@@ -860,6 +1021,12 @@
 
     },
     "Rot ab" : {
+
+    },
+    "Rückmeldung" : {
+
+    },
+    "Ruhezeiten" : {
 
     },
     "Schließen" : {
@@ -877,7 +1044,16 @@
     "Senden" : {
 
     },
+    "Sicherheit" : {
+
+    },
+    "Sobald eine Ausgabe regelmäßig wiederkehrt, wird sie hier vorgeschlagen." : {
+
+    },
     "Sparaktionen" : {
+
+    },
+    "Sparbeiträge" : {
 
     },
     "Sparen" : {
@@ -898,7 +1074,13 @@
     "Sparziel bearbeiten" : {
 
     },
+    "Sparziel erreicht" : {
+
+    },
     "Sparziel löschen?" : {
+
+    },
+    "Sparziel-Prognose" : {
 
     },
     "Sparziele" : {
@@ -916,6 +1098,12 @@
     "Startdatum" : {
 
     },
+    "Statistiken" : {
+
+    },
+    "Statistiken und Monatsberichte" : {
+
+    },
     "Stimme entfernen" : {
 
     },
@@ -925,7 +1113,16 @@
     "System" : {
 
     },
+    "Tägliche Zusammenfassung" : {
+
+    },
+    "Teile die Datei oder speichere sie in der Dateien-App." : {
+
+    },
     "Teile Ideen, melde Fehler und stimme direkt in der App ab – ganz ohne GitHub-Konto." : {
+
+    },
+    "Titel: 3–120 Zeichen · Beschreibung: 3–5.000 Zeichen" : {
 
     },
     "Türkis" : {
@@ -937,10 +1134,19 @@
     "Über Limit %@" : {
 
     },
+    "Über Statusänderungen informieren" : {
+
+    },
+    "Überfällige Fixkosten" : {
+
+    },
     "Übersicht" : {
 
     },
     "Überspringen" : {
+
+    },
+    "Ungewöhnlich hohe Ausgaben" : {
 
     },
     "Variable Buchungen" : {
@@ -1009,7 +1215,16 @@
     "Wiederherstellen" : {
 
     },
+    "Wiederkehrende Buchungen" : {
+
+    },
+    "Wiederkehrende Buchungen erkennen" : {
+
+    },
     "Willkommen bei Elyra Budget" : {
+
+    },
+    "Wird gespeichert" : {
 
     },
     "Zeigt schnelle Aktionen wie Archivieren oder Löschen." : {

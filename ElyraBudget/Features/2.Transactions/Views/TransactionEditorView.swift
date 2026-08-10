@@ -8,6 +8,7 @@
 import SwiftData
 import OSLog
 import SwiftUI
+import UniformTypeIdentifiers
 
 #if os(iOS)
 import UIKit
@@ -26,6 +27,9 @@ struct TransactionEditorView: View {
 
     @Environment(\.modelContext)
     private var modelContext
+
+    @Environment(ProAccessManager.self)
+    private var proAccess
 
     // MARK: - Budgets
 
@@ -46,12 +50,15 @@ struct TransactionEditorView: View {
     @State private var amount: Decimal?
     @State private var date: Date
     @State private var note: String
+    @State private var receiptFilename: String?
     @State private var selectedType: TransactionType
     @State private var selectedBudget: Budget?
 
     // MARK: - Budgetmenü
 
     @State private var showingBudgetMenu = false
+    @State private var showingReceiptImporter = false
+    @State private var showingProUpgrade = false
     @State private var saveErrorMessage: String?
 
     // MARK: - Initialisierung
@@ -81,6 +88,9 @@ struct TransactionEditorView: View {
 
         _note = State(
             initialValue: transaction?.note ?? ""
+        )
+        _receiptFilename = State(
+            initialValue: transaction?.receiptFilename
         )
 
         _selectedType = State(
@@ -164,6 +174,21 @@ struct TransactionEditorView: View {
                 }
             }
             .saveErrorAlert(message: $saveErrorMessage)
+            .sheet(isPresented: $showingProUpgrade) {
+                ProUpgradeView(feature: "Belege an Buchungen")
+            }
+            .fileImporter(
+                isPresented: $showingReceiptImporter,
+                allowedContentTypes: [.image, .pdf],
+                allowsMultipleSelection: false
+            ) { result in
+                do {
+                    guard let url = try result.get().first else { return }
+                    receiptFilename = try TransactionReceiptService.importFile(from: url)
+                } catch {
+                    saveErrorMessage = "Der Beleg konnte nicht gespeichert werden."
+                }
+            }
         }
     }
 
@@ -194,6 +219,7 @@ struct TransactionEditorView: View {
                     note: $note,
                     cardBackground: cardBackground
                 )
+                receiptSection
             }
             .padding(.horizontal, 17)
             .padding(.top, 18)
@@ -294,6 +320,41 @@ struct TransactionEditorView: View {
         }
     }
 
+    private var receiptSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            TransactionEditorSectionHeader(title: "Beleg")
+            if let receiptFilename,
+               let url = TransactionReceiptService.url(for: receiptFilename) {
+                HStack {
+                    Label(url.lastPathComponent, systemImage: "doc.fill")
+                        .lineLimit(1)
+                    Spacer()
+                    Button("Entfernen", role: .destructive) {
+                        self.receiptFilename = nil
+                    }
+                }
+                .padding(16)
+                .background(cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            } else {
+                Button {
+                    if proAccess.hasPro {
+                        showingReceiptImporter = true
+                    } else {
+                        showingProUpgrade = true
+                    }
+                } label: {
+                    Label(
+                        proAccess.hasPro ? "Foto oder PDF hinzufügen" : "Foto oder PDF hinzufügen · PRO",
+                        systemImage: proAccess.hasPro ? "paperclip" : "lock.fill"
+                    )
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+    }
+
     // MARK: - Speichern
 
     private func saveTransaction() {
@@ -314,6 +375,8 @@ struct TransactionEditorView: View {
 
             existingTransaction.note =
                 cleanedNote
+
+            existingTransaction.receiptFilename = receiptFilename
 
             existingTransaction.type =
                 selectedType
@@ -336,6 +399,7 @@ struct TransactionEditorView: View {
                 budget: selectedBudget,
                 group: effectiveGroup
             )
+            newTransaction.receiptFilename = receiptFilename
 
             modelContext.insert(
                 newTransaction

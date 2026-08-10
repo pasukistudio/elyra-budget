@@ -473,6 +473,36 @@ struct ElyraBudgetTests {
         #expect(pending.first?.dueDate == date)
     }
 
+    @Test func fixedCostReminderIsScheduledAtNineOnFutureDueDate() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let dueDate = calendar.date(from: DateComponents(year: 2026, month: 8, day: 20))!
+        let now = calendar.date(from: DateComponents(year: 2026, month: 8, day: 10, hour: 12))!
+
+        let reminderDate = FixedCostNotificationScheduler.reminderDate(
+            for: dueDate,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(reminderDate == calendar.date(from: DateComponents(year: 2026, month: 8, day: 20, hour: 9)))
+    }
+
+    @Test func fixedCostReminderSkipsDueDateAfterReminderTime() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let dueDate = calendar.date(from: DateComponents(year: 2026, month: 8, day: 20))!
+        let now = calendar.date(from: DateComponents(year: 2026, month: 8, day: 20, hour: 10))!
+
+        #expect(
+            FixedCostNotificationScheduler.reminderDate(
+                for: dueDate,
+                now: now,
+                calendar: calendar
+            ) == nil
+        )
+    }
+
     @Test func savingsGoalWithoutTargetHasNoRemainingAmount() {
         let goal = SavingsGoal(name: "Notgroschen")
         goal.contributions = [

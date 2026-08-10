@@ -30,7 +30,6 @@ enum SavingsGoalScheduler {
                     occurrenceDate: occurrenceDate,
                     goal: goal
                 )
-                modelContext.insert(contribution)
 
                 let transaction = Transaction(
                     title: goal.name,
@@ -43,6 +42,9 @@ enum SavingsGoalScheduler {
                 )
                 transaction.savingsGoalID = goal.id
                 transaction.savingsGoalOccurrenceDate = occurrenceDate
+                transaction.savingsContributionID = contribution.id
+                contribution.transactionID = transaction.id
+                modelContext.insert(contribution)
                 modelContext.insert(transaction)
                 existing.insert(marker)
             }

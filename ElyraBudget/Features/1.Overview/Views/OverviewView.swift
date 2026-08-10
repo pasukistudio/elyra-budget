@@ -7,7 +7,10 @@ struct OverviewView: View {
     @Binding var selectedDate: Date
 
     @Environment(\.appCurrencyCode) private var currencyCode
+    @Environment(ProAccessManager.self) private var proAccess
     @State private var dashboardPage = 0
+    @State private var showingAnalytics = false
+    @State private var showingProUpgrade = false
 
     @Query(
         filter: #Predicate<Budget> { !$0.isArchived },
@@ -229,6 +232,25 @@ struct OverviewView: View {
                 savingsSnapshot
             }
             .padding()
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    if proAccess.hasPro {
+                        showingAnalytics = true
+                    } else {
+                        showingProUpgrade = true
+                    }
+                } label: {
+                    Label("Statistiken", systemImage: "chart.xyaxis.line")
+                }
+            }
+        }
+        .sheet(isPresented: $showingAnalytics) {
+            ProAnalyticsView(selectedDate: selectedDate, selectedGroup: selectedGroup)
+        }
+        .sheet(isPresented: $showingProUpgrade) {
+            ProUpgradeView(feature: "Statistiken und Monatsberichte")
         }
     }
 

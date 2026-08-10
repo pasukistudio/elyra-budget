@@ -28,6 +28,8 @@ struct ContentView: View {
         ]
     )
     private var budgetGroups: [BudgetGroup]
+    @Query(sort: [SortDescriptor<Budget>(\.sortOrder)])
+    private var budgets: [Budget]
     @Query(sort: [SortDescriptor<FixedCost>(\.createdAt)])
     private var fixedCosts: [FixedCost]
     @Query(sort: [SortDescriptor<SavingsGoal>(\.createdAt)])
@@ -58,6 +60,7 @@ struct ContentView: View {
     @State private var showingBudgetManagement = false
     @State private var showingArchivedBudgets = false
     @State private var showingTransactionEditor = false
+    @State private var showingTransactionActions = false
     @State private var requestingFixedCostEditor = false
     @State private var requestingSavingsGoalEditor = false
     @State private var requestingSavingsReserveEditor = false
@@ -74,6 +77,8 @@ struct ContentView: View {
     private var cloudKitSyncMonitor
     @Environment(ProAccessManager.self)
     private var proAccess
+    @Environment(AppLockManager.self)
+    private var appLockManager
 
     // MARK: - Hauptansicht
 
@@ -89,6 +94,11 @@ struct ContentView: View {
                 #endif
             }
         }
+        .overlay {
+            if appLockManager.isLocked {
+                AppLockView()
+            }
+        }
         .environment(\.appCurrencyCode, appCurrencyCode)
         .sheet(isPresented: $showingBudgetGroupManagement, onDismiss: {
             if selectedBudgetGroup?.isArchived == true {
@@ -99,25 +109,118 @@ struct ContentView: View {
         }
         .task {
             await proAccess.refreshEntitlement()
+            appLockManager.lockIfNeeded(
+                isEnabled: userSettings.first?.appLockEnabled ?? false,
+                hasPro: proAccess.hasPro
+            )
+            await importPendingCloudKitShareIfNeeded()
             await ensureDefaultBudgetGroupAfterCloudKitSync()
+            await pullSharedAreasIfNeeded()
+            writeWidgetSnapshot()
             presentOnboardingIfNeeded()
             registerAppLaunchIfNeeded()
+            applyQuieterNotificationDefaultsIfNeeded()
             processAutomaticSavingsGoals()
             processAutomaticFixedCosts()
+            rescheduleAppNotifications()
         }
         .task {
             await proAccess.listenForTransactionUpdates()
         }
         .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .background || newPhase == .inactive {
+                appLockManager.lockIfNeeded(
+                    isEnabled: userSettings.first?.appLockEnabled ?? false,
+                    hasPro: proAccess.hasPro
+                )
+            }
             guard newPhase == .active else { return }
             registerAppLaunchIfNeeded()
             Task {
                 await proAccess.refreshEntitlement()
+                await importPendingCloudKitShareIfNeeded()
+                await pullSharedAreasIfNeeded()
+                writeWidgetSnapshot()
             }
             selectExistingBudgetGroupIfNeeded()
             processAutomaticSavingsGoals()
             processAutomaticFixedCosts()
+            rescheduleAppNotifications()
         }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            guard oldPhase != .background, newPhase == .background else { return }
+            Task {
+                await uploadSharedAreasIfNeeded()
+            }
+        }
+        .onChange(of: cloudKitSyncMonitor.status) { _, status in
+            switch status {
+            case .failed:
+                UserDefaults.standard.set(true, forKey: "elyraBudget.syncFailureActive")
+                guard userSettings.first?.syncErrorNotificationsEnabled ?? true else { return }
+                Task {
+                    await AppNotificationScheduler.scheduleSyncError(
+                        message: cloudKitSyncMonitor.errorMessage ?? "Bitte prüfe deine iCloud-Verbindung.",
+                        enabled: true
+                    )
+                }
+            case .succeeded where UserDefaults.standard.bool(forKey: "elyraBudget.syncFailureActive"):
+                UserDefaults.standard.set(false, forKey: "elyraBudget.syncFailureActive")
+                Task {
+                    await AppNotificationScheduler.scheduleSyncRecovery(
+                        enabled: userSettings.first?.syncRecoveryNotificationsEnabled ?? true
+                    )
+                }
+            default:
+                break
+            }
+        }
+    }
+
+    @MainActor
+    private func importPendingCloudKitShareIfNeeded() async {
+        do {
+            _ = try await CloudKitSharedAreaService.shared.importPendingShare(modelContext: modelContext)
+        } catch {
+            AppLogger.persistence.error("Geteilter CloudKit-Bereich konnte nicht importiert werden: \(error.localizedDescription)")
+        }
+    }
+
+    @MainActor
+    private func pullSharedAreasIfNeeded() async {
+        for group in budgetGroups {
+            do {
+                try await CloudKitSharedAreaService.shared.pullSharedArea(
+                    group: group,
+                    modelContext: modelContext
+                )
+            } catch {
+                AppLogger.persistence.error("Geteilter Bereich konnte nicht aktualisiert werden: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    @MainActor
+    private func uploadSharedAreasIfNeeded() async {
+        for group in budgetGroups {
+            do {
+                try await CloudKitSharedAreaService.shared.updateSharedArea(group: group)
+            } catch {
+                AppLogger.persistence.error("Geteilter Bereich konnte nicht gespeichert werden: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func writeWidgetSnapshot() {
+        guard proAccess.hasPro else {
+            WidgetSnapshotWriter.clear()
+            return
+        }
+        WidgetSnapshotWriter.write(
+            groups: budgetGroups,
+            currencyCode: appCurrencyCode,
+            month: selectedDate
+        )
     }
 
     private func processAutomaticFixedCosts() {
@@ -132,6 +235,38 @@ struct ContentView: View {
             AppLogger.persistence.error(
                 "Automatische Fixkosten konnten nicht gebucht werden: \(error)"
             )
+            Task {
+                await AppNotificationScheduler.scheduleAutomaticBookingFailure(
+                    message: "Eine automatische Fixkostenbuchung konnte nicht erstellt werden.",
+                    enabled: userSettings.first?.automaticBookingFailureNotificationsEnabled ?? true
+                )
+            }
+        }
+    }
+
+    private func applyQuieterNotificationDefaultsIfNeeded() {
+        let key = "elyraBudget.notificationDefaults.v2Applied"
+        guard !UserDefaults.standard.bool(forKey: key),
+              let settings = userSettings.first else {
+            return
+        }
+
+        // Keep important warnings active, while disabling noisy optional alerts.
+        settings.savingsContributionNotificationsEnabled = false
+        settings.monthlySummaryNotificationsEnabled = false
+        settings.forecastRiskNotificationsEnabled = false
+        settings.syncRecoveryNotificationsEnabled = false
+        settings.feedbackStatusNotificationsEnabled = false
+        settings.unusualExpenseNotificationsEnabled = false
+        settings.updatedAt = .now
+
+        do {
+            try modelContext.save()
+            UserDefaults.standard.set(true, forKey: key)
+        } catch {
+            AppLogger.persistence.error(
+                "Benachrichtigungseinstellungen konnten nicht angepasst werden: \(error)"
+            )
         }
     }
 
@@ -145,6 +280,30 @@ struct ContentView: View {
         } catch {
             AppLogger.persistence.error(
                 "Automatische Sparbuchungen konnten nicht gebucht werden: \(error)"
+            )
+            Task {
+                await AppNotificationScheduler.scheduleAutomaticBookingFailure(
+                    message: "Eine automatische Sparbuchung konnte nicht erstellt werden.",
+                    enabled: userSettings.first?.automaticBookingFailureNotificationsEnabled ?? true
+                )
+            }
+        }
+    }
+
+    private func rescheduleAppNotifications() {
+        Task {
+            let currentBudgets = (try? modelContext.fetch(
+                FetchDescriptor<Budget>(sortBy: [SortDescriptor(\.sortOrder)])
+            )) ?? budgets
+            let currentTransactions = (try? modelContext.fetch(
+                FetchDescriptor<Transaction>(sortBy: [SortDescriptor(\.date)])
+            )) ?? transactions
+            await AppNotificationScheduler.reschedule(
+                fixedCosts: fixedCosts,
+                savingsGoals: savingsGoals,
+                budgets: currentBudgets,
+                transactions: currentTransactions,
+                settings: userSettings.first
             )
         }
     }
@@ -388,7 +547,9 @@ struct ContentView: View {
         appBackground {
             TransactionsView(
                 selectedDate: $selectedDate,
-                selectedGroup: $selectedBudgetGroup
+                selectedGroup: $selectedBudgetGroup,
+                showingActions: $showingTransactionActions,
+                onNewTransaction: { showingTransactionEditor = true }
             )
         }
         .tabItem {
@@ -579,6 +740,8 @@ struct ContentView: View {
         ) {
             if selectedSection == .overview {
                 overviewActionsMenu
+            } else if selectedSection == .transactions {
+                transactionActionsButton
             } else if selectedSection == .budgets {
                 budgetActionsMenu
             } else if selectedSection == .savings {
@@ -720,6 +883,17 @@ struct ContentView: View {
         )
     }
 
+    private var transactionActionsButton: some View {
+        Button {
+            showingTransactionActions = true
+        } label: {
+            Image(systemName: "plus")
+                .foregroundStyle(effectiveAccentColor)
+        }
+        .help("Buchungsaktionen")
+        .accessibilityLabel("Buchungsaktionen")
+    }
+
     // MARK: - Hinzufügen
 
     private func handleAddButton() {
@@ -854,6 +1028,7 @@ struct ContentView: View {
         .environment(
             ProAccessManager()
         )
+        .environment(AppLockManager())
         .environment(CloudKitSyncMonitor(environment: ["ELYRA_BUDGET_USE_CLOUDKIT": "NO"]))
         .modelContainer(
             for: [
@@ -876,6 +1051,7 @@ struct ContentView: View {
 #Preview("Onboarding – ContentView") {
     ContentView(showsOnboardingPreview: true)
         .environment(ProAccessManager())
+        .environment(AppLockManager())
         .environment(CloudKitSyncMonitor(environment: ["ELYRA_BUDGET_USE_CLOUDKIT": "NO"]))
         .modelContainer(
             for: [
@@ -898,6 +1074,7 @@ struct ContentView: View {
 
     return ContentView()
         .environment(proAccess)
+        .environment(AppLockManager())
         .environment(CloudKitSyncMonitor(environment: ["ELYRA_BUDGET_USE_CLOUDKIT": "NO"]))
         .modelContainer(
             for: [
@@ -922,6 +1099,7 @@ struct ContentView: View {
         .environment(
             ProAccessManager()
         )
+        .environment(AppLockManager())
         .environment(CloudKitSyncMonitor(environment: ["ELYRA_BUDGET_USE_CLOUDKIT": "NO"]))
         .modelContainer(
             for: [
@@ -947,6 +1125,7 @@ struct ContentView: View {
 
     return ContentView()
         .environment(proAccess)
+        .environment(AppLockManager())
         .environment(CloudKitSyncMonitor(environment: ["ELYRA_BUDGET_USE_CLOUDKIT": "NO"]))
         .modelContainer(
             for: [

@@ -10,6 +10,7 @@ final class SavingsContribution {
     var automatic: Bool = false
     var occurrenceDate: Date?
     var goal: SavingsGoal?
+    var transactionID: UUID?
 
     init(
         amount: Decimal,
@@ -26,5 +27,6 @@ final class SavingsContribution {
         self.automatic = automatic
         self.occurrenceDate = occurrenceDate
         self.goal = goal
+        self.transactionID = nil
     }
 }

@@ -14,6 +14,8 @@ final class FixedCost {
     var configurationEffectiveDate: Date?
     var dayOfMonth: Int = 1
     var automaticBooking: Bool = true
+    /// Sends a local reminder for manual bookings on the due date.
+    var reminderEnabled: Bool = true
     var isPaused: Bool = false
     var pauseUntil: Date?
     var note: String = ""
@@ -36,6 +38,7 @@ final class FixedCost {
         anchorDate: Date = .now,
         dayOfMonth: Int = 1,
         automaticBooking: Bool = true,
+        reminderEnabled: Bool = true,
         budget: Budget? = nil,
         group: BudgetGroup? = nil
     ) {
@@ -48,6 +51,7 @@ final class FixedCost {
         self.configurationEffectiveDate = anchorDate
         self.dayOfMonth = min(max(dayOfMonth, 1), 31)
         self.automaticBooking = automaticBooking
+        self.reminderEnabled = reminderEnabled
         self.budget = budget
         self.group = group
         self.createdAt = .now
