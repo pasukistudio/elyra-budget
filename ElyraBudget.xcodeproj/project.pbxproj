@@ -125,6 +125,7 @@
 			);
 			name = ElyraBudget;
 			packageProductDependencies = (
+				B7D0C1A20000000000000002 /* Supabase */,
 			);
 			productName = ElyraBudget;
 			productReference = 50A48CAD3022049E00A33848 /* ElyraBudget.app */;
@@ -210,6 +211,7 @@
 			mainGroup = 50A48CA43022049E00A33848;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				B7D0C1A20000000000000001 /* XCRemoteSwiftPackageReference "supabase-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 50A48CAE3022049E00A33848 /* Products */;
@@ -620,6 +622,25 @@
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		B7D0C1A20000000000000001 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase-community/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B7D0C1A20000000000000002 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B7D0C1A20000000000000001 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCConfigurationList section */
 		50A48CA83022049E00A33848 /* Build configuration list for PBXProject "ElyraBudget" */ = {

@@ -157,10 +157,11 @@ enum FixedCostScheduler {
             let key = dayKey(for: occurrenceDate, calendar: calendar)
             transactionByDate[key] = transactionByDate[key] ?? transaction
         }
-        let futureEnd = calendar.date(byAdding: .year, value: 1, to: date) ?? date
+        let currentDay = calendar.startOfDay(for: date)
+        let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDay)
+            .flatMap { fixedCost.nextDueDate(after: $0, calendar: calendar) }
         let scheduledDates = fixedCost.occurrenceDates(
-            from: calendar.startOfDay(for: date),
-            through: futureEnd,
+            through: nextDate ?? currentDay,
             calendar: calendar
         )
         let allKeys = Set(transactionByDate.keys).union(
