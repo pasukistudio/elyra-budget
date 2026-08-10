@@ -1,4 +1,5 @@
 import SwiftData
+import StoreKit
 import SwiftUI
 import os
 
@@ -44,6 +45,8 @@ struct ContentView: View {
     private var systemColorScheme
     @Environment(\.scenePhase)
     private var scenePhase
+    @Environment(\.requestReview)
+    private var requestReview
 
     // MARK: - Navigation & Sheets
 
@@ -64,6 +67,9 @@ struct ContentView: View {
     @State private var showingBudgetGroupManagement = false
     @State private var showingSettings = false
     @State private var showingOnboarding = false
+    @AppStorage("elyraBudgetAppLaunchCount")
+    private var appLaunchCount = 0
+    @State private var hasCountedCurrentLaunch = false
     @Environment(CloudKitSyncMonitor.self)
     private var cloudKitSyncMonitor
     @Environment(ProAccessManager.self)
@@ -95,11 +101,19 @@ struct ContentView: View {
             await proAccess.refreshEntitlement()
             await ensureDefaultBudgetGroupAfterCloudKitSync()
             presentOnboardingIfNeeded()
+            registerAppLaunchIfNeeded()
             processAutomaticSavingsGoals()
             processAutomaticFixedCosts()
         }
+        .task {
+            await proAccess.listenForTransactionUpdates()
+        }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
+            registerAppLaunchIfNeeded()
+            Task {
+                await proAccess.refreshEntitlement()
+            }
             selectExistingBudgetGroupIfNeeded()
             processAutomaticSavingsGoals()
             processAutomaticFixedCosts()
@@ -188,6 +202,19 @@ struct ContentView: View {
         let name = userSettings.first?.name.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard name.isEmpty else { return }
         showingOnboarding = true
+    }
+
+    private func registerAppLaunchIfNeeded() {
+        guard !showsOnboardingPreview, !hasCountedCurrentLaunch else { return }
+        hasCountedCurrentLaunch = true
+        appLaunchCount += 1
+
+        guard appLaunchCount == 2 else { return }
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1))
+            requestReview()
+        }
     }
 
     // MARK: - Hintergrund

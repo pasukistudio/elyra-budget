@@ -29,7 +29,13 @@
     "%@ verschieben" : {
 
     },
+    "%lld" : {
+
+    },
     "%lld %%" : {
+
+    },
+    "•" : {
 
     },
     "0,00" : {
@@ -67,6 +73,9 @@
 
     },
     "Alles Wichtige auf einen Blick" : {
+
+    },
+    "Ansicht" : {
 
     },
     "Anteil" : {
@@ -272,6 +281,9 @@
     "Datum" : {
 
     },
+    "Dein Beitrag" : {
+
+    },
     "Dein Name" : {
       "localizations" : {
         "en" : {
@@ -373,6 +385,9 @@
     "Endgültig löschen" : {
 
     },
+    "Erneut laden" : {
+
+    },
     "Erscheinungsbild" : {
 
     },
@@ -385,7 +400,22 @@
     "Fällig" : {
 
     },
+    "Feature vorschlagen" : {
+
+    },
+    "Feedback & Roadmap" : {
+
+    },
+    "Feedback hinzufügen" : {
+
+    },
+    "Feedback wird geladen …" : {
+
+    },
     "Fehler ausblenden" : {
+
+    },
+    "Fehler melden" : {
 
     },
     "Fertig" : {
@@ -422,6 +452,9 @@
 
     },
     "Füge die erste Einzahlung für dieses %@ hinzu." : {
+
+    },
+    "Für Beitrag abstimmen" : {
 
     },
     "Für diese Fixkosten wurden noch keine Buchungen oder geplanten Termine gefunden." : {
@@ -497,6 +530,9 @@
 
     },
     "Heute gibt es noch keine Buchungen." : {
+
+    },
+    "Hilfe & Feedback" : {
 
     },
     "Hinzufügen" : {
@@ -591,6 +627,9 @@
 
     },
     "Kontingent für diesen Monat" : {
+
+    },
+    "Kurzer Titel" : {
 
     },
     "Lege regelmäßige Ausgaben an und behalte deine monatliche Belastung im Blick." : {
@@ -721,6 +760,9 @@
     "Noch keine aktiven Sparziele oder freien Rücklagen." : {
 
     },
+    "Noch keine Beiträge" : {
+
+    },
     "Noch keine Buchungen" : {
 
     },
@@ -781,6 +823,9 @@
     "Pausiert bis" : {
 
     },
+    "Privater Support" : {
+
+    },
     "PRO" : {
 
     },
@@ -826,6 +871,12 @@
     "Schritt %lld von 4" : {
 
     },
+    "Sei die erste Person mit einem Vorschlag." : {
+
+    },
+    "Senden" : {
+
+    },
     "Sparaktionen" : {
 
     },
@@ -865,7 +916,16 @@
     "Startdatum" : {
 
     },
+    "Stimme entfernen" : {
+
+    },
+    "Support per E-Mail" : {
+
+    },
     "System" : {
+
+    },
+    "Teile Ideen, melde Fehler und stimme direkt in der App ab – ganz ohne GitHub-Konto." : {
 
     },
     "Türkis" : {
@@ -929,6 +989,12 @@
 
     },
     "Währung" : {
+
+    },
+    "Was ist passiert?" : {
+
+    },
+    "Was würdest du dir wünschen?" : {
 
     },
     "Weiter" : {
