@@ -249,8 +249,12 @@ struct FixedCostsView: View {
 
     private func delete(_ fixedCost: FixedCost) {
         modelContext.delete(fixedCost)
-        do { try modelContext.save() }
-        catch { saveErrorMessage = error.localizedDescription }
+        do {
+            try modelContext.save()
+            rescheduleNotifications()
+        } catch {
+            saveErrorMessage = error.localizedDescription
+        }
         fixedCostToDelete = nil
     }
 
@@ -262,8 +266,25 @@ struct FixedCostsView: View {
                 savingsGoals: savingsGoals,
                 modelContext: modelContext
             )
+            rescheduleNotifications()
         }
         catch { saveErrorMessage = error.localizedDescription }
+    }
+
+    private func rescheduleNotifications() {
+        let allFixedCosts = (try? modelContext.fetch(
+            FetchDescriptor<FixedCost>(sortBy: [SortDescriptor(\.createdAt)])
+        )) ?? fixedCosts
+        let allTransactions = (try? modelContext.fetch(
+            FetchDescriptor<Transaction>(sortBy: [SortDescriptor(\.date)])
+        )) ?? transactions
+
+        Task {
+            await FixedCostNotificationScheduler.reschedule(
+                fixedCosts: allFixedCosts,
+                transactions: allTransactions
+            )
+        }
     }
 }
 

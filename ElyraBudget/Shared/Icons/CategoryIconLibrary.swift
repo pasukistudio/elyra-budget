@@ -28,6 +28,34 @@ enum CategoryIconLibrary {
             ]
         ),
         CategoryIconOption(
+            systemName: "tshirt.fill",
+            keywords: [
+                "de": ["Kleidung", "Shoppen", "Mode", "T-Shirt", "Schuhe"],
+                "en": ["Clothing", "Shopping", "Fashion", "T-Shirt", "Shoes"]
+            ]
+        ),
+        CategoryIconOption(
+            systemName: "bag.fill",
+            keywords: [
+                "de": ["Shopping", "Einkaufen", "Tasche", "Kaufhaus"],
+                "en": ["Shopping", "Bag", "Department Store"]
+            ]
+        ),
+        CategoryIconOption(
+            systemName: "receipt.fill",
+            keywords: [
+                "de": ["Rechnung", "Abrechnung", "Beleg", "Zahlung"],
+                "en": ["Receipt", "Bill", "Payment", "Invoice"]
+            ]
+        ),
+        CategoryIconOption(
+            systemName: "building.columns.fill",
+            keywords: [
+                "de": ["Bank", "Konto", "Gebühren", "Finanzen"],
+                "en": ["Bank", "Account", "Fees", "Finance"]
+            ]
+        ),
+        CategoryIconOption(
             systemName: "house.fill",
             keywords: [
                 "de": [
@@ -351,6 +379,27 @@ enum CategoryIconLibrary {
                     "Health"
                 ]
             ]
+        ),
+        CategoryIconOption(
+            systemName: "music.note",
+            keywords: [
+                "de": ["Musik", "Streaming", "Spotify", "Unterhaltung"],
+                "en": ["Music", "Streaming", "Entertainment"]
+            ]
+        ),
+        CategoryIconOption(
+            systemName: "scissors",
+            keywords: [
+                "de": ["Friseur", "Kosmetik", "Beauty", "Pflege"],
+                "en": ["Hairdresser", "Beauty", "Grooming"]
+            ]
+        ),
+        CategoryIconOption(
+            systemName: "figure.2.and.child.holdinghands",
+            keywords: [
+                "de": ["Kinder", "Familie", "Kindergarten", "Betreuung"],
+                "en": ["Children", "Family", "Childcare"]
+            ]
         )
     ]
 
@@ -358,13 +407,18 @@ enum CategoryIconLibrary {
 
     static let budgetFeatured: [String] = [
         "cart.fill",
+        "tshirt.fill",
+        "bag.fill",
         "house.fill",
         "car.fill",
         "fuelpump.fill",
         "fork.knife",
+        "receipt.fill",
         "gamecontroller.fill",
         "airplane",
         "cross.case.fill",
+        "music.note",
+        "scissors",
         "pawprint.fill",
         "gift.fill"
     ]

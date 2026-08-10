@@ -28,6 +28,8 @@ struct SettingsView: View {
             appearanceSection
             currencySection
             budgetStatusSection
+            securitySection
+            notificationsSection
             accentColorSection
             proSection
             supportSection
@@ -101,6 +103,240 @@ struct SettingsView: View {
                     cloudKitSyncMonitor.clearError()
                 }
             }
+        }
+    }
+
+    private var notificationsSection: some View {
+        Section("Benachrichtigungen") {
+            if let profile = profiles.first {
+                Toggle(
+                    "Budgetwarnungen",
+                    isOn: Binding(
+                        get: { profile.budgetNotificationsEnabled },
+                        set: {
+                            profile.budgetNotificationsEnabled = $0
+                            profile.updatedAt = .now
+                            saveSettings()
+                            requestNotificationPermissionIfNeeded(for: $0)
+                        }
+                    )
+                )
+                Toggle(
+                    "Sparbeiträge",
+                    isOn: Binding(
+                        get: { profile.savingsContributionNotificationsEnabled },
+                        set: {
+                            profile.savingsContributionNotificationsEnabled = $0
+                            profile.updatedAt = .now
+                            saveSettings()
+                            requestNotificationPermissionIfNeeded(for: $0)
+                        }
+                    )
+                )
+                Toggle(
+                    "iCloud-Synchronisierungsfehler",
+                    isOn: Binding(
+                        get: { profile.syncErrorNotificationsEnabled },
+                        set: {
+                            profile.syncErrorNotificationsEnabled = $0
+                            profile.updatedAt = .now
+                            saveSettings()
+                            requestNotificationPermissionIfNeeded(for: $0)
+                        }
+                    )
+                )
+                Toggle(
+                    "Sparziel erreicht",
+                    isOn: Binding(
+                        get: { profile.savingsGoalCompletionNotificationsEnabled },
+                        set: {
+                            profile.savingsGoalCompletionNotificationsEnabled = $0
+                            profile.updatedAt = .now
+                            saveSettings()
+                            requestNotificationPermissionIfNeeded(for: $0)
+                        }
+                    )
+                )
+                Toggle(
+                    "Fehlgeschlagene automatische Buchungen",
+                    isOn: Binding(
+                        get: { profile.automaticBookingFailureNotificationsEnabled },
+                        set: {
+                            profile.automaticBookingFailureNotificationsEnabled = $0
+                            profile.updatedAt = .now
+                            saveSettings()
+                            requestNotificationPermissionIfNeeded(for: $0)
+                        }
+                    )
+                )
+                notificationToggle(
+                    "Monatlicher Finanzüberblick",
+                    isOn: Binding(
+                        get: { profile.monthlySummaryNotificationsEnabled },
+                        set: {
+                            profile.monthlySummaryNotificationsEnabled = $0
+                            profile.updatedAt = .now
+                            saveSettings()
+                            requestNotificationPermissionIfNeeded(for: $0)
+                        }
+                    )
+                )
+                notificationToggle(
+                    "Sparziel-Prognose",
+                    isOn: Binding(
+                        get: { profile.forecastRiskNotificationsEnabled },
+                        set: {
+                            profile.forecastRiskNotificationsEnabled = $0
+                            profile.updatedAt = .now
+                            saveSettings()
+                            requestNotificationPermissionIfNeeded(for: $0)
+                        }
+                    )
+                )
+                notificationToggle(
+                    "Überfällige Fixkosten",
+                    isOn: Binding(
+                        get: { profile.overdueFixedCostNotificationsEnabled },
+                        set: {
+                            profile.overdueFixedCostNotificationsEnabled = $0
+                            profile.updatedAt = .now
+                            saveSettings()
+                            requestNotificationPermissionIfNeeded(for: $0)
+                        }
+                    )
+                )
+                notificationToggle(
+                    "iCloud wieder synchronisiert",
+                    isOn: Binding(
+                        get: { profile.syncRecoveryNotificationsEnabled },
+                        set: {
+                            profile.syncRecoveryNotificationsEnabled = $0
+                            profile.updatedAt = .now
+                            saveSettings()
+                            requestNotificationPermissionIfNeeded(for: $0)
+                        }
+                    )
+                )
+                notificationToggle(
+                    "Feedback-Statusänderungen",
+                    isOn: Binding(
+                        get: { profile.feedbackStatusNotificationsEnabled },
+                        set: {
+                            profile.feedbackStatusNotificationsEnabled = $0
+                            profile.updatedAt = .now
+                            saveSettings()
+                            requestNotificationPermissionIfNeeded(for: $0)
+                        }
+                    )
+                )
+                notificationToggle(
+                    "Ungewöhnlich hohe Ausgaben",
+                    isOn: Binding(
+                        get: { profile.unusualExpenseNotificationsEnabled },
+                        set: {
+                            profile.unusualExpenseNotificationsEnabled = $0
+                            profile.updatedAt = .now
+                            saveSettings()
+                            requestNotificationPermissionIfNeeded(for: $0)
+                        }
+                    )
+                )
+                notificationToggle(
+                    "Tägliche Zusammenfassung",
+                    isOn: Binding(
+                        get: { profile.dailyDigestNotificationsEnabled },
+                        set: {
+                            profile.dailyDigestNotificationsEnabled = $0
+                            profile.updatedAt = .now
+                            saveSettings()
+                            requestNotificationPermissionIfNeeded(for: $0)
+                        }
+                    )
+                )
+                Toggle(
+                    "Ruhezeiten",
+                    isOn: Binding(
+                        get: { profile.notificationQuietHoursEnabled },
+                        set: {
+                            profile.notificationQuietHoursEnabled = $0
+                            profile.updatedAt = .now
+                            saveSettings()
+                        }
+                    )
+                )
+                if profile.notificationQuietHoursEnabled {
+                    Stepper(
+                        "Ab \(profile.notificationQuietHoursStart):00 Uhr",
+                        value: Binding(
+                            get: { profile.notificationQuietHoursStart },
+                            set: {
+                                profile.notificationQuietHoursStart = min(max($0, 0), 23)
+                                profile.updatedAt = .now
+                                saveSettings()
+                            }
+                        ),
+                        in: 0 ... 23
+                    )
+                    Stepper(
+                        "Bis \(profile.notificationQuietHoursEnd):00 Uhr",
+                        value: Binding(
+                            get: { profile.notificationQuietHoursEnd },
+                            set: {
+                                profile.notificationQuietHoursEnd = min(max($0, 0), 23)
+                                profile.updatedAt = .now
+                                saveSettings()
+                            }
+                        ),
+                        in: 0 ... 23
+                    )
+                }
+            }
+
+            Text("Fixkosten-Erinnerungen werden direkt bei der jeweiligen Fixkostenregel gesteuert.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var securitySection: some View {
+        Section("Sicherheit") {
+            if let profile = profiles.first, proAccess.hasPro {
+                Toggle(
+                    "Face ID-/Touch-ID-Sperre",
+                    isOn: Binding(
+                        get: { profile.appLockEnabled },
+                        set: {
+                            profile.appLockEnabled = $0
+                            profile.updatedAt = .now
+                            saveSettings()
+                        }
+                    )
+                )
+                Text("Elyra Budget wird beim Verlassen der App geschützt.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            } else {
+                Button {
+                    proUpgradeFeature = "Face ID-/Touch-ID-Sperre"
+                    showingProUpgrade = true
+                } label: {
+                    Label("Face ID-/Touch-ID-Sperre mit Pro", systemImage: "faceid")
+                }
+            }
+        }
+    }
+
+    private func notificationToggle(
+        _ title: LocalizedStringKey,
+        isOn: Binding<Bool>
+    ) -> some View {
+        Toggle(title, isOn: isOn)
+    }
+
+    private func requestNotificationPermissionIfNeeded(for isEnabled: Bool) {
+        guard isEnabled else { return }
+        Task {
+            _ = await FixedCostNotificationScheduler.requestAuthorizationIfNeeded()
         }
     }
 
@@ -342,69 +578,20 @@ struct SettingsView: View {
         )
     }
 
-    @ViewBuilder
     private func customColorRow(
         profile: UserSettings
     ) -> some View {
-        if proAccess.hasPro {
-            ColorPicker(
-                selection: Binding(
-                    get: {
-                        Color(
-                            hexString: profile.customAccentHex
-                        )
-                    },
-                    set: { newColor in
-                        guard let hex = newColor.toHex() else {
-                            return
-                        }
-
-                        guard profile.customAccentHex != hex else {
-                            return
-                        }
-
-                        profile.customAccentHex = hex
-                        profile.accentColorRawValue =
-                            AppAccentColor.custom.rawValue
-                        profile.updatedAt = Date()
-
-                        saveSettings()
-                    }
-                ),
-                supportsOpacity: false
-            ) {
-                Label(
-                    "Eigene Farbe",
-                    systemImage: "paintpalette"
-                )
-            }
-        } else {
-            Button {
-                proUpgradeFeature = "Eigene Akzentfarben"
-                showingProUpgrade = true
-            } label: {
-                HStack {
-                    Label(
-                        "Eigene Farbe",
-                        systemImage: "paintpalette"
-                    )
-
-                    Spacer()
-
-                    Text("PRO")
-                        .font(.caption.bold())
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(
-                            .tint.opacity(0.15),
-                            in: Capsule()
-                        )
-
-                    Image(systemName: "lock.fill")
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .buttonStyle(.plain)
+        PresetColorSelectionView(
+            selection: Binding(
+                get: { profile.customAccentHex },
+                set: { profile.customAccentHex = $0 }
+            ),
+            title: "Eigene Akzentfarbe"
+        ) { hex in
+            profile.customAccentHex = hex
+            profile.accentColorRawValue = AppAccentColor.custom.rawValue
+            profile.updatedAt = .now
+            saveSettings()
         }
     }
 

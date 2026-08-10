@@ -1,9 +1,16 @@
 import SwiftData
 import SwiftUI
+import UserNotifications
 
 @main
 struct ElyraBudgetApp: App {
+    #if os(iOS)
+    @UIApplicationDelegateAdaptor(CloudKitShareAppDelegate.self)
+    private var cloudKitShareAppDelegate
+    #endif
+
     @State private var proAccess = ProAccessManager()
+    @State private var appLockManager = AppLockManager()
     @State private var cloudKitSyncMonitor = CloudKitSyncMonitor()
 
     private let sharedModelContainer: ModelContainer = {
@@ -55,11 +62,70 @@ struct ElyraBudgetApp: App {
         }
     }()
 
+    init() {
+        let openAction = UNNotificationAction(
+            identifier: "open",
+            title: "Öffnen",
+            options: [.foreground]
+        )
+        UNUserNotificationCenter.current().setNotificationCategories([
+            UNNotificationCategory(
+                identifier: "fixed-costs",
+                actions: [openAction],
+                intentIdentifiers: [],
+                options: []
+            ),
+            UNNotificationCategory(
+                identifier: "budget",
+                actions: [openAction],
+                intentIdentifiers: [],
+                options: []
+            ),
+            UNNotificationCategory(
+                identifier: "savings",
+                actions: [openAction],
+                intentIdentifiers: [],
+                options: []
+            ),
+            UNNotificationCategory(
+                identifier: "summary",
+                actions: [openAction],
+                intentIdentifiers: [],
+                options: []
+            ),
+            UNNotificationCategory(
+                identifier: "transactions",
+                actions: [openAction],
+                intentIdentifiers: [],
+                options: []
+            ),
+            UNNotificationCategory(
+                identifier: "bookings",
+                actions: [openAction],
+                intentIdentifiers: [],
+                options: []
+            ),
+            UNNotificationCategory(
+                identifier: "sync",
+                actions: [openAction],
+                intentIdentifiers: [],
+                options: []
+            ),
+            UNNotificationCategory(
+                identifier: "feedback",
+                actions: [openAction],
+                intentIdentifiers: [],
+                options: []
+            )
+        ])
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .dismissKeyboardOnTap()
                 .environment(proAccess)
+                .environment(appLockManager)
                 .environment(cloudKitSyncMonitor)
         }
         .modelContainer(sharedModelContainer)

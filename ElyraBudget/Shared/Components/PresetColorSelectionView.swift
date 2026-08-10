@@ -7,6 +7,7 @@ struct PresetColorSelectionView: View {
 
     @Binding var selection: String
     var title: LocalizedStringResource = "Icon-Farbe"
+    var onSelectionChanged: ((String) -> Void)? = nil
     var columns: [GridItem] = Array(
         repeating: GridItem(.flexible(), spacing: 8),
         count: 5
@@ -24,6 +25,7 @@ struct PresetColorSelectionView: View {
             set: { newColor in
                 if let hex = newColor.toHex() {
                     selection = hex
+                    onSelectionChanged?(hex)
                 }
             }
         )
@@ -80,9 +82,10 @@ struct PresetColorSelectionView: View {
         let isSelected = selection.caseInsensitiveCompare(preset.hex) == .orderedSame
 
         return Button {
-            withAnimation(.easeInOut(duration: 0.15)) {
-                selection = preset.hex
-            }
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    selection = preset.hex
+                    onSelectionChanged?(preset.hex)
+                }
         } label: {
             ZStack {
                 Circle()

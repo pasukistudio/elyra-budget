@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import SwiftData
 import SwiftUI
 import Auth
 import PostgREST
@@ -124,6 +125,7 @@ private final class FeedbackService: ObservableObject {
     @Published private(set) var posts: [FeedbackPost] = []
     @Published private(set) var isLoading = false
     @Published var errorMessage: String?
+    var feedbackNotificationsEnabled = true
 
     func load() async {
         isLoading = true
@@ -146,7 +148,7 @@ private final class FeedbackService: ObservableObject {
                 .value
 
             let votedPostIDs = Set(votes.map(\.postID))
-            posts = records.map { record in
+            let loadedPosts = records.map { record in
                 FeedbackPost(
                     id: record.id,
                     kind: FeedbackKind(rawValue: record.kind) ?? .feature,
@@ -158,23 +160,60 @@ private final class FeedbackService: ObservableObject {
                     createdAt: ISO8601DateFormatter().date(from: record.createdAt) ?? .now
                 )
             }
+            for post in loadedPosts where UserDefaults.standard.bool(forKey: submittedKey(for: post.id)) {
+                let statusKey = statusKey(for: post.id)
+                if let previousStatus = UserDefaults.standard.string(forKey: statusKey),
+                   previousStatus != post.state.rawValue {
+                    Task {
+                        await AppNotificationScheduler.scheduleFeedbackStatusChange(
+                            title: post.title,
+                            state: post.state.title,
+                            enabled: feedbackNotificationsEnabled,
+                            postID: post.id
+                        )
+                    }
+                }
+                UserDefaults.standard.set(post.state.rawValue, forKey: statusKey)
+            }
+            posts = loadedPosts
             errorMessage = nil
         } catch {
             errorMessage = "Feedback konnte gerade nicht geladen werden. Bitte prüfe deine Internetverbindung und versuche es erneut."
         }
     }
 
-    func submit(kind: FeedbackKind, title: String, detail: String) async throws {
+    func submit(
+        kind: FeedbackKind,
+        title: String,
+        detail: String,
+        notifyOnUpdates: Bool
+    ) async throws {
         _ = try await ensureAnonymousUserID()
-        try await SupabaseService.client
+        if notifyOnUpdates {
+            _ = await FixedCostNotificationScheduler.requestAuthorizationIfNeeded()
+        }
+        let record: SupabaseFeedbackRecord = try await SupabaseService.client
             .from("feedback_posts")
             .insert(SupabaseFeedbackInsert(
                 kind: kind.rawValue,
                 title: title,
                 detail: detail
             ))
+            .select()
+            .single()
             .execute()
+            .value
+        UserDefaults.standard.set(notifyOnUpdates, forKey: submittedKey(for: record.id))
+        UserDefaults.standard.set(record.status, forKey: statusKey(for: record.id))
         await load()
+    }
+
+    private func submittedKey(for postID: String) -> String {
+        "elyraBudget.feedback.submitted.\(postID)"
+    }
+
+    private func statusKey(for postID: String) -> String {
+        "elyraBudget.feedback.status.\(postID)"
     }
 
     func toggleVote(for post: FeedbackPost) async throws {
@@ -232,6 +271,7 @@ struct FeedbackView: View {
     }
 
     @Environment(\.openURL) private var openURL
+    @Query private var userSettings: [UserSettings]
     @StateObject private var service = FeedbackService()
     @State private var filter: Filter = .roadmap
     @State private var composerKind: FeedbackKind = .feature
@@ -389,7 +429,10 @@ struct FeedbackView: View {
                 .accessibilityLabel("Feedback hinzufügen")
             }
         }
-        .task { await service.load() }
+        .task {
+            service.feedbackNotificationsEnabled = userSettings.first?.feedbackStatusNotificationsEnabled ?? true
+            await service.load()
+        }
         .refreshable { await service.load() }
         .alert("Abstimmung nicht gespeichert", isPresented: Binding(
             get: { voteErrorMessage != nil },
@@ -400,8 +443,13 @@ struct FeedbackView: View {
             Text(voteErrorMessage ?? "Bitte versuche es später erneut.")
         }
         .sheet(isPresented: $showingComposer) {
-            FeedbackComposerView(kind: composerKind) { kind, title, detail in
-                try await service.submit(kind: kind, title: title, detail: detail)
+            FeedbackComposerView(kind: composerKind) { kind, title, detail, notifyOnUpdates in
+                try await service.submit(
+                    kind: kind,
+                    title: title,
+                    detail: detail,
+                    notifyOnUpdates: notifyOnUpdates
+                )
             }
         }
     }
@@ -489,7 +537,7 @@ private struct FeedbackPostRow: View {
 
 private struct FeedbackComposerView: View {
     let kind: FeedbackKind
-    let onSubmit: (FeedbackKind, String, String) async throws -> Void
+    let onSubmit: (FeedbackKind, String, String, Bool) async throws -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var title = ""
@@ -497,6 +545,7 @@ private struct FeedbackComposerView: View {
     @State private var isSubmitting = false
     @State private var errorMessage: String?
     @State private var showingSubmissionConfirmation = false
+    @State private var notifyOnUpdates = false
 
     private let minimumTitleLength = 3
     private let maximumTitleLength = 120
@@ -546,6 +595,13 @@ private struct FeedbackComposerView: View {
                     Text("Titel: 3–120 Zeichen · Beschreibung: 3–5.000 Zeichen")
                 }
 
+                Section("Rückmeldung") {
+                    Toggle("Über Statusänderungen informieren", isOn: $notifyOnUpdates)
+                    Text("Du erhältst eine Mitteilung, sobald dein Beitrag geprüft, geplant oder umgesetzt wurde.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
                 if let errorMessage {
                     Section {
                         Text(errorMessage)
@@ -591,7 +647,8 @@ private struct FeedbackComposerView: View {
             try await onSubmit(
                 kind,
                 cleanedTitle,
-                cleanedDetail
+                cleanedDetail,
+                notifyOnUpdates
             )
             showingSubmissionConfirmation = true
         } catch {

@@ -71,6 +71,13 @@ struct ProUpgradeView: View {
     private var benefits: some View {
         VStack(alignment: .leading, spacing: 14) {
             benefit("Detaillierte Prognosen", systemImage: "chart.line.uptrend.xyaxis")
+            benefit("CSV- und PDF-Export", systemImage: "doc.richtext")
+            benefit("CSV-Import", systemImage: "square.and.arrow.down")
+            benefit("Face ID-/Touch-ID-Sperre", systemImage: "faceid")
+            benefit("Statistiken und Monatsberichte", systemImage: "chart.xyaxis.line")
+            benefit("Belege an Buchungen", systemImage: "paperclip")
+            benefit("Wiederkehrende Buchungen erkennen", systemImage: "arrow.triangle.2.circlepath")
+            benefit("Geteilte Budgetbereiche", systemImage: "person.2.badge.plus")
             benefit("Eigene Akzentfarben", systemImage: "paintpalette.fill")
             benefit("Mehr Kontrolle über deine Planung", systemImage: "slider.horizontal.3")
         }

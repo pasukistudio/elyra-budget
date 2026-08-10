@@ -21,6 +21,7 @@ struct FixedCostEditorView: View {
     @State private var schedule: FixedCostSchedule
     @State private var anchorDate: Date
     @State private var automaticBooking: Bool
+    @State private var reminderEnabled: Bool
     @State private var isPaused: Bool
     @State private var pauseUntil: Date
     @State private var note: String
@@ -39,6 +40,7 @@ struct FixedCostEditorView: View {
         _schedule = State(initialValue: fixedCost?.schedule ?? .fixedDay)
         _anchorDate = State(initialValue: fixedCost?.anchorDate ?? .now)
         _automaticBooking = State(initialValue: fixedCost?.automaticBooking ?? true)
+        _reminderEnabled = State(initialValue: fixedCost?.reminderEnabled ?? true)
         _isPaused = State(initialValue: fixedCost?.isPaused ?? false)
         _pauseUntil = State(initialValue: fixedCost?.pauseUntil ?? .now)
         _note = State(initialValue: fixedCost?.note ?? "")
@@ -108,6 +110,12 @@ struct FixedCostEditorView: View {
 
                     Section("Buchung") {
                         Toggle("Automatisch buchen", isOn: $automaticBooking)
+                        if !automaticBooking {
+                            Toggle("An Fälligkeit erinnern", isOn: $reminderEnabled)
+                            Text("Du erhältst am Fälligkeitstag eine lokale Mitteilung.")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
                         TextField("Notiz (optional)", text: $note, axis: .vertical)
                     }
 
@@ -221,6 +229,7 @@ struct FixedCostEditorView: View {
                 || $0.anchorDate != normalizedAnchorDate
                 || $0.dayOfMonth != normalizedDayOfMonth
                 || $0.automaticBooking != automaticBooking
+                || $0.reminderEnabled != reminderEnabled
                 || $0.isPaused != isPaused
                 || $0.pauseUntil != normalizedPauseDate
                 || $0.budget !== selectedBudget
@@ -241,6 +250,7 @@ struct FixedCostEditorView: View {
             )
         }
         value.automaticBooking = automaticBooking
+        value.reminderEnabled = reminderEnabled
         value.isPaused = isPaused
         value.pauseUntil = normalizedPauseDate
         value.note = note
@@ -257,6 +267,20 @@ struct FixedCostEditorView: View {
                     savingsGoals: savingsGoals,
                     transactions: transactions,
                     modelContext: modelContext
+                )
+            }
+
+            Task {
+                if !value.automaticBooking && value.reminderEnabled {
+                    _ = await FixedCostNotificationScheduler.requestAuthorizationIfNeeded()
+                }
+
+                let allFixedCosts = (try? modelContext.fetch(
+                    FetchDescriptor<FixedCost>(sortBy: [SortDescriptor(\.createdAt)])
+                )) ?? [value]
+                await FixedCostNotificationScheduler.reschedule(
+                    fixedCosts: allFixedCosts,
+                    transactions: transactions
                 )
             }
 

@@ -14,5 +14,9 @@
 	<array>
 		<string>CloudKit</string>
 	</array>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.de.pascal.ElyraBudget</string>
+	</array>
 </dict>
 </plist>

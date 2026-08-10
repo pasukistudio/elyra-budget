@@ -5,6 +5,8 @@ import SwiftData
 final class Budget {
     // MARK: - Grunddaten
 
+    var id: UUID = UUID()
+
     var name: String = ""
 
     // MARK: - Darstellung
@@ -64,6 +66,7 @@ final class Budget {
         sortOrder: Int = 0,
         isArchived: Bool = false
     ) {
+        self.id = UUID()
         self.name = name
         self.iconName = iconName
         self.iconColorHex = iconColorHex

@@ -177,7 +177,6 @@ struct SavingsContributionEditorView: View {
             note: note,
             goal: goal
         )
-        modelContext.insert(contribution)
 
         let transaction = Transaction(
             title: goal.name,
@@ -189,6 +188,9 @@ struct SavingsContributionEditorView: View {
             group: effectiveGroup
         )
         transaction.savingsGoalID = goal.id
+        transaction.savingsContributionID = contribution.id
+        contribution.transactionID = transaction.id
+        modelContext.insert(contribution)
         modelContext.insert(transaction)
 
         do {

@@ -63,6 +63,7 @@ struct BudgetGroupMenu: View {
 struct BudgetGroupManagementView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(ProAccessManager.self) private var proAccess
 
     @Query(
         filter: #Predicate<BudgetGroup> { !$0.isArchived },
@@ -78,6 +79,8 @@ struct BudgetGroupManagementView: View {
     ) private var archivedGroups: [BudgetGroup]
 
     @State private var editingGroup: BudgetGroup?
+    @State private var sharingGroup: BudgetGroup?
+    @State private var showingProUpgrade = false
     @State private var showingNewEditor = false
 
     var body: some View {
@@ -106,6 +109,16 @@ struct BudgetGroupManagementView: View {
                             .buttonStyle(.plain)
 
                             Menu {
+                                Button {
+                                    if proAccess.hasPro {
+                                        sharingGroup = group
+                                    } else {
+                                        showingProUpgrade = true
+                                    }
+                                } label: {
+                                    Label("Bereich teilen", systemImage: "person.2.badge.plus")
+                                }
+
                                 Button {
                                     archive(group)
                                 } label: {
@@ -183,6 +196,19 @@ struct BudgetGroupManagementView: View {
             }
             .sheet(isPresented: $showingNewEditor) {
                 BudgetGroupEditorView(group: nil)
+            }
+            .sheet(item: $sharingGroup) { group in
+                NavigationStack {
+                    CloudKitSharingView(group: group)
+                        .ignoresSafeArea()
+                        .navigationTitle("Bereich teilen")
+                        #if os(iOS)
+                        .navigationBarTitleDisplayMode(.inline)
+                        #endif
+                }
+            }
+            .sheet(isPresented: $showingProUpgrade) {
+                ProUpgradeView(feature: "Geteilte Budgetbereiche")
             }
         }
     }

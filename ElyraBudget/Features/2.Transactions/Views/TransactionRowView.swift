@@ -13,6 +13,12 @@ struct TransactionRowView: View {
                     .font(.headline)
                     .lineLimit(1)
 
+                if transaction.receiptFilename != nil {
+                    Label("Beleg", systemImage: "paperclip")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
                 if let budget = transaction.budget {
                     Text(budget.name)
                     .font(.caption)
