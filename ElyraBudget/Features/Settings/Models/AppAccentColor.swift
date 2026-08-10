@@ -8,10 +8,12 @@ enum AppAccentColor: String, CaseIterable, Identifiable {
     case orange
     case green
     case teal
+    case cyan
     case blue
     case indigo
     case purple
     case pink
+    case gray
     case custom
 
     // MARK: - Identifiable
@@ -51,6 +53,9 @@ enum AppAccentColor: String, CaseIterable, Identifiable {
         case .teal:
             return .teal
 
+        case .cyan:
+            return .cyan
+
         case .blue:
             return .blue
 
@@ -62,6 +67,9 @@ enum AppAccentColor: String, CaseIterable, Identifiable {
 
         case .pink:
             return .pink
+
+        case .gray:
+            return .gray
 
         }
     }

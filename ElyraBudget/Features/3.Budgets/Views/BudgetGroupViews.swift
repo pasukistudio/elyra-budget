@@ -222,11 +222,6 @@ private struct BudgetGroupEditorView: View {
         count: 5
     )
 
-    private let colorColumns = Array(
-        repeating: GridItem(.flexible(), spacing: 8),
-        count: 5
-    )
-
     private let featuredIcons = CategoryIconLibrary.budgetFeatured
 
     init(group: BudgetGroup?) {
@@ -300,16 +295,7 @@ private struct BudgetGroupEditorView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
 
-                    Text("Icon-Farbe")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 8)
-
-                    LazyVGrid(columns: colorColumns, spacing: 10) {
-                        ForEach(ColorPreset.allCases) { preset in
-                            colorButton(preset)
-                        }
-                    }
+                    PresetColorSelectionView(selection: $selectedColorHex)
                 }
             }
             .navigationTitle(group == nil ? "Neuer Bereich" : "Bereich bearbeiten")
@@ -413,24 +399,4 @@ private struct BudgetGroupEditorView: View {
         .buttonStyle(.plain)
     }
 
-    private func colorButton(_ preset: ColorPreset) -> some View {
-        let isSelected = selectedColorHex == preset.hex
-
-        return Button {
-            selectedColorHex = preset.hex
-        } label: {
-            ZStack {
-                Circle()
-                    .fill(preset.color)
-                    .frame(width: 36, height: 36)
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(.white)
-                }
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(preset.title)
-    }
 }

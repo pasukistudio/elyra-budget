@@ -45,10 +45,13 @@ struct BudgetsView: View {
         Group {
             if visibleBudgets.isEmpty {
                 emptyState
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
             } else {
                 budgetList
+                    .transition(.opacity)
             }
         }
+        .animation(.snappy(duration: 0.3), value: visibleBudgets.isEmpty)
         .sheet(
             isPresented: editingBudgetIsPresented
         ) {

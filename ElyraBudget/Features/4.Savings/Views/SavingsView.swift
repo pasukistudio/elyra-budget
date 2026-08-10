@@ -89,10 +89,13 @@ struct SavingsView: View {
         Group {
             if visibleGoals.isEmpty {
                 emptyState
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
             } else {
                 content
+                    .transition(.opacity)
             }
         }
+        .animation(.snappy(duration: 0.3), value: visibleGoals.isEmpty)
         .sheet(isPresented: $showingEditor) {
             if editorType == .goal {
                 SavingsGoalEditorView(goal: editingGoal, budgets: visibleBudgets, type: .goal, group: selectedGroup)
@@ -606,6 +609,7 @@ private struct SavingsGoalDetailView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(ProAccessManager.self) private var proAccess
+    @State private var showingProUpgrade = false
 
     private var savedAmount: Decimal {
         goal.savedAmount
@@ -678,7 +682,13 @@ private struct SavingsGoalDetailView: View {
                                 .foregroundStyle(forecast.isOnTrack == false ? .orange : .secondary)
                         }
                     } else {
-                        Label("Detaillierte Sparprognosen sind in Pro verfügbar.", systemImage: "lock.fill")
+                        Button {
+                            showingProUpgrade = true
+                        } label: {
+                            Label("Detaillierte Sparprognosen sind in Pro verfügbar.", systemImage: "lock.fill")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -716,6 +726,9 @@ private struct SavingsGoalDetailView: View {
                         }
                     }
                 }
+            }
+            .sheet(isPresented: $showingProUpgrade) {
+                ProUpgradeView(feature: "Detaillierte Sparprognosen")
             }
             .navigationTitle(goal.name)
             #if os(iOS)

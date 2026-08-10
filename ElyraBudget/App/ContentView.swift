@@ -5,6 +5,14 @@ import os
 
 struct ContentView: View {
 
+    /// Preview-only switch that renders the onboarding inline in Canvas.
+    /// Production callers keep the default value and use the normal startup flow.
+    private let showsOnboardingPreview: Bool
+
+    init(showsOnboardingPreview: Bool = false) {
+        self.showsOnboardingPreview = showsOnboardingPreview
+    }
+
     // MARK: - SwiftData
 
     @Environment(\.modelContext)
@@ -58,16 +66,22 @@ struct ContentView: View {
     @State private var showingOnboarding = false
     @Environment(CloudKitSyncMonitor.self)
     private var cloudKitSyncMonitor
+    @Environment(ProAccessManager.self)
+    private var proAccess
 
     // MARK: - Hauptansicht
 
     var body: some View {
         Group {
-            #if os(macOS)
-            macLayout
-            #else
-            iOSLayout
-            #endif
+            if showsOnboardingPreview {
+                OnboardingView(group: nil)
+            } else {
+                #if os(macOS)
+                macLayout
+                #else
+                iOSLayout
+                #endif
+            }
         }
         .environment(\.appCurrencyCode, appCurrencyCode)
         .sheet(isPresented: $showingBudgetGroupManagement, onDismiss: {
@@ -78,6 +92,7 @@ struct ContentView: View {
             BudgetGroupManagementView()
         }
         .task {
+            await proAccess.refreshEntitlement()
             await ensureDefaultBudgetGroupAfterCloudKitSync()
             presentOnboardingIfNeeded()
             processAutomaticSavingsGoals()
@@ -823,12 +838,31 @@ struct ContentView: View {
                 SavingsGoal.self,
                 SavingsContribution.self
             ],
-            inMemory: false
+            inMemory: true
         )
         .environment(
             \.locale,
             Locale(identifier: "de")
         )
+}
+
+#Preview("Onboarding – ContentView") {
+    ContentView(showsOnboardingPreview: true)
+        .environment(ProAccessManager())
+        .environment(CloudKitSyncMonitor(environment: ["ELYRA_BUDGET_USE_CLOUDKIT": "NO"]))
+        .modelContainer(
+            for: [
+                UserSettings.self,
+                BudgetGroup.self,
+                Budget.self,
+                Transaction.self,
+                FixedCost.self,
+                SavingsGoal.self,
+                SavingsContribution.self
+            ],
+            inMemory: true
+        )
+        .environment(\.locale, Locale(identifier: "de"))
 }
 
 #Preview("Pro – Deutsch") {
