@@ -50,6 +50,7 @@ enum SavingsGoalScheduler {
             }
         }
 
+        guard modelContext.hasChanges else { return }
         try modelContext.save()
     }
 

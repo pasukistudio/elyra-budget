@@ -74,6 +74,10 @@ private struct FeedbackPost: Codable, Identifiable, Hashable {
     let hasVoted: Bool
     let createdAt: Date
 
+    var isBuiltInRoadmapItem: Bool {
+        id.hasPrefix("roadmap-")
+    }
+
     private enum CodingKeys: String, CodingKey {
         case id
         case kind = "type"
@@ -287,12 +291,59 @@ struct FeedbackView: View {
         case .roadmap:
             service.posts.filter { post in
                 post.state == .planned || post.state == .inProgress
+            } + plannedRoadmapPosts.filter { roadmapItem in
+                !service.posts.contains(where: { $0.id == roadmapItem.id })
             }
         case .features:
             service.posts.filter { $0.kind == .feature }
         case .bugs:
             service.posts.filter { $0.kind == .bug }
         }
+    }
+
+    private var plannedRoadmapPosts: [FeedbackPost] {
+        [
+            FeedbackPost(
+                id: "roadmap-ipados-layout",
+                kind: .feature,
+                title: "Optimierte iPadOS-Version",
+                detail: "Ein großzügiges iPad-Layout mit besserer Nutzung von Split View, Querformat und größeren Bildschirmen.",
+                state: .planned,
+                voteCount: 0,
+                hasVoted: false,
+                createdAt: .distantFuture
+            ),
+            FeedbackPost(
+                id: "roadmap-macos-app",
+                kind: .feature,
+                title: "Elyra Budget für macOS",
+                detail: "Eine eigene Mac-App mit optimierter Navigation, Tastaturbedienung und gemeinsamer iCloud-Datenbasis.",
+                state: .planned,
+                voteCount: 0,
+                hasVoted: false,
+                createdAt: .distantFuture
+            ),
+            FeedbackPost(
+                id: "roadmap-receipt-recognition",
+                kind: .feature,
+                title: "Buchungen aus Belegen erfassen",
+                detail: "Rechnungen und Belege fotografieren, wichtige Daten automatisch erkennen und als Buchung vorschlagen lassen.",
+                state: .planned,
+                voteCount: 0,
+                hasVoted: false,
+                createdAt: .distantFuture
+            ),
+            FeedbackPost(
+                id: "roadmap-forecasts",
+                kind: .feature,
+                title: "Intelligentere Prognosen",
+                detail: "Frühzeitig erkennen, wie sich Budgets, Sparziele und wiederkehrende Kosten in den kommenden Monaten entwickeln.",
+                state: .planned,
+                voteCount: 0,
+                hasVoted: false,
+                createdAt: .distantFuture
+            )
+        ]
     }
 
     private var emptyStateIcon: String {
@@ -530,7 +581,7 @@ private struct FeedbackPostRow: View {
                 .frame(minWidth: 36)
             }
             .buttonStyle(.plain)
-            .disabled(isVoting)
+            .disabled(isVoting || post.isBuiltInRoadmapItem)
             .accessibilityLabel(post.hasVoted ? "Stimme entfernen" : "Für Beitrag abstimmen")
             .accessibilityValue(isVoting ? "Wird gespeichert" : "\(post.voteCount) Stimmen")
         }

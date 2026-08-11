@@ -37,6 +37,7 @@ struct SettingsView: View {
             supportSection
             cloudKitSyncSection
             dataTransferSection
+            aboutSection
 
             #if DEBUG
                 developerSection
@@ -158,6 +159,29 @@ struct SettingsView: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var aboutSection: some View {
+        Section("Über Elyra Budget") {
+            LabeledContent("Version") {
+                Text(appVersion)
+                    .foregroundStyle(.secondary)
+            }
+
+            Link(destination: URL(string: "https://github.com/pasukistudio/elyra-budget")!) {
+                Label("Projekt auf GitHub", systemImage: "chevron.left.forwardslash.chevron.right")
+            }
+
+            Link(destination: URL(string: "https://github.com/pasukistudio/elyra-budget/issues")!) {
+                Label("Fehler auf GitHub melden", systemImage: "ladybug")
+            }
+        }
+    }
+
+    private var appVersion: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "–"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "–"
+        return "\(version) (Build \(build))"
     }
 
     private var notificationsSection: some View {

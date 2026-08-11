@@ -6,7 +6,7 @@ import SwiftData
 final class CloudKitSharedAreaService {
     static let shared = CloudKitSharedAreaService()
 
-    static let containerIdentifier = "iCloud.de.pascal.ElyraBudgetNew"
+    static let containerIdentifier = "iCloud.de.pasukistudio.elyrabudget"
     private let container = CKContainer(identifier: containerIdentifier)
     private let zoneID = CKRecordZone.ID(zoneName: "SharedBudgetAreas", ownerName: CKCurrentUserDefaultName)
     private let sharedAreaPrefix = "elyraBudget.cloudKitSharedArea."

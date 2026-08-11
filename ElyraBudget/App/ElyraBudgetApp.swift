@@ -38,7 +38,7 @@ struct ElyraBudgetApp: App {
                 schema: schema,
                 isStoredInMemoryOnly: false,
                 cloudKitDatabase: .private(
-                    "iCloud.de.pascal.ElyraBudgetNew"
+                    "iCloud.de.pasukistudio.elyrabudget"
                 )
             )
         } else {

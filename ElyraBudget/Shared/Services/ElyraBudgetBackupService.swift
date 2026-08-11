@@ -172,13 +172,14 @@ enum ElyraBudgetBackupError: LocalizedError {
         case .invalidFile:
             return "Die Sicherungsdatei ist ungültig oder unvollständig."
         case .unsupportedVersion(let version):
-            return "Diese Sicherungsdatei benötigt eine neuere App-Version (Version (version))."
+            return "Diese Sicherungsdatei benötigt eine neuere App-Version (Version \(version))."
         case .saveFailed(let error):
-            return "Die importierten Daten konnten nicht gespeichert werden: (error.localizedDescription)"
+            return "Die importierten Daten konnten nicht gespeichert werden: \(error.localizedDescription)"
         }
     }
 }
 
+@MainActor
 enum ElyraBudgetBackupService {
     static func exportData(from modelContext: ModelContext) throws -> Data {
         let backup = ElyraBudgetBackup(

@@ -13,6 +13,8 @@ struct ProUpgradeView: View {
                 VStack(spacing: 24) {
                     hero
                     benefits
+                    platformNote
+                    planSelection
                     purchaseAction
                 }
                 .padding(24)
@@ -91,9 +93,9 @@ struct ProUpgradeView: View {
             if proAccess.hasPro {
                 Label("Pro ist bereits freigeschaltet", systemImage: "checkmark.seal.fill")
                     .foregroundStyle(.green)
-            } else if let product = proAccess.product {
+            } else if let product = proAccess.selectedProduct {
                 Button {
-                    Task { await proAccess.purchase() }
+                    Task { await proAccess.purchase(plan: proAccess.selectedPlan) }
                 } label: {
                     Text("Pro kaufen – \(product.displayPrice)")
                         .frame(maxWidth: .infinity)
@@ -130,6 +132,68 @@ struct ProUpgradeView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
+    }
+
+    private var planSelection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Wähle dein Pro-Modell")
+                .font(.headline)
+
+            ForEach(ProProductPlan.allCases) { plan in
+                Button {
+                    proAccess.selectedPlan = plan
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: proAccess.selectedPlan == plan
+                              ? "checkmark.circle.fill"
+                              : "circle")
+                            .foregroundStyle(proAccess.selectedPlan == plan ? Color.accentColor : .secondary)
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(plan.title)
+                                .font(.headline)
+                            Text(plan.subtitle)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        if let product = proAccess.products[plan.productID] {
+                            Text(product.displayPrice)
+                                .font(.headline)
+                        } else {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(12)
+                .background(
+                    proAccess.selectedPlan == plan
+                        ? Color.accentColor.opacity(0.12)
+                        : Color.secondary.opacity(0.08),
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                )
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var platformNote: some View {
+        Label {
+            Text("Elyra Budget startet mit iOS. Eine optimierte iPadOS-Version und die Mac-App folgen nach einer eigenen Testphase. Die Mac-App kann zunächst 7 Tage kostenlos getestet werden und benötigt danach Pro.")
+        } icon: {
+            Image(systemName: "info.circle.fill")
+                .foregroundStyle(.tint)
+        }
+        .font(.footnote)
+        .foregroundStyle(.secondary)
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private func benefit(_ title: LocalizedStringKey, systemImage: String) -> some View {

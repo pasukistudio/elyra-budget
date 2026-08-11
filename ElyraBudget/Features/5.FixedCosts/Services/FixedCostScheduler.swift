@@ -57,6 +57,7 @@ enum FixedCostScheduler {
             }
         }
 
+        guard modelContext.hasChanges else { return }
         try modelContext.save()
     }
 

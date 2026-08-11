@@ -1,4 +1,5 @@
 import CoreData
+import CloudKit
 import Foundation
 import Observation
 import SwiftUI
@@ -119,8 +120,32 @@ final class CloudKitSyncMonitor {
             errorMessage = nil
         } else {
             status = .failed
-            errorMessage = error?.localizedDescription ?? "Unbekannter iCloud-Fehler."
+            errorMessage = Self.detailedErrorDescription(error)
         }
+    }
+
+    private static func detailedErrorDescription(_ error: Error?) -> String {
+        guard let error else { return "Unbekannter iCloud-Fehler." }
+
+        guard let cloudKitError = error as? CKError else {
+            return error.localizedDescription
+        }
+
+        var details = "CKError \(cloudKitError.code.rawValue): \(cloudKitError.localizedDescription)"
+
+        if let underlyingError = cloudKitError.userInfo[NSUnderlyingErrorKey] as? Error {
+            details += " Ursache: \(underlyingError.localizedDescription)"
+        }
+
+        let additionalInfo = cloudKitError.userInfo
+            .filter { key, _ in key != NSUnderlyingErrorKey }
+            .map { "($0.key)=\($0.value)" }
+            .joined(separator: ", ")
+        if !additionalInfo.isEmpty {
+            details += " Details: \(additionalInfo)"
+        }
+
+        return details
     }
 
     func clearError() {
