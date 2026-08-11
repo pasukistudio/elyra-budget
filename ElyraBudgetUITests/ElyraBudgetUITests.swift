@@ -23,11 +23,54 @@ final class ElyraBudgetUITests: XCTestCase {
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    private func launchTestApp() -> XCUIApplication {
         let app = XCUIApplication()
+        app.launchArguments += ["-ui-testing-skip-onboarding"]
         app.launchEnvironment["ELYRA_BUDGET_USE_CLOUDKIT"] = "NO"
         app.launch()
+        return app
+    }
+
+    @MainActor
+    func testPrimaryNavigationAndBudgetEditorAreAvailable() throws {
+        let app = launchTestApp()
+
+        let budgetsTab = app.tabBars.buttons["Budgets"]
+        XCTAssertTrue(budgetsTab.waitForExistence(timeout: 8))
+        budgetsTab.tap()
+
+        let actions = app.buttons["Budgetaktionen"]
+        XCTAssertTrue(actions.waitForExistence(timeout: 5))
+        actions.tap()
+
+        let newBudget = app.buttons["Neues Budget"]
+        XCTAssertTrue(newBudget.waitForExistence(timeout: 5))
+        newBudget.tap()
+        XCTAssertTrue(app.navigationBars["Neues Budget"].waitForExistence(timeout: 5))
+
+        app.buttons["Abbrechen"].tap()
+    }
+
+    @MainActor
+    func testTransactionActionsMenuIsAvailable() throws {
+        let app = launchTestApp()
+
+        let transactionsTab = app.tabBars.buttons["Buchungen"]
+        XCTAssertTrue(transactionsTab.waitForExistence(timeout: 8))
+        transactionsTab.tap()
+
+        let actions = app.buttons["Buchungsaktionen"]
+        XCTAssertTrue(actions.waitForExistence(timeout: 5))
+        actions.tap()
+
+        XCTAssertTrue(app.buttons["Neue Buchung"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["CSV exportieren"].exists)
+    }
+
+    @MainActor
+    func testExample() throws {
+        // UI tests must launch the application that they test.
+        let app = launchTestApp()
 
         // Use XCTAssert and related functions to verify your tests produce the correct results.
         // XCUIAutomation Documentation

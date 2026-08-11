@@ -13,6 +13,7 @@ enum AppNotificationScheduler {
     private static let overduePrefix = "fixed-cost-overdue-"
     private static let unusualExpensePrefix = "unusual-expense-"
     private static let syncRecoveryPrefix = "icloud-sync-recovered-"
+    private static let dailyDigestIdentifier = "daily-digest"
     private static let reminderHour = 9
 
     static func reschedule(
@@ -41,7 +42,9 @@ enum AppNotificationScheduler {
             summaryPrefix,
             forecastPrefix,
             overduePrefix,
-            unusualExpensePrefix
+            unusualExpensePrefix,
+            failurePrefix,
+            dailyDigestIdentifier
         ]
         let oldIdentifiers = pendingRequests
             .map { $0.identifier }
@@ -220,13 +223,19 @@ enum AppNotificationScheduler {
         content.sound = .default
         content.threadIdentifier = "sync"
         let identifier = "\(syncRecoveryPrefix)\(dayKey(for: now, calendar: .autoupdatingCurrent))"
-        try? await center.add(
-            UNNotificationRequest(
-                identifier: identifier,
-                content: content,
-                trigger: immediateTrigger()
+        do {
+            try await center.add(
+                UNNotificationRequest(
+                    identifier: identifier,
+                    content: content,
+                    trigger: immediateTrigger()
+                )
             )
-        )
+        } catch {
+            AppLogger.persistence.error(
+                "Sync-Wiederherstellungsbenachrichtigung konnte nicht geplant werden: \(error)"
+            )
+        }
     }
 
     static func scheduleFeedbackStatusChange(
@@ -246,13 +255,19 @@ enum AppNotificationScheduler {
         content.sound = .default
         content.threadIdentifier = "feedback"
         content.categoryIdentifier = "feedback"
-        try? await center.add(
-            UNNotificationRequest(
-                identifier: "feedback-status-\(postID)",
-                content: content,
-                trigger: immediateTrigger()
+        do {
+            try await center.add(
+                UNNotificationRequest(
+                    identifier: "feedback-status-\(postID)",
+                    content: content,
+                    trigger: immediateTrigger()
+                )
             )
-        )
+        } catch {
+            AppLogger.persistence.error(
+                "Feedback-Benachrichtigung konnte nicht geplant werden: \(error)"
+            )
+        }
     }
 
     private static func scheduleBudgetWarnings(
@@ -339,9 +354,15 @@ enum AppNotificationScheduler {
                     repeats: false
                 )
                 let identifier = "\(savingsPrefix)\(goal.id.uuidString)-\(dayKey(for: occurrence, calendar: calendar))"
-                try? await center.add(
-                    UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
-                )
+                do {
+                    try await center.add(
+                        UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+                    )
+                } catch {
+                    AppLogger.persistence.error(
+                        "Sparbeitragsbenachrichtigung konnte nicht geplant werden: \(error)"
+                    )
+                }
             }
         }
     }
@@ -572,17 +593,23 @@ enum AppNotificationScheduler {
         content.sound = .default
         content.threadIdentifier = "summary"
         content.categoryIdentifier = "summary"
-        let identifier = "daily-digest"
-        try? await center.add(
-            UNNotificationRequest(
-                identifier: identifier,
-                content: content,
-                trigger: UNCalendarNotificationTrigger(
-                    dateMatching: calendar.dateComponents([.year, .month, .day, .hour, .minute], from: deliveryDate),
-                    repeats: false
+        let identifier = dailyDigestIdentifier
+        do {
+            try await center.add(
+                UNNotificationRequest(
+                    identifier: identifier,
+                    content: content,
+                    trigger: UNCalendarNotificationTrigger(
+                        dateMatching: calendar.dateComponents([.year, .month, .day, .hour, .minute], from: deliveryDate),
+                        repeats: false
+                    )
                 )
             )
-        )
+        } catch {
+            AppLogger.persistence.error(
+                "Tagesüberblick konnte nicht geplant werden: \(error)"
+            )
+        }
     }
 
     private static func configureQuietHours(using settings: UserSettings?) {

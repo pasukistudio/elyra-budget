@@ -1,5 +1,11 @@
 import SwiftData
 import SwiftUI
+import os
+
+private struct FixedCostEditorRequest: Identifiable {
+    let id = UUID()
+    let fixedCost: FixedCost?
+}
 
 struct FixedCostsView: View {
     @Binding private var addRequested: Bool
@@ -26,8 +32,10 @@ struct FixedCostsView: View {
     @Query(sort: [SortDescriptor<SavingsGoal>(\.createdAt)])
     private var savingsGoals: [SavingsGoal]
 
-    @State private var editingFixedCost: FixedCost?
-    @State private var showingEditor = false
+    @Query(sort: [SortDescriptor<SavingsContribution>(\.date)])
+    private var savingsContributions: [SavingsContribution]
+
+    @State private var fixedCostEditorRequest: FixedCostEditorRequest?
     @State private var savingsGoalFromFixedCost: FixedCost?
     @State private var showingSavingsGoalEditor = false
     @State private var fixedCostToDelete: FixedCost?
@@ -82,15 +90,14 @@ struct FixedCostsView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
-                    editingFixedCost = nil
-                    showingEditor = true
+                    fixedCostEditorRequest = FixedCostEditorRequest(fixedCost: nil)
                 } label: {
                     Label("Fixkosten hinzufügen", systemImage: "plus")
                 }
             }
         }
-        .sheet(isPresented: $showingEditor) {
-            FixedCostEditorView(fixedCost: editingFixedCost, budgets: visibleBudgets, group: selectedGroup)
+        .sheet(item: $fixedCostEditorRequest) { request in
+            FixedCostEditorView(fixedCost: request.fixedCost, budgets: visibleBudgets, group: selectedGroup)
         }
         .sheet(isPresented: $showingSavingsGoalEditor) {
             SavingsGoalEditorView(
@@ -117,8 +124,7 @@ struct FixedCostsView: View {
         .saveErrorAlert(message: $saveErrorMessage)
         .onChange(of: addRequested) { _, requested in
             guard requested else { return }
-            editingFixedCost = nil
-            showingEditor = true
+            fixedCostEditorRequest = FixedCostEditorRequest(fixedCost: nil)
             addRequested = false
         }
     }
@@ -149,8 +155,7 @@ struct FixedCostsView: View {
                     FixedCostRowView(fixedCost: fixedCost, currencyCode: currencyCode)
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            editingFixedCost = fixedCost
-                            showingEditor = true
+                            fixedCostEditorRequest = FixedCostEditorRequest(fixedCost: fixedCost)
                         }
                         .contextMenu {
                             Button {
@@ -179,8 +184,7 @@ struct FixedCostsView: View {
                         FixedCostRowView(fixedCost: fixedCost, currencyCode: currencyCode)
                             .contentShape(Rectangle())
                             .onTapGesture {
-                                editingFixedCost = fixedCost
-                                showingEditor = true
+                                fixedCostEditorRequest = FixedCostEditorRequest(fixedCost: fixedCost)
                             }
                             .contextMenu {
                                 Button {
@@ -204,7 +208,11 @@ struct FixedCostsView: View {
                 }
             }
         }
+        #if os(iOS)
         .listStyle(.insetGrouped)
+        #else
+        .listStyle(.inset)
+        #endif
     }
 
     private var summary: some View {
@@ -233,8 +241,7 @@ struct FixedCostsView: View {
             Text("Lege regelmäßige Ausgaben an und behalte deine monatliche Belastung im Blick.")
         } actions: {
             Button("Fixkosten hinzufügen") {
-                editingFixedCost = nil
-                showingEditor = true
+                fixedCostEditorRequest = FixedCostEditorRequest(fixedCost: nil)
             }
             .buttonStyle(.borderedProminent)
         }
@@ -266,18 +273,37 @@ struct FixedCostsView: View {
                 savingsGoals: savingsGoals,
                 modelContext: modelContext
             )
+            let allTransactions = try modelContext.fetch(FetchDescriptor<Transaction>())
+            let allContributions = try modelContext.fetch(FetchDescriptor<SavingsContribution>())
+            for transaction in allTransactions {
+                try TransactionRoundUpService.applyIfNeeded(
+                    to: transaction,
+                    group: transaction.effectiveGroup,
+                    savingsGoals: savingsGoals,
+                    contributions: allContributions,
+                    modelContext: modelContext
+                )
+            }
             rescheduleNotifications()
         }
         catch { saveErrorMessage = error.localizedDescription }
     }
 
     private func rescheduleNotifications() {
-        let allFixedCosts = (try? modelContext.fetch(
-            FetchDescriptor<FixedCost>(sortBy: [SortDescriptor(\.createdAt)])
-        )) ?? fixedCosts
-        let allTransactions = (try? modelContext.fetch(
-            FetchDescriptor<Transaction>(sortBy: [SortDescriptor(\.date)])
-        )) ?? transactions
+        var allFixedCosts = fixedCosts
+        var allTransactions = transactions
+        do {
+            allFixedCosts = try modelContext.fetch(
+                FetchDescriptor<FixedCost>(sortBy: [SortDescriptor(\.createdAt)])
+            )
+            allTransactions = try modelContext.fetch(
+                FetchDescriptor<Transaction>(sortBy: [SortDescriptor(\.date)])
+            )
+        } catch {
+            AppLogger.persistence.error(
+                "Daten für Fixkostenbenachrichtigungen konnten nicht geladen werden: \(error)"
+            )
+        }
 
         Task {
             await FixedCostNotificationScheduler.reschedule(
@@ -378,7 +404,11 @@ private struct FixedCostHistoryView: View {
                             }
                         }
                     }
+                    #if os(iOS)
                     .listStyle(.insetGrouped)
+                    #else
+                    .listStyle(.inset)
+                    #endif
                 }
             }
             .navigationTitle(fixedCost.title)

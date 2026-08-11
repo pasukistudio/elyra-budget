@@ -38,7 +38,10 @@ final class CloudKitSharedAreaService {
 
         let share: CKShare
         if let shareReference = root.share {
-            share = try await database.record(for: shareReference.recordID) as! CKShare
+            guard let existingShare = try await database.record(for: shareReference.recordID) as? CKShare else {
+                throw SharedBudgetAreaError.invalidShareRecord
+            }
+            share = existingShare
         } else {
             share = CKShare(rootRecord: root)
             share[CKShare.SystemFieldKey.title] = group.name as CKRecordValue
@@ -54,7 +57,10 @@ final class CloudKitSharedAreaService {
         metadata: CKShare.Metadata,
         modelContext: ModelContext
     ) async throws -> BudgetGroup {
-        let record = try await container.sharedCloudDatabase.record(for: metadata.rootRecordID)
+        guard let rootRecordID = metadata.hierarchicalRootRecordID else {
+            throw SharedBudgetAreaError.invalidShareRecord
+        }
+        let record = try await container.sharedCloudDatabase.record(for: rootRecordID)
         guard let data = record["payload"] as? Data else {
             throw SharedBudgetAreaError.unsupportedPayload
         }
@@ -125,11 +131,14 @@ final class CloudKitSharedAreaService {
 
 enum SharedBudgetAreaError: LocalizedError {
     case unsupportedPayload
+    case invalidShareRecord
 
     var errorDescription: String? {
         switch self {
         case .unsupportedPayload:
             return "Die geteilten Bereichsdaten konnten nicht gelesen werden."
+        case .invalidShareRecord:
+            return "Der geteilte Budgetbereich ist nicht gültig und konnte nicht geöffnet werden."
         }
     }
 }

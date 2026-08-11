@@ -90,6 +90,25 @@ enum CategoryIconLibrary {
             ]
         ),
         CategoryIconOption(
+            systemName: "motorcycle.fill",
+            keywords: [
+                "de": [
+                    "Motorrad",
+                    "Moped",
+                    "Roller",
+                    "Zweirad",
+                    "Mobilität"
+                ],
+                "en": [
+                    "Motorcycle",
+                    "Motorbike",
+                    "Scooter",
+                    "Two-Wheeler",
+                    "Mobility"
+                ]
+            ]
+        ),
+        CategoryIconOption(
             systemName: "fuelpump.fill",
             keywords: [
                 "de": [
@@ -188,6 +207,23 @@ enum CategoryIconLibrary {
                     "Doctor",
                     "Medicine",
                     "Pharmacy"
+                ]
+            ]
+        ),
+        CategoryIconOption(
+            systemName: "eyeglasses",
+            keywords: [
+                "de": [
+                    "Brille",
+                    "Sehhilfe",
+                    "Optiker",
+                    "Augen"
+                ],
+                "en": [
+                    "Glasses",
+                    "Eyewear",
+                    "Optician",
+                    "Eyes"
                 ]
             ]
         ),
@@ -411,12 +447,14 @@ enum CategoryIconLibrary {
         "bag.fill",
         "house.fill",
         "car.fill",
+        "motorcycle.fill",
         "fuelpump.fill",
         "fork.knife",
         "receipt.fill",
         "gamecontroller.fill",
         "airplane",
         "cross.case.fill",
+        "eyeglasses",
         "music.note",
         "scissors",
         "pawprint.fill",
@@ -432,6 +470,7 @@ enum CategoryIconLibrary {
         "chart.line.uptrend.xyaxis",
         "house.fill",
         "car.fill",
+        "motorcycle.fill",
         "airplane",
         "graduationcap.fill",
         "laptopcomputer",

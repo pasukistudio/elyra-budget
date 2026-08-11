@@ -1,6 +1,7 @@
 import SwiftData
 import OSLog
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @Environment(ProAccessManager.self) private var proAccess
@@ -11,16 +12,17 @@ struct SettingsView: View {
     @State private var showingProUpgrade = false
     @State private var proUpgradeFeature = "Mehr Funktionen"
     @State private var saveErrorMessage: String?
+    @State private var showingBackupExporter = false
+    @State private var backupDocument: ElyraBudgetBackupDocument?
+    @State private var showingBackupImporter = false
+    @State private var pendingBackupData: Data?
+    @State private var showingImportConfirmation = false
 
     @Query(
         sort: \UserSettings.updatedAt,
         order: .reverse
     )
     private var profiles: [UserSettings]
-
-    private let columns = [
-        GridItem(.adaptive(minimum: 72), spacing: 12)
-    ]
 
     var body: some View {
         Form {
@@ -34,6 +36,7 @@ struct SettingsView: View {
             proSection
             supportSection
             cloudKitSyncSection
+            dataTransferSection
 
             #if DEBUG
                 developerSection
@@ -60,6 +63,37 @@ struct SettingsView: View {
             .saveErrorAlert(message: $saveErrorMessage)
             .sheet(isPresented: $showingProUpgrade) {
                 ProUpgradeView(feature: proUpgradeFeature)
+            }
+            .fileExporter(
+                isPresented: $showingBackupExporter,
+                document: backupDocument,
+                contentType: .json,
+                defaultFilename: "ElyraBudget-Backup"
+            ) { result in
+                if case .failure(let error) = result {
+                    saveErrorMessage = "Die Sicherung konnte nicht exportiert werden: \(error.localizedDescription)"
+                }
+            }
+            .fileImporter(
+                isPresented: $showingBackupImporter,
+                allowedContentTypes: [.json],
+                allowsMultipleSelection: false
+            ) { result in
+                handleBackupImportSelection(result)
+            }
+            .confirmationDialog(
+                "Backup importieren?",
+                isPresented: $showingImportConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Bestehende Daten ersetzen", role: .destructive) {
+                    importPendingBackup()
+                }
+                Button("Abbrechen", role: .cancel) {
+                    pendingBackupData = nil
+                }
+            } message: {
+                Text("Die lokalen Daten dieser App werden durch die Sicherung ersetzt. Dieser Schritt kann nicht rückgängig gemacht werden.")
             }
     }
 
@@ -106,196 +140,65 @@ struct SettingsView: View {
         }
     }
 
-    private var notificationsSection: some View {
-        Section("Benachrichtigungen") {
-            if let profile = profiles.first {
-                Toggle(
-                    "Budgetwarnungen",
-                    isOn: Binding(
-                        get: { profile.budgetNotificationsEnabled },
-                        set: {
-                            profile.budgetNotificationsEnabled = $0
-                            profile.updatedAt = .now
-                            saveSettings()
-                            requestNotificationPermissionIfNeeded(for: $0)
-                        }
-                    )
-                )
-                Toggle(
-                    "Sparbeiträge",
-                    isOn: Binding(
-                        get: { profile.savingsContributionNotificationsEnabled },
-                        set: {
-                            profile.savingsContributionNotificationsEnabled = $0
-                            profile.updatedAt = .now
-                            saveSettings()
-                            requestNotificationPermissionIfNeeded(for: $0)
-                        }
-                    )
-                )
-                Toggle(
-                    "iCloud-Synchronisierungsfehler",
-                    isOn: Binding(
-                        get: { profile.syncErrorNotificationsEnabled },
-                        set: {
-                            profile.syncErrorNotificationsEnabled = $0
-                            profile.updatedAt = .now
-                            saveSettings()
-                            requestNotificationPermissionIfNeeded(for: $0)
-                        }
-                    )
-                )
-                Toggle(
-                    "Sparziel erreicht",
-                    isOn: Binding(
-                        get: { profile.savingsGoalCompletionNotificationsEnabled },
-                        set: {
-                            profile.savingsGoalCompletionNotificationsEnabled = $0
-                            profile.updatedAt = .now
-                            saveSettings()
-                            requestNotificationPermissionIfNeeded(for: $0)
-                        }
-                    )
-                )
-                Toggle(
-                    "Fehlgeschlagene automatische Buchungen",
-                    isOn: Binding(
-                        get: { profile.automaticBookingFailureNotificationsEnabled },
-                        set: {
-                            profile.automaticBookingFailureNotificationsEnabled = $0
-                            profile.updatedAt = .now
-                            saveSettings()
-                            requestNotificationPermissionIfNeeded(for: $0)
-                        }
-                    )
-                )
-                notificationToggle(
-                    "Monatlicher Finanzüberblick",
-                    isOn: Binding(
-                        get: { profile.monthlySummaryNotificationsEnabled },
-                        set: {
-                            profile.monthlySummaryNotificationsEnabled = $0
-                            profile.updatedAt = .now
-                            saveSettings()
-                            requestNotificationPermissionIfNeeded(for: $0)
-                        }
-                    )
-                )
-                notificationToggle(
-                    "Sparziel-Prognose",
-                    isOn: Binding(
-                        get: { profile.forecastRiskNotificationsEnabled },
-                        set: {
-                            profile.forecastRiskNotificationsEnabled = $0
-                            profile.updatedAt = .now
-                            saveSettings()
-                            requestNotificationPermissionIfNeeded(for: $0)
-                        }
-                    )
-                )
-                notificationToggle(
-                    "Überfällige Fixkosten",
-                    isOn: Binding(
-                        get: { profile.overdueFixedCostNotificationsEnabled },
-                        set: {
-                            profile.overdueFixedCostNotificationsEnabled = $0
-                            profile.updatedAt = .now
-                            saveSettings()
-                            requestNotificationPermissionIfNeeded(for: $0)
-                        }
-                    )
-                )
-                notificationToggle(
-                    "iCloud wieder synchronisiert",
-                    isOn: Binding(
-                        get: { profile.syncRecoveryNotificationsEnabled },
-                        set: {
-                            profile.syncRecoveryNotificationsEnabled = $0
-                            profile.updatedAt = .now
-                            saveSettings()
-                            requestNotificationPermissionIfNeeded(for: $0)
-                        }
-                    )
-                )
-                notificationToggle(
-                    "Feedback-Statusänderungen",
-                    isOn: Binding(
-                        get: { profile.feedbackStatusNotificationsEnabled },
-                        set: {
-                            profile.feedbackStatusNotificationsEnabled = $0
-                            profile.updatedAt = .now
-                            saveSettings()
-                            requestNotificationPermissionIfNeeded(for: $0)
-                        }
-                    )
-                )
-                notificationToggle(
-                    "Ungewöhnlich hohe Ausgaben",
-                    isOn: Binding(
-                        get: { profile.unusualExpenseNotificationsEnabled },
-                        set: {
-                            profile.unusualExpenseNotificationsEnabled = $0
-                            profile.updatedAt = .now
-                            saveSettings()
-                            requestNotificationPermissionIfNeeded(for: $0)
-                        }
-                    )
-                )
-                notificationToggle(
-                    "Tägliche Zusammenfassung",
-                    isOn: Binding(
-                        get: { profile.dailyDigestNotificationsEnabled },
-                        set: {
-                            profile.dailyDigestNotificationsEnabled = $0
-                            profile.updatedAt = .now
-                            saveSettings()
-                            requestNotificationPermissionIfNeeded(for: $0)
-                        }
-                    )
-                )
-                Toggle(
-                    "Ruhezeiten",
-                    isOn: Binding(
-                        get: { profile.notificationQuietHoursEnabled },
-                        set: {
-                            profile.notificationQuietHoursEnabled = $0
-                            profile.updatedAt = .now
-                            saveSettings()
-                        }
-                    )
-                )
-                if profile.notificationQuietHoursEnabled {
-                    Stepper(
-                        "Ab \(profile.notificationQuietHoursStart):00 Uhr",
-                        value: Binding(
-                            get: { profile.notificationQuietHoursStart },
-                            set: {
-                                profile.notificationQuietHoursStart = min(max($0, 0), 23)
-                                profile.updatedAt = .now
-                                saveSettings()
-                            }
-                        ),
-                        in: 0 ... 23
-                    )
-                    Stepper(
-                        "Bis \(profile.notificationQuietHoursEnd):00 Uhr",
-                        value: Binding(
-                            get: { profile.notificationQuietHoursEnd },
-                            set: {
-                                profile.notificationQuietHoursEnd = min(max($0, 0), 23)
-                                profile.updatedAt = .now
-                                saveSettings()
-                            }
-                        ),
-                        in: 0 ... 23
-                    )
-                }
+    private var dataTransferSection: some View {
+        Section("Daten übertragen") {
+            Button {
+                prepareBackupExport()
+            } label: {
+                Label("Backup exportieren", systemImage: "square.and.arrow.up")
             }
 
-            Text("Fixkosten-Erinnerungen werden direkt bei der jeweiligen Fixkostenregel gesteuert.")
+            Button {
+                showingBackupImporter = true
+            } label: {
+                Label("Backup importieren", systemImage: "square.and.arrow.down")
+            }
+
+            Text("Übertrage deine Daten lokal zwischen App-Versionen. Belege werden mitgesichert.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var notificationsSection: some View {
+        Section("Benachrichtigungen") {
+            NavigationLink {
+                NotificationSettingsView(
+                    profile: profiles.first,
+                    saveSettings: saveSettings,
+                    requestPermission: requestNotificationPermissionIfNeeded(for:)
+                )
+            } label: {
+                HStack(spacing: 12) {
+                    Label("Benachrichtigungen", systemImage: "bell.badge.fill")
+                    Spacer()
+                    Text(notificationSummary)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    private var notificationSummary: String {
+        guard let profile = profiles.first else { return "Wird geladen …" }
+
+        let enabledCount = [
+            profile.budgetNotificationsEnabled,
+            profile.savingsContributionNotificationsEnabled,
+            profile.syncErrorNotificationsEnabled,
+            profile.savingsGoalCompletionNotificationsEnabled,
+            profile.automaticBookingFailureNotificationsEnabled,
+            profile.monthlySummaryNotificationsEnabled,
+            profile.forecastRiskNotificationsEnabled,
+            profile.overdueFixedCostNotificationsEnabled,
+            profile.syncRecoveryNotificationsEnabled,
+            profile.feedbackStatusNotificationsEnabled,
+            profile.unusualExpenseNotificationsEnabled,
+            profile.dailyDigestNotificationsEnabled
+        ].filter { $0 }.count
+
+        return enabledCount == 0 ? "Aus" : "\(enabledCount) aktiv"
     }
 
     private var securitySection: some View {
@@ -324,13 +227,6 @@ struct SettingsView: View {
                 }
             }
         }
-    }
-
-    private func notificationToggle(
-        _ title: LocalizedStringKey,
-        isOn: Binding<Bool>
-    ) -> some View {
-        Toggle(title, isOn: isOn)
     }
 
     private func requestNotificationPermissionIfNeeded(for isEnabled: Bool) {
@@ -486,96 +382,15 @@ struct SettingsView: View {
     private var accentColorSection: some View {
         Section {
             if let profile = profiles.first {
-                LazyVGrid(
-                    columns: columns,
-                    spacing: 16
-                ) {
-                    ForEach(freeAccentColors) { accentColor in
-                        accentColorButton(
-                            accentColor,
-                            profile: profile
-                        )
-                    }
-                }
-                .padding(.vertical, 8)
-
                 customColorRow(profile: profile)
             }
         } header: {
             Text("Akzentfarbe")
         } footer: {
             Text(
-                "Eine eigene Akzentfarbe ist Bestandteil von Elyra Budget Pro."
+                "Eigene Farben sind Bestandteil von Elyra Budget Pro."
             )
         }
-    }
-
-    private var freeAccentColors: [AppAccentColor] {
-        AppAccentColor.allCases.filter {
-            !$0.isProOnly
-        }
-    }
-
-    private func accentColorButton(
-        _ accentColor: AppAccentColor,
-        profile: UserSettings
-    ) -> some View {
-        let isSelected =
-            profile.accentColorRawValue ==
-            accentColor.rawValue
-
-        return Button {
-            withAnimation {
-                profile.accentColorRawValue =
-                    accentColor.rawValue
-
-                if let preset = accentColor.preset {
-                    profile.customAccentHex =
-                        preset.hex
-                }
-
-                profile.updatedAt = Date()
-                saveSettings()
-            }
-        } label: {
-            VStack(spacing: 7) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            previewColor(
-                                for: accentColor
-                            )
-                        )
-                        .frame(
-                            width: 38,
-                            height: 38
-                        )
-
-                    if isSelected {
-                        Image(systemName: "checkmark")
-                            .font(.headline)
-                            .foregroundStyle(
-                                checkmarkColor(
-                                    for: accentColor
-                                )
-                            )
-                    }
-                }
-
-                Text(accentColor.title)
-                    .font(.caption)
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(
-            Text(accentColor.title)
-        )
-        .accessibilityAddTraits(
-            isSelected ? .isSelected : []
-        )
     }
 
     private func customColorRow(
@@ -586,30 +401,12 @@ struct SettingsView: View {
                 get: { profile.customAccentHex },
                 set: { profile.customAccentHex = $0 }
             ),
-            title: "Eigene Akzentfarbe"
+            title: "Akzentfarbe"
         ) { hex in
             profile.customAccentHex = hex
             profile.accentColorRawValue = AppAccentColor.custom.rawValue
             profile.updatedAt = .now
             saveSettings()
-        }
-    }
-
-    private func previewColor(
-        for accentColor: AppAccentColor
-    ) -> Color {
-        accentColor.color ?? .accentColor
-    }
-
-    private func checkmarkColor(
-        for accentColor: AppAccentColor
-    ) -> Color {
-        switch accentColor {
-        case .orange, .pink:
-            return .black
-
-        default:
-            return .white
         }
     }
 
@@ -662,7 +459,11 @@ struct SettingsView: View {
                             proAccess.hasPro
                         },
                         set: { newValue in
-                            proAccess.hasPro = newValue
+                            if newValue {
+                                proAccess.enableProForTesting()
+                            } else {
+                                proAccess.disableProForTesting()
+                            }
                         }
                     )
                 )
@@ -725,6 +526,44 @@ struct SettingsView: View {
                 "UserSettings konnten nicht gespeichert werden: \(error)"
             )
             saveErrorMessage = "Die Einstellungen konnten nicht gespeichert werden."
+        }
+    }
+
+    private func prepareBackupExport() {
+        do {
+            backupDocument = ElyraBudgetBackupDocument(
+                data: try ElyraBudgetBackupService.exportData(from: modelContext)
+            )
+            showingBackupExporter = true
+        } catch {
+            saveErrorMessage = "Die Sicherung konnte nicht erstellt werden: \(error.localizedDescription)"
+        }
+    }
+
+    private func handleBackupImportSelection(
+        _ result: Result<[URL], Error>
+    ) {
+        do {
+            guard let url = try result.get().first else { return }
+            let accessed = url.startAccessingSecurityScopedResource()
+            defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+            pendingBackupData = try Data(contentsOf: url)
+            showingImportConfirmation = true
+        } catch {
+            saveErrorMessage = "Die Sicherung konnte nicht gelesen werden: \(error.localizedDescription)"
+        }
+    }
+
+    private func importPendingBackup() {
+        guard let pendingBackupData else { return }
+        do {
+            try ElyraBudgetBackupService.importData(
+                pendingBackupData,
+                into: modelContext
+            )
+            self.pendingBackupData = nil
+        } catch {
+            saveErrorMessage = error.localizedDescription
         }
     }
 

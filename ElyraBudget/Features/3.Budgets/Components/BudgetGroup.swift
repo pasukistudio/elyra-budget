@@ -16,6 +16,10 @@ final class BudgetGroup {
     /// The fallback monthly allowance used when a month has no override.
     /// A value of `0` means that no group allowance has been configured yet.
     var standardMonthlyBudget: Decimal = 0
+    /// Rounds expense transactions up to the next full currency unit.
+    var roundUpTransactionsEnabled: Bool = false
+    /// Identifies the automatically created reserve that receives round-up differences.
+    var roundUpReserveID: UUID?
 
     @Relationship(
         deleteRule: .cascade,
@@ -60,6 +64,8 @@ final class BudgetGroup {
         self.iconColorHex = iconColorHex
         self.sortOrder = sortOrder
         self.standardMonthlyBudget = standardMonthlyBudget
+        self.roundUpTransactionsEnabled = false
+        self.roundUpReserveID = nil
         self.createdAt = .now
         self.updatedAt = .now
     }

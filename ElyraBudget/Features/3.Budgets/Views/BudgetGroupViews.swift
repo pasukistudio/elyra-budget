@@ -82,6 +82,7 @@ struct BudgetGroupManagementView: View {
     @State private var sharingGroup: BudgetGroup?
     @State private var showingProUpgrade = false
     @State private var showingNewEditor = false
+    @State private var saveErrorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -147,7 +148,11 @@ struct BudgetGroupManagementView: View {
                             group.sortOrder = index
                             group.updatedAt = .now
                         }
-                        try? modelContext.save()
+                        do {
+                            try modelContext.save()
+                        } catch {
+                            saveErrorMessage = "Die Reihenfolge konnte nicht gespeichert werden."
+                        }
                     }
                 }
 
@@ -181,7 +186,9 @@ struct BudgetGroupManagementView: View {
                     }
                 }
             }
+            #if os(iOS)
             .environment(\.editMode, .constant(.active))
+            #endif
             .navigationTitle("Budgetbereiche")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -210,20 +217,29 @@ struct BudgetGroupManagementView: View {
             .sheet(isPresented: $showingProUpgrade) {
                 ProUpgradeView(feature: "Geteilte Budgetbereiche")
             }
+            .saveErrorAlert(message: $saveErrorMessage)
         }
     }
 
     private func archive(_ group: BudgetGroup) {
         group.isArchived = true
         group.updatedAt = .now
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            saveErrorMessage = "Der Budgetbereich konnte nicht archiviert werden."
+        }
     }
 
     private func restore(_ group: BudgetGroup) {
         group.isArchived = false
         group.updatedAt = .now
         group.sortOrder = groups.count
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            saveErrorMessage = "Der Budgetbereich konnte nicht wiederhergestellt werden."
+        }
     }
 }
 
@@ -233,6 +249,9 @@ private struct BudgetGroupEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.appCurrencyCode) private var currencyCode
+    @Query private var transactions: [Transaction]
+    @Query private var savingsGoals: [SavingsGoal]
+    @Query private var savingsContributions: [SavingsContribution]
     @State private var name: String
     @State private var selectedIcon: String
     @State private var selectedColorHex: String
@@ -241,6 +260,8 @@ private struct BudgetGroupEditorView: View {
     @State private var hasMonthlyOverride: Bool
     @State private var monthlyOverride: Decimal?
     @State private var showingIconPicker = false
+    @State private var roundUpTransactionsEnabled: Bool
+    @State private var showingRoundUpConfirmation = false
     @State private var saveErrorMessage: String?
 
     private let iconColumns = Array(
@@ -260,6 +281,7 @@ private struct BudgetGroupEditorView: View {
         _selectedMonth = State(initialValue: month)
         _hasMonthlyOverride = State(initialValue: group?.monthlyAllocation(for: month) != nil)
         _monthlyOverride = State(initialValue: group?.monthlyAllocation(for: month)?.amount)
+        _roundUpTransactionsEnabled = State(initialValue: group?.roundUpTransactionsEnabled ?? false)
     }
 
     var body: some View {
@@ -302,6 +324,23 @@ private struct BudgetGroupEditorView: View {
                     Text("Nicht angepasste Monate verwenden automatisch den Standardwert.")
                 }
 
+                Section("Automatisches Sparen") {
+                    Toggle("Buchungen aufrunden", isOn: Binding(
+                        get: { roundUpTransactionsEnabled },
+                        set: { newValue in
+                            if newValue {
+                                showingRoundUpConfirmation = true
+                            } else {
+                                roundUpTransactionsEnabled = false
+                            }
+                        }
+                    ))
+
+                    Text("Ausgaben werden auf den nächsten vollen Euro aufgerundet. Die Differenz wird automatisch als freie Rücklage gespeichert.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
                 Section("Darstellung") {
                     Text("Icon")
                         .font(.subheadline)
@@ -330,6 +369,14 @@ private struct BudgetGroupEditorView: View {
             #endif
             .sheet(isPresented: $showingIconPicker) {
                 IconPickerView(selectedIcon: $selectedIcon)
+            }
+            .alert("Buchungen automatisch aufrunden?", isPresented: $showingRoundUpConfirmation) {
+                Button("Aufrundung aktivieren") {
+                    roundUpTransactionsEnabled = true
+                }
+                Button("Abbrechen", role: .cancel) { }
+            } message: {
+                Text("Wenn du diese Funktion aktivierst, werden die Ausgaben in diesem Bereich auf den nächsten vollen Euro aufgerundet. Die jeweilige Differenz wird automatisch in einer neuen freien Rücklage gesammelt.")
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -374,6 +421,21 @@ private struct BudgetGroupEditorView: View {
             }
         } else if let existing = value.monthlyAllocation(for: monthStart) {
             modelContext.delete(existing)
+        }
+
+        if roundUpTransactionsEnabled {
+            do {
+                try TransactionRoundUpService.enable(
+                    for: value,
+                    transactions: transactions,
+                    savingsGoals: savingsGoals,
+                    contributions: savingsContributions,
+                    modelContext: modelContext
+                )
+            } catch {
+                saveErrorMessage = "Die Aufrundung konnte nicht aktiviert werden."
+                return
+            }
         }
 
         do {

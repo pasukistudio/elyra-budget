@@ -52,15 +52,11 @@ struct BudgetsView: View {
             }
         }
         .animation(.snappy(duration: 0.3), value: visibleBudgets.isEmpty)
-        .sheet(
-            isPresented: editingBudgetIsPresented
-        ) {
-            if let editingBudget {
-                BudgetEditorView(
-                    budget: editingBudget,
-                    group: selectedGroup
-                )
-            }
+        .sheet(item: $editingBudget) { budget in
+            BudgetEditorView(
+                budget: budget,
+                group: selectedGroup
+            )
         }
         .alert(
             "Budget löschen?",
@@ -88,21 +84,6 @@ struct BudgetsView: View {
         .saveErrorAlert(message: $saveErrorMessage)
     }
 
-    // MARK: - Bearbeitungs-Sheet
-
-    private var editingBudgetIsPresented: Binding<Bool> {
-        Binding(
-            get: {
-                editingBudget != nil
-            },
-            set: { isPresented in
-                if !isPresented {
-                    editingBudget = nil
-                }
-            }
-        )
-    }
-
     // MARK: - Löschbestätigung
 
     private var deleteConfirmationIsPresented: Binding<Bool> {
@@ -123,7 +104,7 @@ struct BudgetsView: View {
     private var budgetList: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
-                ForEach(visibleBudgets) { budget in
+                ForEach(visibleBudgets, id: \.persistentModelID) { budget in
                     NavigationLink {
                         BudgetDetailView(
                             budget: budget,

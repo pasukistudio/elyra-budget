@@ -1,5 +1,13 @@
 import SwiftData
 import SwiftUI
+import os
+
+private struct SavingsEditorRequest: Identifiable {
+    let id = UUID()
+    let goal: SavingsGoal?
+    let type: SavingsGoalType
+    let group: BudgetGroup?
+}
 
 struct SavingsView: View {
     @Binding private var addRequested: Bool
@@ -33,9 +41,7 @@ struct SavingsView: View {
     )
     private var budgets: [Budget]
 
-    @State private var editingGoal: SavingsGoal?
-    @State private var editorType: SavingsGoalType = .goal
-    @State private var showingEditor = false
+    @State private var savingsEditorRequest: SavingsEditorRequest?
     @State private var showingManagement = false
     @State private var showingArchived = false
     @State private var contributingGoal: SavingsGoal?
@@ -96,11 +102,11 @@ struct SavingsView: View {
             }
         }
         .animation(.snappy(duration: 0.3), value: visibleGoals.isEmpty)
-        .sheet(isPresented: $showingEditor) {
-            if editorType == .goal {
-                SavingsGoalEditorView(goal: editingGoal, budgets: visibleBudgets, type: .goal, group: selectedGroup)
+        .sheet(item: $savingsEditorRequest) { request in
+            if request.type == .goal {
+                SavingsGoalEditorView(goal: request.goal, budgets: visibleBudgets, type: .goal, group: request.group)
             } else {
-                FreeReserveEditorView(reserve: editingGoal, budgets: visibleBudgets, group: selectedGroup)
+                FreeReserveEditorView(reserve: request.goal, budgets: visibleBudgets, group: request.group)
             }
         }
         .sheet(isPresented: $showingManagement) {
@@ -118,9 +124,11 @@ struct SavingsView: View {
                 currencyCode: currencyCode,
                 onEdit: {
                     detailGoal = nil
-                    editingGoal = goal
-                    editorType = goal.type
-                    showingEditor = true
+                    savingsEditorRequest = SavingsEditorRequest(
+                        goal: goal,
+                        type: goal.type,
+                        group: selectedGroup
+                    )
                 },
                 onContribute: {
                     detailGoal = nil
@@ -198,8 +206,12 @@ struct SavingsView: View {
                 }
             }
         }
+        #if os(iOS)
         .listStyle(.insetGrouped)
         .listSectionSpacing(.compact)
+        #else
+        .listStyle(.inset)
+        #endif
     }
 
     @ViewBuilder
@@ -216,9 +228,11 @@ struct SavingsView: View {
         }
         .contextMenu {
             Button {
-                editingGoal = goal
-                editorType = goal.type
-                showingEditor = true
+                savingsEditorRequest = SavingsEditorRequest(
+                    goal: goal,
+                    type: goal.type,
+                    group: selectedGroup
+                )
             } label: {
                 Label("Bearbeiten", systemImage: "pencil")
             }
@@ -286,9 +300,11 @@ struct SavingsView: View {
     }
 
     private func openEditor(for type: SavingsGoalType) {
-        editingGoal = nil
-        editorType = type
-        showingEditor = true
+        savingsEditorRequest = SavingsEditorRequest(
+            goal: nil,
+            type: type,
+            group: selectedGroup
+        )
     }
 
     private func migrateLegacyGoals() {
@@ -299,7 +315,11 @@ struct SavingsView: View {
             goal.type = .reserve
             goal.updatedAt = .now
         }
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            AppLogger.persistence.error("Legacy-Sparziele konnten nicht migriert werden: \(error.localizedDescription)")
+        }
     }
 
     private func archive(_ goal: SavingsGoal) {
@@ -325,9 +345,7 @@ private struct SavingsManagementView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @State private var editingGoal: SavingsGoal?
-    @State private var editorType: SavingsGoalType = .goal
-    @State private var showingEditor = false
+    @State private var savingsEditorRequest: SavingsEditorRequest?
     @State private var showingArchived = false
     @State private var goalToDelete: SavingsGoal?
     @State private var saveErrorMessage: String?
@@ -383,7 +401,9 @@ private struct SavingsManagementView: View {
                     Button("Archiv öffnen") { showingArchived = true }
                 }
             }
+            #if os(iOS)
             .environment(\.editMode, .constant(.active))
+            #endif
             .navigationTitle("Verwalten")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -404,11 +424,11 @@ private struct SavingsManagementView: View {
                 Text("„\(goal.name)“ und seine Einzahlungen werden dauerhaft gelöscht.")
             }
             .saveErrorAlert(message: $saveErrorMessage)
-            .sheet(isPresented: $showingEditor) {
-                if editorType == .goal {
-                    SavingsGoalEditorView(goal: editingGoal, budgets: budgets, type: .goal, group: editingGoal?.group)
+            .sheet(item: $savingsEditorRequest) { request in
+                if request.type == .goal {
+                    SavingsGoalEditorView(goal: request.goal, budgets: budgets, type: .goal, group: request.group)
                 } else {
-                    FreeReserveEditorView(reserve: editingGoal, budgets: budgets, group: editingGoal?.group)
+                    FreeReserveEditorView(reserve: request.goal, budgets: budgets, group: request.group)
                 }
             }
             .sheet(isPresented: $showingArchived) {
@@ -443,9 +463,11 @@ private struct SavingsManagementView: View {
             Spacer()
             Menu {
                 Button {
-                    editingGoal = goal
-                    editorType = goal.type
-                    showingEditor = true
+                    savingsEditorRequest = SavingsEditorRequest(
+                        goal: goal,
+                        type: goal.type,
+                        group: goal.group
+                    )
                 } label: {
                     Label("Bearbeiten", systemImage: "pencil")
                 }

@@ -1,4 +1,5 @@
 import Foundation
+import os
 import SwiftData
 
 #if canImport(WidgetKit)
@@ -16,7 +17,7 @@ struct ElyraWidgetSnapshot: Codable {
 
 @MainActor
 enum WidgetSnapshotWriter {
-    static let appGroup = "group.de.pascal.ElyraBudget"
+    static let appGroup = "group.de.pasukistudio.elyrabudget"
     private static let key = "elyraBudget.widget.snapshot"
 
     static func write(
@@ -41,8 +42,13 @@ enum WidgetSnapshotWriter {
             currencyCode: currencyCode,
             updatedAt: .now
         )
-        guard let data = try? JSONEncoder().encode(snapshot) else { return }
-        UserDefaults(suiteName: appGroup)?.set(data, forKey: key)
+        do {
+            let data = try JSONEncoder().encode(snapshot)
+            UserDefaults(suiteName: appGroup)?.set(data, forKey: key)
+        } catch {
+            AppLogger.persistence.error("Widget-Daten konnten nicht gespeichert werden: \(error)")
+            return
+        }
         #if canImport(WidgetKit)
         WidgetCenter.shared.reloadAllTimelines()
         #endif

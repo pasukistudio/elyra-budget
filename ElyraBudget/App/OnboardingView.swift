@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+import os
 
 struct OnboardingView: View {
     let group: BudgetGroup?
@@ -52,7 +53,11 @@ struct OnboardingView: View {
                     templatesPage.tag(2)
                     interactionPage.tag(3)
                 }
+                #if os(iOS)
                 .tabViewStyle(.page(indexDisplayMode: .never))
+                #else
+                .tabViewStyle(.automatic)
+                #endif
                 .animation(.easeInOut(duration: 0.25), value: step)
 
                 HStack(spacing: 12) {
@@ -313,9 +318,15 @@ struct OnboardingView: View {
     }
 
     private func fetchOrCreateDefaultGroup() -> BudgetGroup {
-        if let existing = (try? modelContext.fetch(FetchDescriptor<BudgetGroup>()))?
-            .first(where: { !$0.isArchived }) {
-            return existing
+        do {
+            if let existing = try modelContext.fetch(FetchDescriptor<BudgetGroup>())
+                .first(where: { !$0.isArchived }) {
+                return existing
+            }
+        } catch {
+            AppLogger.persistence.error(
+                "Standard-Budgetbereich konnte im Onboarding nicht geladen werden: \(error)"
+            )
         }
 
         let created = BudgetGroup(name: "Persönlich", iconName: "person.fill")

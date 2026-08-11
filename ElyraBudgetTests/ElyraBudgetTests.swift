@@ -13,6 +13,24 @@ import Testing
 
 struct ElyraBudgetTests {
 
+    @Test func runtimeConfigurationDisablesCloudKitForXCTestArguments() {
+        #expect(
+            !AppRuntimeConfiguration.isCloudKitEnabled(
+                environment: [:],
+                arguments: ["ElyraBudget", "-XCTest"]
+            )
+        )
+    }
+
+    @Test func runtimeConfigurationHonorsExplicitLocalStorageOverride() {
+        #expect(
+            !AppRuntimeConfiguration.isCloudKitEnabled(
+                environment: ["ELYRA_BUDGET_USE_CLOUDKIT": "NO"],
+                arguments: []
+            )
+        )
+    }
+
     @Test func cloudKitSyncMonitorDisablesItselfForLocalTestStorage() {
         let monitor = CloudKitSyncMonitor(environment: ["ELYRA_BUDGET_USE_CLOUDKIT": "NO"])
 
@@ -21,7 +39,7 @@ struct ElyraBudgetTests {
     }
 
     @Test func cloudKitSyncMonitorReportsSyncFailure() {
-        let monitor = CloudKitSyncMonitor(environment: ["CloudKit": "YES"])
+        let monitor = CloudKitSyncMonitor(environment: ["ELYRA_BUDGET_USE_CLOUDKIT": "YES"])
 
         monitor.handle(
             type: .export,
@@ -45,7 +63,7 @@ struct ElyraBudgetTests {
     }
 
     @Test func cloudKitSyncMonitorRecordsSuccessfulSync() {
-        let monitor = CloudKitSyncMonitor(environment: ["CloudKit": "YES"])
+        let monitor = CloudKitSyncMonitor(environment: ["ELYRA_BUDGET_USE_CLOUDKIT": "YES"])
 
         monitor.handle(
             type: .import,
@@ -96,6 +114,81 @@ struct ElyraBudgetTests {
 
         #expect(transaction.group == nil)
         #expect(transaction.effectiveGroup === group)
+    }
+
+    @Test func transactionExportsCreateShareableFiles() throws {
+        let date = Calendar.current.date(from: DateComponents(year: 2026, month: 8, day: 2))!
+        let transaction = Transaction(
+            title: "Testbuchung",
+            amount: 12.50,
+            date: date
+        )
+
+        for format in [TransactionExportFormat.csv, .pdf] {
+            let url = try TransactionExportService.write(
+                transactions: [transaction],
+                month: date,
+                currencyCode: "EUR",
+                format: format
+            )
+            var isDirectory: ObjCBool = false
+            #expect(FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory))
+            #expect(!isDirectory.boolValue)
+            #expect(try Data(contentsOf: url).isEmpty == false)
+            try FileManager.default.removeItem(at: url)
+        }
+    }
+
+    @Test func backupRoundTripPreservesDataAndRelationships() throws {
+        let container = try ModelContainer(
+            for: UserSettings.self,
+            BudgetGroup.self,
+            BudgetGroupMonthlyAllocation.self,
+            Budget.self,
+            Transaction.self,
+            FixedCost.self,
+            SavingsGoal.self,
+            SavingsContribution.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = ModelContext(container)
+        let group = BudgetGroup(name: "Persönlich", standardMonthlyBudget: 2_000)
+        let budget = Budget(name: "Shoppen", limit: 200, group: group)
+        let fixedCost = FixedCost(title: "Miete", amount: 800, budget: budget, group: group)
+        let goal = SavingsGoal(name: "Urlaub", targetAmount: 1_000, budget: budget, group: group)
+        let contribution = SavingsContribution(amount: 100, goal: goal)
+        let transaction = Transaction(
+            title: "Test",
+            amount: 14.51,
+            note: "Backup",
+            budget: budget,
+            group: group
+        )
+        transaction.receiptData = Data("receipt".utf8)
+
+        context.insert(group)
+        context.insert(budget)
+        context.insert(fixedCost)
+        context.insert(goal)
+        context.insert(contribution)
+        context.insert(transaction)
+        try context.save()
+
+        let data = try ElyraBudgetBackupService.exportData(from: context)
+        try ElyraBudgetBackupService.importData(data, into: context)
+
+        let importedGroups = try context.fetch(FetchDescriptor<BudgetGroup>())
+        let importedBudgets = try context.fetch(FetchDescriptor<Budget>())
+        let importedTransactions = try context.fetch(FetchDescriptor<Transaction>())
+        let importedGoals = try context.fetch(FetchDescriptor<SavingsGoal>())
+
+        #expect(importedGroups.count == 1)
+        #expect(importedBudgets.count == 1)
+        #expect(importedTransactions.count == 1)
+        #expect(importedGoals.count == 1)
+        #expect(importedBudgets.first?.group?.id == importedGroups.first?.id)
+        #expect(importedTransactions.first?.budget?.id == importedBudgets.first?.id)
+        #expect(importedTransactions.first?.receiptData == Data("receipt".utf8))
     }
 
     @Test func budgetGroupRelationshipsRejectCrossGroupAssignments() {

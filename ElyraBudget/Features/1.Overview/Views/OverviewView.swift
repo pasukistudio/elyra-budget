@@ -234,6 +234,7 @@ struct OverviewView: View {
             .padding()
         }
         .toolbar {
+            #if os(iOS)
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     if proAccess.hasPro {
@@ -245,6 +246,19 @@ struct OverviewView: View {
                     Label("Statistiken", systemImage: "chart.xyaxis.line")
                 }
             }
+            #else
+            ToolbarItem {
+                Button {
+                    if proAccess.hasPro {
+                        showingAnalytics = true
+                    } else {
+                        showingProUpgrade = true
+                    }
+                } label: {
+                    Label("Statistiken", systemImage: "chart.xyaxis.line")
+                }
+            }
+            #endif
         }
         .sheet(isPresented: $showingAnalytics) {
             ProAnalyticsView(selectedDate: selectedDate, selectedGroup: selectedGroup)
@@ -414,7 +428,11 @@ struct OverviewView: View {
                 spendingDistributionPage
                     .tag(1)
             }
+            #if os(iOS)
             .tabViewStyle(.page(indexDisplayMode: .never))
+            #else
+            .tabViewStyle(.automatic)
+            #endif
             .frame(height: 244)
             .background(cardBackground, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
             .overlay {

@@ -137,3 +137,67 @@ struct ProUpgradeView: View {
             .font(.headline)
     }
 }
+
+#if os(macOS)
+/// Vollbild-Hinweis für die macOS-App nach Ablauf des kostenlosen Testzeitraums.
+struct MacProRequiredView: View {
+    @Environment(ProAccessManager.self) private var proAccess
+    @State private var showingUpgrade = false
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Image(systemName: "lock.shield.fill")
+                .font(.system(size: 54, weight: .semibold))
+                .foregroundStyle(.tint)
+
+            VStack(spacing: 8) {
+                Text("Elyra Budget Pro erforderlich")
+                    .font(.largeTitle.bold())
+                    .multilineTextAlignment(.center)
+
+                Text("Deine kostenlose 7-Tage-Testphase auf dem Mac ist abgelaufen. Kaufe Pro, um deine Budgets, Buchungen und alle Pro-Funktionen weiter auf dem Mac zu nutzen.")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 560)
+            }
+
+            Button("Elyra Budget Pro freischalten") {
+                showingUpgrade = true
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+
+            Button {
+                Task { await proAccess.restorePurchases() }
+            } label: {
+                if proAccess.isRestoringPurchases {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Text("Käufe wiederherstellen")
+                }
+            }
+            .buttonStyle(.borderless)
+            .disabled(proAccess.isRestoringPurchases)
+        }
+        .padding(48)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.regularMaterial)
+        .sheet(isPresented: $showingUpgrade) {
+            ProUpgradeView(feature: "die Nutzung der Mac-App")
+        }
+        .alert(
+            "Kauf nicht möglich",
+            isPresented: Binding(
+                get: { proAccess.purchaseError != nil },
+                set: { if !$0 { proAccess.purchaseError = nil } }
+            )
+        ) {
+            Button("OK") { proAccess.purchaseError = nil }
+        } message: {
+            Text(proAccess.purchaseError ?? "")
+        }
+    }
+}
+#endif
