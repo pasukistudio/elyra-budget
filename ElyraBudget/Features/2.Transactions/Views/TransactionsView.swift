@@ -3,10 +3,17 @@ import OSLog
 import SwiftUI
 import UniformTypeIdentifiers
 
+enum TransactionToolbarAction: Equatable {
+    case exportCSV
+    case exportPDF
+    case importCSV
+    case recurringTransactions
+}
+
 struct TransactionsView: View {
     @Binding var selectedDate: Date
     @Binding var selectedGroup: BudgetGroup?
-    @Binding var showingActions: Bool
+    @Binding var requestedToolbarAction: TransactionToolbarAction?
     let onNewTransaction: () -> Void
     @Environment(\.appCurrencyCode) private var currencyCode
     @Environment(ProAccessManager.self) private var proAccess
@@ -28,6 +35,8 @@ struct TransactionsView: View {
     private var transactions: [Transaction]
     @Query private var budgets: [Budget]
     @Query private var budgetGroups: [BudgetGroup]
+    @Query private var savingsGoals: [SavingsGoal]
+    @Query private var savingsContributions: [SavingsContribution]
 
     @State private var editingTransaction: Transaction?
     @State private var transactionToDelete: Transaction?
@@ -51,12 +60,12 @@ struct TransactionsView: View {
     init(
         selectedDate: Binding<Date>,
         selectedGroup: Binding<BudgetGroup?> = .constant(nil),
-        showingActions: Binding<Bool> = .constant(false),
+        requestedToolbarAction: Binding<TransactionToolbarAction?> = .constant(nil),
         onNewTransaction: @escaping () -> Void = {}
     ) {
         _selectedDate = selectedDate
         _selectedGroup = selectedGroup
-        _showingActions = showingActions
+        _requestedToolbarAction = requestedToolbarAction
         self.onNewTransaction = onNewTransaction
     }
 
@@ -71,9 +80,10 @@ struct TransactionsView: View {
             }
         }
         .animation(.snappy(duration: 0.3), value: displayedTransactions.isEmpty)
-        .popover(isPresented: $showingActions, arrowEdge: .top) {
-            transactionActionsPopover
-                .presentationCompactAdaptation(.popover)
+        .onChange(of: requestedToolbarAction) { _, action in
+            guard let action else { return }
+            handleToolbarAction(action)
+            requestedToolbarAction = nil
         }
         .sheet(
             isPresented: editingTransactionIsPresented
@@ -190,47 +200,21 @@ struct TransactionsView: View {
         }
     }
 
-    private var transactionActionsPopover: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Button {
-                showingActions = false
-                onNewTransaction()
-            } label: {
-                Label("Neue Buchung", systemImage: "plus.circle.fill")
-            }
-            Button {
-                showingActions = false
-                export(format: .csv)
-            } label: {
-                Label("CSV exportieren", systemImage: "tablecells")
-            }
-            Button {
-                showingActions = false
-                export(format: .pdf)
-            } label: {
-                Label("PDF exportieren", systemImage: "doc.richtext")
-            }
-            Button {
-                showingActions = false
-                beginImport()
-            } label: {
-                Label("CSV importieren", systemImage: "square.and.arrow.down")
-            }
-            Button {
-                showingActions = false
-                if proAccess.hasPro {
-                    showingRecurringTransactions = true
-                } else {
-                    showingProUpgrade = true
-                }
-            } label: {
-                Label("Wiederkehrende Buchungen", systemImage: "arrow.triangle.2.circlepath")
+    private func handleToolbarAction(_ action: TransactionToolbarAction) {
+        switch action {
+        case .exportCSV:
+            export(format: .csv)
+        case .exportPDF:
+            export(format: .pdf)
+        case .importCSV:
+            beginImport()
+        case .recurringTransactions:
+            if proAccess.hasPro {
+                showingRecurringTransactions = true
+            } else {
+                showingProUpgrade = true
             }
         }
-        .buttonStyle(.plain)
-        .controlSize(.large)
-        .padding(14)
-        .frame(minWidth: 230, alignment: .leading)
     }
 
     private var transactionToolsMenu: some View {
@@ -301,7 +285,7 @@ struct TransactionsView: View {
                         && (group == nil || $0.group === group)
                 }
             }
-            modelContext.insert(Transaction(
+            let transaction = Transaction(
                 title: row.title,
                 amount: row.amount,
                 date: row.date,
@@ -309,7 +293,20 @@ struct TransactionsView: View {
                 type: row.type,
                 budget: budget,
                 group: group
-            ))
+            )
+            do {
+                try TransactionRoundUpService.applyIfNeeded(
+                    to: transaction,
+                    group: group,
+                    savingsGoals: savingsGoals,
+                    contributions: savingsContributions,
+                    modelContext: modelContext
+                )
+            } catch {
+                importErrorMessage = "Die importierten Buchungen konnten nicht aufgerundet werden."
+                return
+            }
+            modelContext.insert(transaction)
         }
 
         do {
@@ -347,7 +344,7 @@ struct TransactionsView: View {
                 id: \.date
             ) { group in
                 Section {
-                    ForEach(group.transactions) { transaction in
+                    ForEach(group.transactions, id: \.persistentModelID) { transaction in
                         TransactionRowView(
                             transaction: transaction,
                             currencyCode: currencyCode
@@ -374,7 +371,11 @@ struct TransactionsView: View {
                 }
             }
         }
+        #if os(iOS)
         .listStyle(.insetGrouped)
+        #else
+        .listStyle(.inset)
+        #endif
     }
 
     // MARK: - Gruppierung
@@ -398,8 +399,10 @@ struct TransactionsView: View {
                     transactions:
                         transactions.sorted {
                             if $0.date == $1.date {
-                                return $0.createdAt >
-                                    $1.createdAt
+                                if $0.createdAt == $1.createdAt {
+                                    return $0.id.uuidString > $1.id.uuidString
+                                }
+                                return $0.createdAt > $1.createdAt
                             }
 
                             return $0.date > $1.date
@@ -458,9 +461,16 @@ struct TransactionsView: View {
     private func deleteTransaction(
         _ transaction: Transaction
     ) {
-        if let contributionID = transaction.savingsContributionID,
-           let contribution = (try? modelContext.fetch(FetchDescriptor<SavingsContribution>()))?.first(where: { $0.id == contributionID }) {
-            modelContext.delete(contribution)
+        if let contributionID = transaction.savingsContributionID {
+            do {
+                if let contribution = try modelContext.fetch(FetchDescriptor<SavingsContribution>()).first(where: { $0.id == contributionID }) {
+                    modelContext.delete(contribution)
+                }
+            } catch {
+                AppLogger.persistence.error(
+                    "Zugehöriger Sparbeitrag konnte nicht geladen werden: \(error)"
+                )
+            }
         }
         modelContext.delete(transaction)
 

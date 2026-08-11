@@ -3,6 +3,29 @@ import Foundation
 import Observation
 import SwiftUI
 
+enum AppRuntimeConfiguration {
+    static func isRunningUnderXCTest(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        arguments: [String] = ProcessInfo.processInfo.arguments
+    ) -> Bool {
+        arguments.contains("-XCTest")
+            || environment["XCTestConfigurationFilePath"] != nil
+            || environment["XCTestSessionIdentifier"] != nil
+            || NSClassFromString("XCTestCase") != nil
+    }
+
+    static func isCloudKitEnabled(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        arguments: [String] = ProcessInfo.processInfo.arguments
+    ) -> Bool {
+        if let override = environment["ELYRA_BUDGET_USE_CLOUDKIT"] {
+            return override != "NO"
+        }
+
+        return !isRunningUnderXCTest(environment: environment, arguments: arguments)
+    }
+}
+
 enum CloudKitSyncStatus: Equatable {
     case unavailable
     case idle
@@ -41,10 +64,9 @@ final class CloudKitSyncMonitor {
     private var observerTokens: [NSObjectProtocol] = []
 
     init(environment: [String: String] = ProcessInfo.processInfo.environment) {
-        let isRunningUnderXCTest = environment["XCTestConfigurationFilePath"] != nil
-            || environment["XCTestSessionIdentifier"] != nil
-        isCloudKitEnabled = !isRunningUnderXCTest
-            && environment["ELYRA_BUDGET_USE_CLOUDKIT"] != "NO"
+        isCloudKitEnabled = AppRuntimeConfiguration.isCloudKitEnabled(
+            environment: environment
+        )
         status = isCloudKitEnabled ? .idle : .unavailable
 
         guard isCloudKitEnabled else { return }
@@ -59,17 +81,6 @@ final class CloudKitSyncMonitor {
                     NSPersistentCloudKitContainer.eventNotificationUserInfoKey
                 ] as? NSPersistentCloudKitContainer.Event else { return }
                 self?.handle(event: event)
-            }
-        )
-        observerTokens.append(
-            center.addObserver(
-                forName: .NSPersistentStoreRemoteChange,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                guard let self, self.isCloudKitEnabled else { return }
-                self.status = .syncing
-                self.errorMessage = nil
             }
         )
     }

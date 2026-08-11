@@ -2,6 +2,10 @@ import SwiftData
 import OSLog
 import SwiftUI
 
+#if os(macOS)
+import AppKit
+#endif
+
 struct BudgetDetailView: View {
     let budget: Budget
     @Environment(\.appCurrencyCode) private var currencyCode
@@ -55,6 +59,7 @@ struct BudgetDetailView: View {
         .scrollIndicators(.hidden)
         .background(pageBackground)
         .navigationTitle("")
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {
@@ -76,6 +81,21 @@ struct BudgetDetailView: View {
                 .accessibilityLabel("Neue Buchung")
             }
         }
+        #else
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                backButton
+            }
+            ToolbarItem {
+                Button {
+                    showingNewTransaction = true
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .accessibilityLabel("Neue Buchung")
+            }
+        }
+        #endif
         .tint(effectiveAccentColor)
         .sheet(isPresented: $showingMonthPicker) {
             MonthPickerSheet(
@@ -490,17 +510,24 @@ struct BudgetDetailView: View {
     }
 
     private var cardBackground: Color {
+        #if os(iOS)
         Color(
             uiColor:
                 .secondarySystemGroupedBackground
         )
+        #else
+        Color(nsColor: .controlBackgroundColor)
+        #endif
     }
 
     private var pageBackground: some View {
-        Color(
+        #if os(iOS)
+        return Color(
             uiColor: .systemGroupedBackground
-        )
-        .ignoresSafeArea()
+        ).ignoresSafeArea()
+        #else
+        return Color(nsColor: .windowBackgroundColor).ignoresSafeArea()
+        #endif
     }
 
 }

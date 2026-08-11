@@ -7,7 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		60A48C010000000000000001 /* ElyraBudgetWidget.appex in CopyFiles */ = {isa = PBXBuildFile; fileRef = 60A48C020000000000000001 /* ElyraBudgetWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		50D3356D302A64110075FF3A /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = B7D0C1A20000000000000002 /* Supabase */; };
+		60A48C010000000000000001 /* ElyraBudgetWidget.appex in CopyFiles */ = {isa = PBXBuildFile; fileRef = 60A48C020000000000000001 /* ElyraBudgetWidget.appex */; platformFilters = (ios, iphonesimulator, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		60A48C010000000000000002 /* ElyraBudgetWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60A48C030000000000000001 /* ElyraBudgetWidget.swift */; };
 /* End PBXBuildFile section */
 
@@ -39,7 +40,7 @@
 		60A48C050000000000000001 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = "$(CONTENTS_FOLDER_PATH)/PlugIns";
+			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
 				60A48C010000000000000001 /* ElyraBudgetWidget.appex in CopyFiles */,
@@ -92,6 +93,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				50D3356D302A64110075FF3A /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -360,6 +362,10 @@
 		};
 		60A48C0C0000000000000001 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				iphonesimulator,
+			);
 			target = 60A48C0A0000000000000001 /* ElyraBudgetWidget */;
 			targetProxy = 60A48C0B0000000000000001 /* PBXContainerItemProxy */;
 		};
@@ -369,6 +375,7 @@
 		50A48CD2302204A000A33848 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				APS_ENVIRONMENT = development;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ElyraBudget/Configuration/ElyraBudget.entitlements;
@@ -426,6 +433,7 @@
 		50A48CD3302204A000A33848 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				APS_ENVIRONMENT = production;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ElyraBudget/Configuration/ElyraBudget.entitlements;
@@ -707,8 +715,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = N56UYFA4DD;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = "com.apple.widgetkit-extension";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ElyraBudgetWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = de.pascal.ElyraBudgetNew.widget;
@@ -727,8 +735,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = N56UYFA4DD;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = "com.apple.widgetkit-extension";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ElyraBudgetWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = de.pascal.ElyraBudgetNew.widget;
@@ -742,25 +750,6 @@
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		B7D0C1A20000000000000001 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/supabase-community/supabase-swift";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.0.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		B7D0C1A20000000000000002 /* Supabase */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = B7D0C1A20000000000000001 /* XCRemoteSwiftPackageReference "supabase-swift" */;
-			productName = Supabase;
-		};
-/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCConfigurationList section */
 		50A48CA83022049E00A33848 /* Build configuration list for PBXProject "ElyraBudget" */ = {
@@ -810,6 +799,24 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		B7D0C1A20000000000000001 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase-community/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B7D0C1A20000000000000002 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B7D0C1A20000000000000001 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 50A48CA53022049E00A33848 /* Project object */;
 }

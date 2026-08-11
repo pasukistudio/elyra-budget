@@ -56,14 +56,10 @@ struct BudgetManagementView: View {
                     }
                 }
             }
-            .sheet(
-                isPresented: editingBudgetIsPresented
-            ) {
-                if let editingBudget {
-                    BudgetEditorView(
-                        budget: editingBudget
-                    )
-                }
+            .sheet(item: $editingBudget) { budget in
+                BudgetEditorView(
+                    budget: budget
+                )
             }
             .alert(
                 "Budget löschen?",
@@ -570,22 +566,6 @@ struct BudgetManagementView: View {
         )
 
         budgetToDelete = nil
-    }
-
-    // MARK: - Bearbeitungs-Sheet
-
-    private var editingBudgetIsPresented:
-        Binding<Bool> {
-        Binding(
-            get: {
-                editingBudget != nil
-            },
-            set: { isPresented in
-                if !isPresented {
-                    editingBudget = nil
-                }
-            }
-        )
     }
 
     // MARK: - Löschbestätigung

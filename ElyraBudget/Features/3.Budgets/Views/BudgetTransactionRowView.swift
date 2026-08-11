@@ -22,6 +22,18 @@ struct BudgetTransactionRowView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                if let originalAmount = transaction.roundUpOriginalAmount {
+                    HStack(spacing: 2) {
+                        Text("Original")
+                        Text(originalAmount, format: .currency(code: currencyCode))
+                        Text("·")
+                        Text(transaction.amount - originalAmount, format: .currency(code: currencyCode))
+                        Text("gespart")
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                }
             }
 
             Spacer(minLength: 12)

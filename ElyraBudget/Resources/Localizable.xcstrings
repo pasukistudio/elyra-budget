@@ -4,6 +4,9 @@
     "" : {
 
     },
+    "·" : {
+
+    },
     "„%@“ bleibt erhalten und kann später im Archiv wiederhergestellt werden." : {
 
     },
@@ -48,6 +51,9 @@
 
     },
     "0,00" : {
+
+    },
+    "0%@00" : {
 
     },
     "Ab %lld:00 Uhr" : {
@@ -129,6 +135,9 @@
     "Auf Budget buchen" : {
 
     },
+    "Aufrundung aktivieren" : {
+
+    },
     "Aus dieser Fixkostenposition wird ein vorausgefülltes Sparziel erstellt." : {
 
     },
@@ -136,6 +145,9 @@
 
     },
     "Ausgaben nach Budget" : {
+
+    },
+    "Ausgaben werden auf den nächsten vollen Euro aufgerundet. Die Differenz wird automatisch als freie Rücklage gespeichert." : {
 
     },
     "Ausgaben: 0,00 %@" : {
@@ -193,10 +205,16 @@
     "Bereich bearbeiten" : {
 
     },
+    "Bereich konnte nicht geteilt werden" : {
+
+    },
     "Bereich teilen" : {
 
     },
     "Bereiche verwalten" : {
+
+    },
+    "Bereite einen CloudKit-Link für „%@“ vor." : {
 
     },
     "Bericht nicht möglich" : {
@@ -233,6 +251,12 @@
 
     },
     "Buchungen" : {
+
+    },
+    "Buchungen aufrunden" : {
+
+    },
+    "Buchungen automatisch aufrunden?" : {
 
     },
     "Buchungsaktionen" : {
@@ -422,19 +446,16 @@
     "Dunkel" : {
 
     },
-    "Eigene Akzentfarbe" : {
-
-    },
     "Eigene Akzentfarben" : {
 
     },
     "Eigene Farbe" : {
 
     },
-    "Ein Sparziel benötigt einen Zielbetrag." : {
+    "Eigene Farben sind Bestandteil von Elyra Budget Pro." : {
 
     },
-    "Eine eigene Akzentfarbe ist Bestandteil von Elyra Budget Pro." : {
+    "Ein Sparziel benötigt einen Zielbetrag." : {
 
     },
     "Eine freie Rücklage hat keinen festen Zielbetrag." : {
@@ -444,6 +465,9 @@
 
     },
     "Einfach starten, jederzeit anpassen" : {
+
+    },
+    "Einladungslink teilen" : {
 
     },
     "Einstellungen" : {
@@ -457,6 +481,9 @@
       }
     },
     "Einzahlen" : {
+
+    },
+    "Elyra Budget" : {
 
     },
     "Elyra Budget hilft dir, Budgets, Buchungen, Fixkosten und Sparziele an einem Ort zu organisieren." : {
@@ -573,6 +600,9 @@
     "Freie Rücklagen" : {
 
     },
+    "Freigabe vorbereiten" : {
+
+    },
     "Füge die erste Einzahlung für dieses %@ hinzu." : {
 
     },
@@ -592,6 +622,9 @@
 
     },
     "Gesamt belegt" : {
+
+    },
+    "gespart" : {
 
     },
     "Gespart" : {
@@ -969,6 +1002,9 @@
     "Orange bis" : {
 
     },
+    "Original" : {
+
+    },
     "Pause" : {
 
     },
@@ -1122,6 +1158,9 @@
     "Teile Ideen, melde Fehler und stimme direkt in der App ab – ganz ohne GitHub-Konto." : {
 
     },
+    "Teilen" : {
+
+    },
     "Titel: 3–120 Zeichen · Beschreibung: 3–5.000 Zeichen" : {
 
     },
@@ -1207,6 +1246,9 @@
 
     },
     "Weitere Icons" : {
+
+    },
+    "Wenn du diese Funktion aktivierst, werden die Ausgaben in diesem Bereich auf den nächsten vollen Euro aufgerundet. Die jeweilige Differenz wird automatisch in einer neuen freien Rücklage gesammelt." : {
 
     },
     "Wie dürfen wir dich nennen?" : {

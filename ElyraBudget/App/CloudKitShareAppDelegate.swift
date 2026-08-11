@@ -1,5 +1,7 @@
 import CloudKit
 import os
+
+#if os(iOS)
 import UIKit
 
 final class CloudKitShareAppDelegate: NSObject, UIApplicationDelegate {
@@ -7,15 +9,18 @@ final class CloudKitShareAppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         userDidAcceptCloudKitShareWith metadata: CKShare.Metadata
     ) {
-        let recordID = metadata.rootRecordID
+        guard let recordID = metadata.hierarchicalRootRecordID else {
+            AppLogger.persistence.error("CloudKit-Bereich enthält keine Root-Record-ID.")
+            return
+        }
         let defaults = UserDefaults.standard
         defaults.set(recordID.recordName, forKey: "elyraBudget.pendingCloudKitShare.recordName")
         defaults.set(recordID.zoneID.zoneName, forKey: "elyraBudget.pendingCloudKitShare.zoneName")
         defaults.set(recordID.zoneID.ownerName, forKey: "elyraBudget.pendingCloudKitShare.ownerName")
 
         let operation = CKAcceptSharesOperation(shareMetadatas: [metadata])
-        operation.acceptSharesCompletionBlock = { error in
-            if let error {
+        operation.acceptSharesResultBlock = { result in
+            if case .failure(let error) = result {
                 AppLogger.persistence.error("CloudKit-Bereich konnte nicht angenommen werden: \(error.localizedDescription)")
                 defaults.set(true, forKey: "elyraBudget.pendingCloudKitShare.failed")
             } else {
@@ -26,3 +31,4 @@ final class CloudKitShareAppDelegate: NSObject, UIApplicationDelegate {
             .add(operation)
     }
 }
+#endif

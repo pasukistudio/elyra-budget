@@ -75,9 +75,11 @@ struct CurrencyAmountTextField: UIViewRepresentable {
             _ field: UITextField,
             shouldChangeCharactersIn range: NSRange,
             replacementString replacement: String
-        ) -> Bool {
+            ) -> Bool {
             let wasEmpty = field.text?.isEmpty != false
-            let current = wasEmpty ? "0\(decimalSeparator)00" : field.text!
+            let current = wasEmpty
+                ? "0\(decimalSeparator)00"
+                : (field.text ?? "0\(decimalSeparator)00")
             let effectiveRange = wasEmpty && range.length == 0
                 ? NSRange(location: 0, length: 1)
                 : range
@@ -163,7 +165,9 @@ struct CurrencyAmountTextField: UIViewRepresentable {
 
             let separator = Character(decimalSeparator)
             if current.contains(separator), !updated.contains(separator) {
-                let separatorIndex = current.firstIndex(of: separator)!
+                guard let separatorIndex = current.firstIndex(of: separator) else {
+                    return false
+                }
                 let integer = String(current[..<separatorIndex])
                 let shortened = integer.dropLast()
                 let normalizedInteger = shortened.isEmpty ? "0" : String(shortened)
@@ -194,8 +198,12 @@ struct CurrencyAmountTextField: UIViewRepresentable {
         }
 
         private func moveCursorToIntegerEnd(in field: UITextField) {
-            let separator = field.text?.firstIndex(of: Character(decimalSeparator))
-            let offset = separator.map { field.text!.distance(from: field.text!.startIndex, to: $0) } ?? field.text?.count ?? 0
+            guard let currentText = field.text else {
+                setCursor(in: field, offset: 0)
+                return
+            }
+            let separator = currentText.firstIndex(of: Character(decimalSeparator))
+            let offset = separator.map { currentText.distance(from: currentText.startIndex, to: $0) } ?? currentText.count
             setCursor(in: field, offset: offset)
         }
 

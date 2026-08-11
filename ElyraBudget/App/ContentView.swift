@@ -36,6 +36,8 @@ struct ContentView: View {
     private var savingsGoals: [SavingsGoal]
     @Query(sort: [SortDescriptor<Transaction>(\.date)])
     private var transactions: [Transaction]
+    @Query(sort: [SortDescriptor<SavingsContribution>(\.date)])
+    private var savingsContributions: [SavingsContribution]
 
     private var appCurrencyCode: String {
         userSettings.first?.currencyRawValue ?? AppCurrency.eur.rawValue
@@ -60,13 +62,15 @@ struct ContentView: View {
     @State private var showingBudgetManagement = false
     @State private var showingArchivedBudgets = false
     @State private var showingTransactionEditor = false
-    @State private var showingTransactionActions = false
+    @State private var requestedTransactionToolbarAction: TransactionToolbarAction?
     @State private var requestingFixedCostEditor = false
     @State private var requestingSavingsGoalEditor = false
     @State private var requestingSavingsReserveEditor = false
     @State private var showingSavingsManagement = false
     @State private var showingArchivedSavings = false
     @State private var selectedBudgetGroup: BudgetGroup?
+    @AppStorage("elyraBudget.selectedBudgetGroupID")
+    private var persistedSelectedBudgetGroupID = ""
     @State private var showingBudgetGroupManagement = false
     @State private var showingSettings = false
     @State private var showingOnboarding = false
@@ -88,7 +92,11 @@ struct ContentView: View {
                 OnboardingView(group: nil)
             } else {
                 #if os(macOS)
-                macLayout
+                if proAccess.requiresMacPro {
+                    MacProRequiredView()
+                } else {
+                    macLayout
+                }
                 #else
                 iOSLayout
                 #endif
@@ -116,12 +124,15 @@ struct ContentView: View {
             await importPendingCloudKitShareIfNeeded()
             await ensureDefaultBudgetGroupAfterCloudKitSync()
             await pullSharedAreasIfNeeded()
+            restoreSelectedBudgetGroup()
+            migrateLocalReceiptsToSyncableData()
             writeWidgetSnapshot()
             presentOnboardingIfNeeded()
             registerAppLaunchIfNeeded()
             applyQuieterNotificationDefaultsIfNeeded()
             processAutomaticSavingsGoals()
             processAutomaticFixedCosts()
+            processRoundUps()
             rescheduleAppNotifications()
         }
         .task {
@@ -140,12 +151,16 @@ struct ContentView: View {
                 await proAccess.refreshEntitlement()
                 await importPendingCloudKitShareIfNeeded()
                 await pullSharedAreasIfNeeded()
+                migrateLocalReceiptsToSyncableData()
                 writeWidgetSnapshot()
             }
-            selectExistingBudgetGroupIfNeeded()
             processAutomaticSavingsGoals()
             processAutomaticFixedCosts()
+            processRoundUps()
             rescheduleAppNotifications()
+        }
+        .onChange(of: selectedBudgetGroup?.id) { _, newID in
+            persistedSelectedBudgetGroupID = newID?.uuidString ?? ""
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
             guard oldPhase != .background, newPhase == .background else { return }
@@ -179,6 +194,7 @@ struct ContentView: View {
 
     @MainActor
     private func importPendingCloudKitShareIfNeeded() async {
+        guard cloudKitSyncMonitor.isCloudKitEnabled else { return }
         do {
             _ = try await CloudKitSharedAreaService.shared.importPendingShare(modelContext: modelContext)
         } catch {
@@ -188,6 +204,7 @@ struct ContentView: View {
 
     @MainActor
     private func pullSharedAreasIfNeeded() async {
+        guard cloudKitSyncMonitor.isCloudKitEnabled else { return }
         for group in budgetGroups {
             do {
                 try await CloudKitSharedAreaService.shared.pullSharedArea(
@@ -202,6 +219,7 @@ struct ContentView: View {
 
     @MainActor
     private func uploadSharedAreasIfNeeded() async {
+        guard cloudKitSyncMonitor.isCloudKitEnabled else { return }
         for group in budgetGroups {
             do {
                 try await CloudKitSharedAreaService.shared.updateSharedArea(group: group)
@@ -241,6 +259,39 @@ struct ContentView: View {
                     enabled: userSettings.first?.automaticBookingFailureNotificationsEnabled ?? true
                 )
             }
+        }
+    }
+
+    private func processRoundUps() {
+        do {
+            let allTransactions = try modelContext.fetch(FetchDescriptor<Transaction>())
+            let allContributions = try modelContext.fetch(FetchDescriptor<SavingsContribution>())
+            try TransactionRoundUpService.applyAllIfNeeded(
+                transactions: allTransactions,
+                groups: budgetGroups,
+                savingsGoals: savingsGoals,
+                contributions: allContributions,
+                modelContext: modelContext
+            )
+        } catch {
+            AppLogger.persistence.error("Buchungen konnten nicht aufgerundet werden: \(error)")
+        }
+    }
+
+    private func migrateLocalReceiptsToSyncableData() {
+        var changed = false
+        for transaction in transactions where transaction.receiptData == nil {
+            guard let filename = transaction.receiptFilename,
+                  let data = TransactionReceiptService.data(for: filename) else { continue }
+            transaction.receiptData = data
+            transaction.updatedAt = .now
+            changed = true
+        }
+        guard changed else { return }
+        do {
+            try modelContext.save()
+        } catch {
+            AppLogger.persistence.error("Belegdaten konnten nicht synchronisiert werden: \(error)")
         }
     }
 
@@ -292,12 +343,20 @@ struct ContentView: View {
 
     private func rescheduleAppNotifications() {
         Task {
-            let currentBudgets = (try? modelContext.fetch(
-                FetchDescriptor<Budget>(sortBy: [SortDescriptor(\.sortOrder)])
-            )) ?? budgets
-            let currentTransactions = (try? modelContext.fetch(
-                FetchDescriptor<Transaction>(sortBy: [SortDescriptor(\.date)])
-            )) ?? transactions
+            var currentBudgets = budgets
+            var currentTransactions = transactions
+            do {
+                currentBudgets = try modelContext.fetch(
+                    FetchDescriptor<Budget>(sortBy: [SortDescriptor(\.sortOrder)])
+                )
+                currentTransactions = try modelContext.fetch(
+                    FetchDescriptor<Transaction>(sortBy: [SortDescriptor(\.date)])
+                )
+            } catch {
+                AppLogger.persistence.error(
+                    "Aktuelle Daten für Benachrichtigungen konnten nicht geladen werden: \(error)"
+                )
+            }
             await AppNotificationScheduler.reschedule(
                 fixedCosts: fixedCosts,
                 savingsGoals: savingsGoals,
@@ -314,10 +373,15 @@ struct ContentView: View {
         for _ in 0..<6 {
             guard !Task.isCancelled else { return }
 
-            selectExistingBudgetGroupIfNeeded()
-            let existingGroups = (try? modelContext.fetch(
-                FetchDescriptor<BudgetGroup>()
-            )) ?? []
+            let existingGroups: [BudgetGroup]
+            do {
+                existingGroups = try modelContext.fetch(FetchDescriptor<BudgetGroup>())
+            } catch {
+                AppLogger.persistence.error(
+                    "Budgetbereiche konnten nach der CloudKit-Synchronisierung nicht geladen werden: \(error)"
+                )
+                return
+            }
 
             if !existingGroups.isEmpty {
                 ensureDefaultBudgetGroup()
@@ -330,26 +394,9 @@ struct ContentView: View {
         ensureDefaultBudgetGroup()
     }
 
-    private func selectExistingBudgetGroupIfNeeded() {
-        guard selectedBudgetGroup == nil else { return }
-
-        let existingGroups = (try? modelContext.fetch(
-            FetchDescriptor<BudgetGroup>()
-        )) ?? []
-
-        selectedBudgetGroup = existingGroups.first {
-            !$0.isArchived && $0.name.trimmingCharacters(
-                in: .whitespacesAndNewlines
-            ).localizedCaseInsensitiveCompare("Persönlich") == .orderedSame
-        } ?? existingGroups.first { !$0.isArchived }
-    }
-
     private func ensureDefaultBudgetGroup() {
         do {
-            let group = try BudgetGroupMigration.ensureDefaultGroupAndMigrate(in: modelContext)
-            if selectedBudgetGroup == nil, !group.isArchived {
-                selectedBudgetGroup = group
-            }
+            _ = try BudgetGroupMigration.ensureDefaultGroupAndMigrate(in: modelContext)
         } catch {
             AppLogger.persistence.error(
                 "Standard-Budgetbereich konnte nicht erstellt werden: \(error)"
@@ -357,7 +404,25 @@ struct ContentView: View {
         }
     }
 
+    private func restoreSelectedBudgetGroup() {
+        guard selectedBudgetGroup == nil else { return }
+        guard !persistedSelectedBudgetGroupID.isEmpty else { return }
+
+        guard let restoredGroup = budgetGroups.first(where: {
+            $0.id.uuidString == persistedSelectedBudgetGroupID
+        }) else {
+            // The saved group may have been deleted or archived on another device.
+            persistedSelectedBudgetGroupID = ""
+            return
+        }
+
+        selectedBudgetGroup = restoredGroup
+    }
+
     private func presentOnboardingIfNeeded() {
+        guard !ProcessInfo.processInfo.arguments.contains("-ui-testing-skip-onboarding") else {
+            return
+        }
         let name = userSettings.first?.name.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard name.isEmpty else { return }
         showingOnboarding = true
@@ -548,7 +613,7 @@ struct ContentView: View {
             TransactionsView(
                 selectedDate: $selectedDate,
                 selectedGroup: $selectedBudgetGroup,
-                showingActions: $showingTransactionActions,
+                requestedToolbarAction: $requestedTransactionToolbarAction,
                 onNewTransaction: { showingTransactionEditor = true }
             )
         }
@@ -741,7 +806,7 @@ struct ContentView: View {
             if selectedSection == .overview {
                 overviewActionsMenu
             } else if selectedSection == .transactions {
-                transactionActionsButton
+                transactionActionsMenu
             } else if selectedSection == .budgets {
                 budgetActionsMenu
             } else if selectedSection == .savings {
@@ -785,6 +850,45 @@ struct ContentView: View {
         }
         .help("Schnellaktionen")
         .accessibilityLabel("Schnellaktionen")
+    }
+
+    private var transactionActionsMenu: some View {
+        Menu {
+            Button {
+                showingTransactionEditor = true
+            } label: {
+                Label("Neue Buchung", systemImage: "plus.circle.fill")
+            }
+
+            Button {
+                requestedTransactionToolbarAction = .exportCSV
+            } label: {
+                Label("CSV exportieren", systemImage: "tablecells")
+            }
+
+            Button {
+                requestedTransactionToolbarAction = .exportPDF
+            } label: {
+                Label("PDF exportieren", systemImage: "doc.richtext")
+            }
+
+            Button {
+                requestedTransactionToolbarAction = .importCSV
+            } label: {
+                Label("CSV importieren", systemImage: "square.and.arrow.down")
+            }
+
+            Button {
+                requestedTransactionToolbarAction = .recurringTransactions
+            } label: {
+                Label("Wiederkehrende Buchungen", systemImage: "arrow.triangle.2.circlepath")
+            }
+        } label: {
+            Image(systemName: "plus")
+                .foregroundStyle(effectiveAccentColor)
+        }
+        .help("Buchungsaktionen")
+        .accessibilityLabel("Buchungsaktionen")
     }
 
     private var budgetActionsMenu: some View {
@@ -881,17 +985,6 @@ struct ContentView: View {
         .accessibilityLabel(
             addButtonAccessibilityLabel
         )
-    }
-
-    private var transactionActionsButton: some View {
-        Button {
-            showingTransactionActions = true
-        } label: {
-            Image(systemName: "plus")
-                .foregroundStyle(effectiveAccentColor)
-        }
-        .help("Buchungsaktionen")
-        .accessibilityLabel("Buchungsaktionen")
     }
 
     // MARK: - Hinzufügen

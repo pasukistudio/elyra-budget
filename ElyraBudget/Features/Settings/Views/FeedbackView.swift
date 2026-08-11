@@ -107,6 +107,7 @@ private struct SupabaseFeedbackRecord: Decodable {
 }
 
 private struct SupabaseFeedbackInsert: Encodable {
+    let id: UUID
     let kind: String
     let title: String
     let detail: String
@@ -192,19 +193,21 @@ private final class FeedbackService: ObservableObject {
         if notifyOnUpdates {
             _ = await FixedCostNotificationScheduler.requestAuthorizationIfNeeded()
         }
-        let record: SupabaseFeedbackRecord = try await SupabaseService.client
+        let postID = UUID()
+        try await SupabaseService.client
             .from("feedback_posts")
             .insert(SupabaseFeedbackInsert(
+                id: postID,
                 kind: kind.rawValue,
                 title: title,
                 detail: detail
             ))
-            .select()
-            .single()
             .execute()
-            .value
-        UserDefaults.standard.set(notifyOnUpdates, forKey: submittedKey(for: record.id))
-        UserDefaults.standard.set(record.status, forKey: statusKey(for: record.id))
+        // New submissions are intentionally hidden until approved, so the insert
+        // response cannot be read back under the public RLS policy. Persist the
+        // client-generated ID so status notifications still work after approval.
+        UserDefaults.standard.set(notifyOnUpdates, forKey: submittedKey(for: postID.uuidString))
+        UserDefaults.standard.set(FeedbackState.underReview.rawValue, forKey: statusKey(for: postID.uuidString))
         await load()
     }
 
@@ -314,7 +317,7 @@ struct FeedbackView: View {
         List {
             Section {
                 Label {
-                    Text("Teile Ideen, melde Fehler und stimme direkt in der App ab – ganz ohne GitHub-Konto.")
+                    Text("Teile Ideen, melde Fehler und stimme direkt in der App ab.")
                         .foregroundStyle(.secondary)
                 } icon: {
                     Image(systemName: "bubble.left.and.bubble.right.fill")

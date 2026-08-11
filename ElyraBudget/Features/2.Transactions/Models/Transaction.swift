@@ -19,6 +19,7 @@ final class Transaction {
     var date: Date = Date()
     var note: String = ""
     var receiptFilename: String?
+    @Attribute(.externalStorage) var receiptData: Data?
 
     // MARK: - Typ
 
@@ -49,6 +50,11 @@ final class Transaction {
     var savingsContributionID: UUID?
     var savingsGoalOccurrenceDate: Date?
 
+    /// The amount entered before automatic round-up was applied.
+    var roundUpOriginalAmount: Decimal?
+    /// Links the round-up difference to its automatic savings contribution.
+    var roundUpSavingsContributionID: UUID?
+
     // MARK: - Zeitstempel
 
     var createdAt: Date = Date()
@@ -71,6 +77,7 @@ final class Transaction {
         self.date = date
         self.note = note
         self.receiptFilename = nil
+        self.receiptData = nil
         self.typeRawValue = type.rawValue
         self.budget = budget
         self.group = group
@@ -81,6 +88,8 @@ final class Transaction {
         self.savingsGoalID = nil
         self.savingsContributionID = nil
         self.savingsGoalOccurrenceDate = nil
+        self.roundUpOriginalAmount = nil
+        self.roundUpSavingsContributionID = nil
         self.createdAt = Date()
         self.updatedAt = Date()
     }

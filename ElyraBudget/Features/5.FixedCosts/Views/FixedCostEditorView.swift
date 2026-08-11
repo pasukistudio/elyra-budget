@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+import os
 
 struct FixedCostEditorView: View {
     let fixedCost: FixedCost?
@@ -275,9 +276,17 @@ struct FixedCostEditorView: View {
                     _ = await FixedCostNotificationScheduler.requestAuthorizationIfNeeded()
                 }
 
-                let allFixedCosts = (try? modelContext.fetch(
-                    FetchDescriptor<FixedCost>(sortBy: [SortDescriptor(\.createdAt)])
-                )) ?? [value]
+                let allFixedCosts: [FixedCost]
+                do {
+                    allFixedCosts = try modelContext.fetch(
+                        FetchDescriptor<FixedCost>(sortBy: [SortDescriptor(\.createdAt)])
+                    )
+                } catch {
+                    AppLogger.persistence.error(
+                        "Fixkosten für die Benachrichtigungsplanung konnten nicht geladen werden: \(error)"
+                    )
+                    allFixedCosts = [value]
+                }
                 await FixedCostNotificationScheduler.reschedule(
                     fixedCosts: allFixedCosts,
                     transactions: transactions

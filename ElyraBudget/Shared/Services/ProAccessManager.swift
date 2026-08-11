@@ -14,7 +14,56 @@ final class ProAccessManager {
     // MARK: - Pro-Status
 
     /// Gibt an, ob Elyra Budget Pro freigeschaltet ist.
-    var hasPro: Bool = false
+    var hasPro: Bool
+
+    #if os(macOS)
+    private static let macTrialStartKey = "elyraBudget.macOSProTrialStartedAt"
+    private static let macTrialDuration: TimeInterval = 7 * 24 * 60 * 60
+
+    /// Der Testzeitraum gilt nur für die macOS-App. Der Startzeitpunkt wird
+    /// gespeichert, damit ein Neustart die Testphase nicht zurücksetzt.
+    private(set) var macTrialStartDate: Date?
+
+    var isMacTrialActive: Bool {
+        guard let macTrialStartDate else { return false }
+        return Date().timeIntervalSince(macTrialStartDate) < Self.macTrialDuration
+    }
+
+    var macTrialDaysRemaining: Int {
+        guard let macTrialStartDate else { return 0 }
+        let remaining = Self.macTrialDuration - Date().timeIntervalSince(macTrialStartDate)
+        guard remaining > 0 else { return 0 }
+        return max(1, Int(ceil(remaining / (24 * 60 * 60))))
+    }
+
+    /// Nach Ablauf der macOS-Testphase ist die gesamte App nur noch mit Pro
+    /// nutzbar. Auf iOS und iPadOS gibt es diese globale Sperre nicht.
+    var requiresMacPro: Bool {
+        !hasPro && !isMacTrialActive
+    }
+    #endif
+
+    #if DEBUG
+    private static let testingProKey = "elyraBudget.debug.proEnabled"
+    #endif
+
+    init() {
+        #if DEBUG
+        hasPro = UserDefaults.standard.bool(forKey: Self.testingProKey)
+        #else
+        hasPro = false
+        #endif
+
+        #if os(macOS)
+        if let storedDate = UserDefaults.standard.object(forKey: Self.macTrialStartKey) as? Date {
+            macTrialStartDate = storedDate
+        } else {
+            let startDate = Date()
+            macTrialStartDate = startDate
+            UserDefaults.standard.set(startDate, forKey: Self.macTrialStartKey)
+        }
+        #endif
+    }
 
     static let productID = "de.pascal.ElyraBudget.pro"
     private(set) var product: Product?
@@ -27,11 +76,17 @@ final class ProAccessManager {
     /// Aktiviert Pro für Entwicklung und Previews.
     func enableProForTesting() {
         hasPro = true
+        #if DEBUG
+        UserDefaults.standard.set(true, forKey: Self.testingProKey)
+        #endif
     }
 
     /// Deaktiviert Pro für Entwicklung und Previews.
     func disableProForTesting() {
         hasPro = false
+        #if DEBUG
+        UserDefaults.standard.set(false, forKey: Self.testingProKey)
+        #endif
     }
 
     @MainActor
@@ -49,6 +104,13 @@ final class ProAccessManager {
 
     @MainActor
     func refreshEntitlement() async {
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: Self.testingProKey) {
+            hasPro = true
+            return
+        }
+        #endif
+
         // Recalculate the entitlement from StoreKit instead of keeping a stale
         // in-memory value after a restore, revocation, or account change.
         hasPro = false
@@ -69,7 +131,15 @@ final class ProAccessManager {
             guard case .verified(let transaction) = result else { continue }
 
             if transaction.productID == Self.productID {
+                #if DEBUG
+                if UserDefaults.standard.bool(forKey: Self.testingProKey) {
+                    hasPro = true
+                } else {
+                    hasPro = transaction.revocationDate == nil
+                }
+                #else
                 hasPro = transaction.revocationDate == nil
+                #endif
             }
 
             await transaction.finish()

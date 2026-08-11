@@ -26,11 +26,10 @@ struct ElyraBudgetApp: App {
         ])
 
         let processInfo = ProcessInfo.processInfo
-        let isRunningUnderXCTest = processInfo.arguments.contains("-XCTest")
-            || processInfo.environment["XCTestConfigurationFilePath"] != nil
-            || processInfo.environment["XCTestSessionIdentifier"] != nil
-        let useCloudKit = !isRunningUnderXCTest
-            && processInfo.environment["ELYRA_BUDGET_USE_CLOUDKIT"] != "NO"
+        let useCloudKit = AppRuntimeConfiguration.isCloudKitEnabled(
+            environment: processInfo.environment,
+            arguments: processInfo.arguments
+        )
 
         let configuration: ModelConfiguration
         if useCloudKit {

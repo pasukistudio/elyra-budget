@@ -7,11 +7,14 @@
 
 import SwiftData
 import OSLog
+import QuickLook
 import SwiftUI
 import UniformTypeIdentifiers
 
 #if os(iOS)
 import UIKit
+#elseif os(macOS)
+import AppKit
 #endif
 
 struct TransactionEditorView: View {
@@ -44,6 +47,9 @@ struct TransactionEditorView: View {
     )
     private var budgets: [Budget]
 
+    @Query private var savingsGoals: [SavingsGoal]
+    @Query private var savingsContributions: [SavingsContribution]
+
     // MARK: - Eingaben
 
     @State private var title: String
@@ -51,6 +57,7 @@ struct TransactionEditorView: View {
     @State private var date: Date
     @State private var note: String
     @State private var receiptFilename: String?
+    @State private var receiptData: Data?
     @State private var selectedType: TransactionType
     @State private var selectedBudget: Budget?
 
@@ -58,6 +65,7 @@ struct TransactionEditorView: View {
 
     @State private var showingBudgetMenu = false
     @State private var showingReceiptImporter = false
+    @State private var showingReceiptPreview = false
     @State private var showingProUpgrade = false
     @State private var saveErrorMessage: String?
 
@@ -91,6 +99,10 @@ struct TransactionEditorView: View {
         )
         _receiptFilename = State(
             initialValue: transaction?.receiptFilename
+        )
+        _receiptData = State(
+            initialValue: transaction?.receiptData
+                ?? transaction?.receiptFilename.flatMap(TransactionReceiptService.data(for:))
         )
 
         _selectedType = State(
@@ -177,6 +189,13 @@ struct TransactionEditorView: View {
             .sheet(isPresented: $showingProUpgrade) {
                 ProUpgradeView(feature: "Belege an Buchungen")
             }
+            #if os(iOS)
+            .sheet(isPresented: $showingReceiptPreview) {
+                if let url = receiptURL {
+                    ReceiptPreviewView(url: url)
+                }
+            }
+            #endif
             .fileImporter(
                 isPresented: $showingReceiptImporter,
                 allowedContentTypes: [.image, .pdf],
@@ -184,7 +203,9 @@ struct TransactionEditorView: View {
             ) { result in
                 do {
                     guard let url = try result.get().first else { return }
-                    receiptFilename = try TransactionReceiptService.importFile(from: url)
+                    let filename = try TransactionReceiptService.importFile(from: url)
+                    receiptFilename = filename
+                    receiptData = TransactionReceiptService.data(for: filename)
                 } catch {
                     saveErrorMessage = "Der Beleg konnte nicht gespeichert werden."
                 }
@@ -323,14 +344,34 @@ struct TransactionEditorView: View {
     private var receiptSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             TransactionEditorSectionHeader(title: "Beleg")
-            if let receiptFilename,
-               let url = TransactionReceiptService.url(for: receiptFilename) {
-                HStack {
-                    Label(url.lastPathComponent, systemImage: "doc.fill")
-                        .lineLimit(1)
-                    Spacer()
-                    Button("Entfernen", role: .destructive) {
-                        self.receiptFilename = nil
+            if let url = receiptURL {
+                VStack(spacing: 10) {
+                    Button {
+                        #if os(iOS)
+                        showingReceiptPreview = true
+                        #elseif os(macOS)
+                        NSWorkspace.shared.open(url)
+                        #endif
+                    } label: {
+                        HStack {
+                            Label(url.lastPathComponent, systemImage: "doc.fill")
+                                .lineLimit(1)
+                            Spacer()
+                            Image(systemName: "eye")
+                                .foregroundStyle(Color.accentColor)
+                        }
+                    }
+                    .buttonStyle(.plain)
+
+                    HStack {
+                        ShareLink(item: url) {
+                            Label("Teilen", systemImage: "square.and.arrow.up")
+                        }
+                        Spacer()
+                        Button("Entfernen", role: .destructive) {
+                            self.receiptFilename = nil
+                            self.receiptData = nil
+                        }
                     }
                 }
                 .padding(16)
@@ -355,6 +396,19 @@ struct TransactionEditorView: View {
         }
     }
 
+    private var receiptURL: URL? {
+        guard let receiptFilename else { return nil }
+        if let url = TransactionReceiptService.url(for: receiptFilename),
+           FileManager.default.fileExists(atPath: url.path) {
+            return url
+        }
+        guard let receiptData else { return nil }
+        return try? TransactionReceiptService.temporaryURL(
+            for: receiptFilename,
+            data: receiptData
+        )
+    }
+
     // MARK: - Speichern
 
     private func saveTransaction() {
@@ -367,6 +421,7 @@ struct TransactionEditorView: View {
             existingTransaction.title =
                 cleanedTitle
 
+            let amountChanged = existingTransaction.amount != normalizedAmount
             existingTransaction.amount =
                 normalizedAmount
 
@@ -377,6 +432,7 @@ struct TransactionEditorView: View {
                 cleanedNote
 
             existingTransaction.receiptFilename = receiptFilename
+            existingTransaction.receiptData = receiptData
 
             existingTransaction.type =
                 selectedType
@@ -387,8 +443,27 @@ struct TransactionEditorView: View {
             existingTransaction.group =
                 effectiveGroup
 
+            // Only reset the base amount when the user actually changed the amount.
+            // Editing the title or note must preserve an existing round-up.
+            if amountChanged {
+                existingTransaction.roundUpOriginalAmount = nil
+            }
+
             existingTransaction.updatedAt =
                 .now
+
+            do {
+                try TransactionRoundUpService.applyIfNeeded(
+                    to: existingTransaction,
+                    group: effectiveGroup,
+                    savingsGoals: savingsGoals,
+                    contributions: savingsContributions,
+                    modelContext: modelContext
+                )
+            } catch {
+                saveErrorMessage = "Die Buchung konnte nicht aufgerundet werden."
+                return
+            }
         } else {
             let newTransaction = Transaction(
                 title: cleanedTitle,
@@ -400,6 +475,20 @@ struct TransactionEditorView: View {
                 group: effectiveGroup
             )
             newTransaction.receiptFilename = receiptFilename
+            newTransaction.receiptData = receiptData
+
+            do {
+                try TransactionRoundUpService.applyIfNeeded(
+                    to: newTransaction,
+                    group: effectiveGroup,
+                    savingsGoals: savingsGoals,
+                    contributions: savingsContributions,
+                    modelContext: modelContext
+                )
+            } catch {
+                saveErrorMessage = "Die Buchung konnte nicht aufgerundet werden."
+                return
+            }
 
             modelContext.insert(
                 newTransaction
@@ -418,6 +507,44 @@ struct TransactionEditorView: View {
     }
 
 }
+
+#if os(iOS)
+private struct ReceiptPreviewView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(url: url)
+    }
+
+    func makeUIViewController(context: Context) -> QLPreviewController {
+        let controller = QLPreviewController()
+        controller.dataSource = context.coordinator
+        return controller
+    }
+
+    func updateUIViewController(_ controller: QLPreviewController, context: Context) {}
+
+    final class Coordinator: NSObject, QLPreviewControllerDataSource {
+        let url: URL
+
+        init(url: URL) {
+            self.url = url
+        }
+
+        func numberOfPreviewItems(in controller: QLPreviewController) -> Int {
+            1
+        }
+
+        func previewController(
+            _ controller: QLPreviewController,
+            previewItemAt index: Int
+        ) -> QLPreviewItem {
+            url as NSURL
+        }
+    }
+}
+#endif
+
 // MARK: - UIKit-Systemmaterial
 
 #if os(iOS)
