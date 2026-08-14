@@ -2,7 +2,7 @@ import OSLog
 
 enum AppLogger {
     static let persistence = Logger(
-        subsystem: "de.pascal.ElyraBudget",
+        subsystem: "de.pasukistudio.elyrabudget",
         category: "Persistence"
     )
 }

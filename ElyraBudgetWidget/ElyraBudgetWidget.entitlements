@@ -4,7 +4,7 @@
 <dict>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.de.pascal.ElyraBudget</string>
+		<string>group.de.pasukistudio.elyrabudget</string>
 	</array>
 </dict>
 </plist>

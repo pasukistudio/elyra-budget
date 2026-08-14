@@ -32,9 +32,6 @@
     "%@ verschieben" : {
 
     },
-    "%lld" : {
-
-    },
     "%lld %%" : {
 
     },
@@ -44,16 +41,7 @@
     "%lld Buchungen werden importiert. Bestehende Buchungen bleiben unverändert." : {
 
     },
-    "%lld Stimmen" : {
-
-    },
-    "•" : {
-
-    },
     "0,00" : {
-
-    },
-    "0%@00" : {
 
     },
     "Ab %lld:00 Uhr" : {
@@ -63,9 +51,6 @@
 
     },
     "Abbuchung" : {
-
-    },
-    "Abstimmung nicht gespeichert" : {
 
     },
     "Achte auf dein Budget" : {
@@ -100,9 +85,6 @@
 
     },
     "An Fälligkeit erinnern" : {
-
-    },
-    "Ansicht" : {
 
     },
     "Anteil" : {
@@ -180,6 +162,15 @@
     "Automatisches Sparen" : {
 
     },
+    "Backup exportieren" : {
+
+    },
+    "Backup importieren" : {
+
+    },
+    "Backup importieren?" : {
+
+    },
     "Bearbeiten" : {
 
     },
@@ -205,16 +196,10 @@
     "Bereich bearbeiten" : {
 
     },
-    "Bereich konnte nicht geteilt werden" : {
-
-    },
     "Bereich teilen" : {
 
     },
     "Bereiche verwalten" : {
-
-    },
-    "Bereite einen CloudKit-Link für „%@“ vor." : {
 
     },
     "Bericht nicht möglich" : {
@@ -224,6 +209,9 @@
 
     },
     "Beschreibung" : {
+
+    },
+    "Bestehende Daten ersetzen" : {
 
     },
     "Betrag" : {
@@ -304,9 +292,6 @@
     "Budgetbereich %@" : {
 
     },
-    "Budgetbereich auswählen" : {
-
-    },
     "Budgetbereiche" : {
 
     },
@@ -325,9 +310,6 @@
     "Budgetübersicht" : {
 
     },
-    "Budgetwarnungen" : {
-
-    },
     "CSV exportieren" : {
 
     },
@@ -344,9 +326,6 @@
 
     },
     "Cyan" : {
-
-    },
-    "Danke für deinen Beitrag" : {
 
     },
     "Darstellung" : {
@@ -370,13 +349,13 @@
     "Daten übernehmen" : {
 
     },
+    "Daten übertragen" : {
+
+    },
+    "Datenschutz" : {
+
+    },
     "Datum" : {
-
-    },
-    "Dein Beitrag" : {
-
-    },
-    "Dein Beitrag wurde übermittelt und wird vor der Veröffentlichung geprüft." : {
 
     },
     "Dein Name" : {
@@ -407,13 +386,7 @@
     "Detaillierte Prognosen" : {
 
     },
-    "Detaillierte Sparprognosen" : {
-
-    },
     "Detaillierte Sparprognosen sind in Pro verfügbar." : {
-
-    },
-    "Details" : {
 
     },
     "Die Auszahlung wird als Einnahme im ausgewählten Budget erfasst." : {
@@ -428,10 +401,10 @@
     "Die Farben zeigen, wie viel des Monatsbudgets bereits verwendet wurde." : {
 
     },
-    "Du erhältst am Fälligkeitstag eine lokale Mitteilung." : {
+    "Die lokalen Daten dieser App werden durch die Sicherung ersetzt. Dieser Schritt kann nicht rückgängig gemacht werden." : {
 
     },
-    "Du erhältst eine Mitteilung, sobald dein Beitrag geprüft, geplant oder umgesetzt wurde." : {
+    "Du erhältst am Fälligkeitstag eine lokale Mitteilung." : {
 
     },
     "Du kannst Budgets, Währung und weitere Einstellungen später jederzeit ändern." : {
@@ -440,7 +413,7 @@
     "Du kannst jederzeit zurückkommen und alles ändern." : {
 
     },
-    "Du kannst Pro später jederzeit in deinen Apple‑Account-Einstellungen verwalten." : {
+    "Du kannst Pro später jederzeit in deinen Apple‑Account‑Einstellungen verwalten." : {
 
     },
     "Dunkel" : {
@@ -467,9 +440,6 @@
     "Einfach starten, jederzeit anpassen" : {
 
     },
-    "Einladungslink teilen" : {
-
-    },
     "Einstellungen" : {
       "localizations" : {
         "en" : {
@@ -483,9 +453,6 @@
     "Einzahlen" : {
 
     },
-    "Elyra Budget" : {
-
-    },
     "Elyra Budget hilft dir, Budgets, Buchungen, Fixkosten und Sparziele an einem Ort zu organisieren." : {
 
     },
@@ -495,6 +462,9 @@
     "Elyra Budget Pro" : {
 
     },
+    "Elyra Budget startet mit iOS. Eine optimierte iPadOS-Version und die Mac-App folgen nach einer eigenen Testphase. Die Mac-App kann zunächst 7 Tage kostenlos getestet werden und benötigt danach Pro." : {
+
+    },
     "Elyra Budget wird beim Verlassen der App geschützt." : {
 
     },
@@ -502,9 +472,6 @@
 
     },
     "Entfernen" : {
-
-    },
-    "Erneut laden" : {
 
     },
     "Erscheinungsbild" : {
@@ -534,28 +501,10 @@
     "Fällig" : {
 
     },
-    "Feature vorschlagen" : {
-
-    },
-    "Feedback & Roadmap" : {
-
-    },
-    "Feedback hinzufügen" : {
-
-    },
-    "Feedback wird geladen …" : {
-
-    },
-    "Feedback-Statusänderungen" : {
+    "Fehler auf GitHub melden" : {
 
     },
     "Fehler ausblenden" : {
-
-    },
-    "Fehler melden" : {
-
-    },
-    "Fehlgeschlagene automatische Buchungen" : {
 
     },
     "Fertig" : {
@@ -600,13 +549,7 @@
     "Freie Rücklagen" : {
 
     },
-    "Freigabe vorbereiten" : {
-
-    },
     "Füge die erste Einzahlung für dieses %@ hinzu." : {
-
-    },
-    "Für Beitrag abstimmen" : {
 
     },
     "Für diese Fixkosten wurden noch keine Buchungen oder geplanten Termine gefunden." : {
@@ -619,9 +562,6 @@
 
     },
     "Gesamt" : {
-
-    },
-    "Gesamt belegt" : {
 
     },
     "gespart" : {
@@ -690,7 +630,7 @@
     "Heute gibt es noch keine Buchungen." : {
 
     },
-    "Hilfe & Feedback" : {
+    "Hilfe & Support" : {
 
     },
     "Hinzufügen" : {
@@ -699,13 +639,7 @@
     "Hinzugefügt" : {
 
     },
-    "iCloud wieder synchronisiert" : {
-
-    },
     "iCloud-Synchronisierung" : {
-
-    },
-    "iCloud-Synchronisierungsfehler" : {
 
     },
     "Icon" : {
@@ -808,9 +742,6 @@
     "Kontingent für diesen Monat" : {
 
     },
-    "Kurzer Titel" : {
-
-    },
     "Lege regelmäßige Ausgaben an und behalte deine monatliche Belastung im Blick." : {
 
     },
@@ -836,9 +767,6 @@
 
     },
     "Manuelle Rücklage" : {
-
-    },
-    "Mehr Funktionen" : {
 
     },
     "Mehr Kontrolle über deine Planung" : {
@@ -870,9 +798,6 @@
       }
     },
     "Monat auswählen" : {
-
-    },
-    "Monatlicher Finanzüberblick" : {
 
     },
     "Monatlicher Sparbetrag" : {
@@ -948,9 +873,6 @@
     "Noch keine aktiven Sparziele oder freien Rücklagen." : {
 
     },
-    "Noch keine Beiträge" : {
-
-    },
     "Noch keine Buchungen" : {
 
     },
@@ -982,6 +904,9 @@
 
     },
     "Nur verknüpfen" : {
+
+    },
+    "Nutzungsbedingungen (EULA)" : {
 
     },
     "Öffnet weitere Optionen wie Bearbeiten und Verwalten." : {
@@ -1017,9 +942,6 @@
     "PDF exportieren" : {
 
     },
-    "Privater Support" : {
-
-    },
     "PRO" : {
 
     },
@@ -1047,7 +969,13 @@
     "Prognose" : {
 
     },
+    "Projekt auf GitHub" : {
+
+    },
     "Prüfe Identität …" : {
+
+    },
+    "Rechtliches" : {
 
     },
     "Rosa" : {
@@ -1057,9 +985,6 @@
 
     },
     "Rot ab" : {
-
-    },
-    "Rückmeldung" : {
 
     },
     "Ruhezeiten" : {
@@ -1074,12 +999,6 @@
     "Schritt %lld von 4" : {
 
     },
-    "Sei die erste Person mit einem Vorschlag." : {
-
-    },
-    "Senden" : {
-
-    },
     "Sicherheit" : {
 
     },
@@ -1087,9 +1006,6 @@
 
     },
     "Sparaktionen" : {
-
-    },
-    "Sparbeiträge" : {
 
     },
     "Sparen" : {
@@ -1110,13 +1026,7 @@
     "Sparziel bearbeiten" : {
 
     },
-    "Sparziel erreicht" : {
-
-    },
     "Sparziel löschen?" : {
-
-    },
-    "Sparziel-Prognose" : {
 
     },
     "Sparziele" : {
@@ -1140,31 +1050,22 @@
     "Statistiken und Monatsberichte" : {
 
     },
-    "Stimme entfernen" : {
-
-    },
     "Support per E-Mail" : {
 
     },
     "System" : {
 
     },
-    "Tägliche Zusammenfassung" : {
-
-    },
     "Teile die Datei oder speichere sie in der Dateien-App." : {
-
-    },
-    "Teile Ideen, melde Fehler und stimme direkt in der App ab – ganz ohne GitHub-Konto." : {
 
     },
     "Teilen" : {
 
     },
-    "Titel: 3–120 Zeichen · Beschreibung: 3–5.000 Zeichen" : {
+    "Türkis" : {
 
     },
-    "Türkis" : {
+    "Über Elyra Budget" : {
 
     },
     "Über Limit" : {
@@ -1173,19 +1074,13 @@
     "Über Limit %@" : {
 
     },
-    "Über Statusänderungen informieren" : {
-
-    },
-    "Überfällige Fixkosten" : {
-
-    },
     "Übersicht" : {
 
     },
     "Überspringen" : {
 
     },
-    "Ungewöhnlich hohe Ausgaben" : {
+    "Übertrage deine Daten lokal zwischen App-Versionen. Belege werden mitgesichert." : {
 
     },
     "Variable Buchungen" : {
@@ -1209,6 +1104,9 @@
     "Verlauf anzeigen" : {
 
     },
+    "Version" : {
+
+    },
     "Verwalten" : {
 
     },
@@ -1230,16 +1128,13 @@
     "Vorschau" : {
 
     },
+    "Wähle dein Pro-Modell" : {
+
+    },
     "Wähle häufige Budgets aus. Du kannst sie später bearbeiten oder löschen." : {
 
     },
     "Währung" : {
-
-    },
-    "Was ist passiert?" : {
-
-    },
-    "Was würdest du dir wünschen?" : {
 
     },
     "Weiter" : {
@@ -1264,9 +1159,6 @@
 
     },
     "Willkommen bei Elyra Budget" : {
-
-    },
-    "Wird gespeichert" : {
 
     },
     "Zeigt schnelle Aktionen wie Archivieren oder Löschen." : {

@@ -1,5 +1,11 @@
+import Foundation
 import StoreKit
 import SwiftUI
+
+private enum AppLegalLinks {
+    static let privacyPolicy = URL(string: "https://pasukistudio.de/datenschutz/")!
+    static let termsOfUse = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
+}
 
 struct ProUpgradeView: View {
     @Environment(\.dismiss) private var dismiss
@@ -13,6 +19,8 @@ struct ProUpgradeView: View {
                 VStack(spacing: 24) {
                     hero
                     benefits
+                    platformNote
+                    planSelection
                     purchaseAction
                 }
                 .padding(24)
@@ -91,9 +99,9 @@ struct ProUpgradeView: View {
             if proAccess.hasPro {
                 Label("Pro ist bereits freigeschaltet", systemImage: "checkmark.seal.fill")
                     .foregroundStyle(.green)
-            } else if let product = proAccess.product {
+            } else if let product = proAccess.selectedProduct {
                 Button {
-                    Task { await proAccess.purchase() }
+                    Task { await proAccess.purchase(plan: proAccess.selectedPlan) }
                 } label: {
                     Text("Pro kaufen – \(product.displayPrice)")
                         .frame(maxWidth: .infinity)
@@ -125,11 +133,93 @@ struct ProUpgradeView: View {
             .buttonStyle(.borderless)
             .disabled(proAccess.isRestoringPurchases)
 
-            Text("Du kannst Pro später jederzeit in deinen Apple‑Account-Einstellungen verwalten.")
+            Text("Du kannst Pro später jederzeit in deinen Apple‑Account‑Einstellungen verwalten.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+
+            Text(subscriptionTerms)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            HStack(spacing: 16) {
+                Link("Datenschutz", destination: AppLegalLinks.privacyPolicy)
+                Link("Nutzungsbedingungen (EULA)", destination: AppLegalLinks.termsOfUse)
+            }
+            .font(.footnote)
         }
+    }
+
+    private var planSelection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Wähle dein Pro-Modell")
+                .font(.headline)
+
+            ForEach(ProProductPlan.allCases) { plan in
+                Button {
+                    proAccess.selectedPlan = plan
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: proAccess.selectedPlan == plan
+                              ? "checkmark.circle.fill"
+                              : "circle")
+                            .foregroundStyle(proAccess.selectedPlan == plan ? Color.accentColor : .secondary)
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(plan.title)
+                                .font(.headline)
+                            Text(plan.subtitle)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        if let product = proAccess.products[plan.productID] {
+                            Text(product.displayPrice)
+                                .font(.headline)
+                        } else {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(12)
+                .background(
+                    proAccess.selectedPlan == plan
+                        ? Color.accentColor.opacity(0.12)
+                        : Color.secondary.opacity(0.08),
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                )
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var subscriptionTerms: String {
+        switch proAccess.selectedPlan {
+        case .monthly, .yearly:
+            "Das ausgewählte Abo verlängert sich automatisch, sofern es nicht mindestens 24 Stunden vor Ablauf gekündigt wird. Verwaltung und Kündigung erfolgen in den Apple‑Account‑Einstellungen."
+        case .lifetime:
+            "Für immer ist ein einmaliger Kauf ohne automatische Verlängerung."
+        }
+    }
+
+    private var platformNote: some View {
+        Label {
+            Text("Elyra Budget startet mit iOS. Eine optimierte iPadOS-Version und die Mac-App folgen nach einer eigenen Testphase. Die Mac-App kann zunächst 7 Tage kostenlos getestet werden und benötigt danach Pro.")
+        } icon: {
+            Image(systemName: "info.circle.fill")
+                .foregroundStyle(.tint)
+        }
+        .font(.footnote)
+        .foregroundStyle(.secondary)
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private func benefit(_ title: LocalizedStringKey, systemImage: String) -> some View {

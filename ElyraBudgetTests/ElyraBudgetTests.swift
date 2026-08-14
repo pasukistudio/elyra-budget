@@ -11,6 +11,7 @@ import SwiftData
 import Testing
 @testable import ElyraBudget
 
+@MainActor
 struct ElyraBudgetTests {
 
     @Test func runtimeConfigurationDisablesCloudKitForXCTestArguments() {
@@ -139,7 +140,7 @@ struct ElyraBudgetTests {
         }
     }
 
-    @Test func backupRoundTripPreservesDataAndRelationships() throws {
+    @Test @MainActor func backupRoundTripPreservesDataAndRelationships() throws {
         let container = try ModelContainer(
             for: UserSettings.self,
             BudgetGroup.self,

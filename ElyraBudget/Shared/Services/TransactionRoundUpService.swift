@@ -30,6 +30,7 @@ enum TransactionRoundUpService {
             )
         }
 
+        guard modelContext.hasChanges else { return }
         try modelContext.save()
     }
 
@@ -77,6 +78,7 @@ enum TransactionRoundUpService {
                 modelContext: modelContext
             )
         }
+        guard modelContext.hasChanges else { return }
         try modelContext.save()
     }
 

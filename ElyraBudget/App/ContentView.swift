@@ -307,7 +307,6 @@ struct ContentView: View {
         settings.monthlySummaryNotificationsEnabled = false
         settings.forecastRiskNotificationsEnabled = false
         settings.syncRecoveryNotificationsEnabled = false
-        settings.feedbackStatusNotificationsEnabled = false
         settings.unusualExpenseNotificationsEnabled = false
         settings.updatedAt = .now
 

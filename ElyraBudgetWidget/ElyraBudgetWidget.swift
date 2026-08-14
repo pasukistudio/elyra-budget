@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 import WidgetKit
 
-private let widgetAppGroup = "group.de.pascal.ElyraBudget"
+private let widgetAppGroup = "group.de.pasukistudio.elyrabudget"
 private let widgetSnapshotKey = "elyraBudget.widget.snapshot"
 
 private struct WidgetSnapshot: Codable {
@@ -41,7 +41,10 @@ private struct Provider: TimelineProvider {
     }
 
     private func loadSnapshot() -> WidgetSnapshot? {
-        guard let data = UserDefaults(suiteName: widgetAppGroup)?.data(forKey: widgetSnapshotKey) else {
+        guard FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: widgetAppGroup
+        ) != nil,
+        let data = UserDefaults(suiteName: widgetAppGroup)?.data(forKey: widgetSnapshotKey) else {
             return nil
         }
         return try? JSONDecoder().decode(WidgetSnapshot.self, from: data)

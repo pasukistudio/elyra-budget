@@ -9,6 +9,38 @@ import Foundation
 import Observation
 import StoreKit
 
+enum ProProductPlan: String, CaseIterable, Identifiable {
+    case monthly
+    case yearly
+    case lifetime
+
+    var id: String { rawValue }
+
+    var productID: String {
+        switch self {
+        case .monthly: "de.pasukistudio.elyrabudget.pro.monthly"
+        case .yearly: "de.pasukistudio.elyrabudget.pro.yearly"
+        case .lifetime: "de.pasukistudio.elyrabudget.pro.lifetime.v1"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .monthly: "Monatlich"
+        case .yearly: "Jährlich"
+        case .lifetime: "Für immer"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .monthly: "Flexibel monatlich kündbar"
+        case .yearly: "Beste Wahl – günstiger als monatlich"
+        case .lifetime: "Einmal zahlen, dauerhaft nutzen"
+        }
+    }
+}
+
 @Observable
 final class ProAccessManager {
     // MARK: - Pro-Status
@@ -65,11 +97,16 @@ final class ProAccessManager {
         #endif
     }
 
-    static let productID = "de.pascal.ElyraBudget.pro"
-    private(set) var product: Product?
+    static let productIDs = ProProductPlan.allCases.map(\.productID)
+    private(set) var products: [String: Product] = [:]
+    var selectedPlan: ProProductPlan = .yearly
     private(set) var isLoadingProduct = false
     private(set) var isRestoringPurchases = false
     var purchaseError: String?
+
+    var selectedProduct: Product? {
+        products[selectedPlan.productID]
+    }
 
     // MARK: - Testfunktionen
 
@@ -91,12 +128,27 @@ final class ProAccessManager {
 
     @MainActor
     func loadProduct() async {
-        guard product == nil, !isLoadingProduct else { return }
+        guard products.isEmpty, !isLoadingProduct else { return }
         isLoadingProduct = true
         defer { isLoadingProduct = false }
 
         do {
-            product = try await Product.products(for: [Self.productID]).first
+            let loadedProducts = try await Product.products(for: Self.productIDs)
+            let productsByID = Dictionary(
+                uniqueKeysWithValues: loadedProducts.map { ($0.id, $0) }
+            )
+            products = productsByID
+
+            if productsByID[selectedPlan.productID] == nil,
+               let fallbackPlan = ProProductPlan.allCases.first(where: {
+                   productsByID[$0.productID] != nil
+               }) {
+                selectedPlan = fallbackPlan
+            }
+
+            if productsByID.isEmpty {
+                purchaseError = "Die Pro-Angebote sind derzeit nicht verfügbar. Bitte versuche es später erneut."
+            }
         } catch {
             purchaseError = error.localizedDescription
         }
@@ -115,12 +167,14 @@ final class ProAccessManager {
         // in-memory value after a restore, revocation, or account change.
         hasPro = false
 
-        for await result in StoreKit.Transaction.currentEntitlements(for: Self.productID) {
-            guard case .verified(let transaction) = result else { continue }
-            if transaction.productID == Self.productID,
-               transaction.revocationDate == nil {
-                hasPro = true
-                return
+        for productID in Self.productIDs {
+            for await result in StoreKit.Transaction.currentEntitlements(for: productID) {
+                guard case .verified(let transaction) = result else { continue }
+                if transaction.productID == productID,
+                   transaction.revocationDate == nil {
+                    hasPro = true
+                    return
+                }
             }
         }
     }
@@ -130,7 +184,7 @@ final class ProAccessManager {
         for await result in StoreKit.Transaction.updates {
             guard case .verified(let transaction) = result else { continue }
 
-            if transaction.productID == Self.productID {
+            if Self.productIDs.contains(transaction.productID) {
                 #if DEBUG
                 if UserDefaults.standard.bool(forKey: Self.testingProKey) {
                     hasPro = true
@@ -147,8 +201,9 @@ final class ProAccessManager {
     }
 
     @MainActor
-    func purchase() async {
-        guard let product else {
+    func purchase(plan: ProProductPlan? = nil) async {
+        let plan = plan ?? selectedPlan
+        guard let product = products[plan.productID] else {
             purchaseError = "Das Pro-Angebot ist derzeit nicht verfügbar."
             return
         }

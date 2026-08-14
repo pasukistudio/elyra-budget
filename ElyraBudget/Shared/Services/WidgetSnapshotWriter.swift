@@ -20,6 +20,16 @@ enum WidgetSnapshotWriter {
     static let appGroup = "group.de.pasukistudio.elyrabudget"
     private static let key = "elyraBudget.widget.snapshot"
 
+    private static var sharedDefaults: UserDefaults? {
+        guard FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: appGroup
+        ) != nil else {
+            AppLogger.persistence.debug("Widget-App-Group ist auf diesem Gerät nicht verfügbar.")
+            return nil
+        }
+        return UserDefaults(suiteName: appGroup)
+    }
+
     static func write(
         groups: [BudgetGroup],
         currencyCode: String,
@@ -44,7 +54,7 @@ enum WidgetSnapshotWriter {
         )
         do {
             let data = try JSONEncoder().encode(snapshot)
-            UserDefaults(suiteName: appGroup)?.set(data, forKey: key)
+            sharedDefaults?.set(data, forKey: key)
         } catch {
             AppLogger.persistence.error("Widget-Daten konnten nicht gespeichert werden: \(error)")
             return
@@ -55,7 +65,7 @@ enum WidgetSnapshotWriter {
     }
 
     static func clear() {
-        UserDefaults(suiteName: appGroup)?.removeObject(forKey: key)
+        sharedDefaults?.removeObject(forKey: key)
         #if canImport(WidgetKit)
         WidgetCenter.shared.reloadAllTimelines()
         #endif
