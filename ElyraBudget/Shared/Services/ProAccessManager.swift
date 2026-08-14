@@ -134,7 +134,21 @@ final class ProAccessManager {
 
         do {
             let loadedProducts = try await Product.products(for: Self.productIDs)
-            products = Dictionary(uniqueKeysWithValues: loadedProducts.map { ($0.id, $0) })
+            let productsByID = Dictionary(
+                uniqueKeysWithValues: loadedProducts.map { ($0.id, $0) }
+            )
+            products = productsByID
+
+            if productsByID[selectedPlan.productID] == nil,
+               let fallbackPlan = ProProductPlan.allCases.first(where: {
+                   productsByID[$0.productID] != nil
+               }) {
+                selectedPlan = fallbackPlan
+            }
+
+            if productsByID.isEmpty {
+                purchaseError = "Die Pro-Angebote sind derzeit nicht verfügbar. Bitte versuche es später erneut."
+            }
         } catch {
             purchaseError = error.localizedDescription
         }

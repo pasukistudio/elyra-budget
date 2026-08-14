@@ -17,7 +17,6 @@ struct NotificationSettingsSection: View {
                 notificationToggle("Sparziel-Prognose", value: \.forecastRiskNotificationsEnabled, profile: profile)
                 notificationToggle("Überfällige Fixkosten", value: \.overdueFixedCostNotificationsEnabled, profile: profile)
                 notificationToggle("iCloud wieder synchronisiert", value: \.syncRecoveryNotificationsEnabled, profile: profile)
-                notificationToggle("Feedback-Statusänderungen", value: \.feedbackStatusNotificationsEnabled, profile: profile)
                 notificationToggle("Ungewöhnlich hohe Ausgaben", value: \.unusualExpenseNotificationsEnabled, profile: profile)
                 notificationToggle("Tägliche Zusammenfassung", value: \.dailyDigestNotificationsEnabled, profile: profile)
 

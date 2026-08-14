@@ -238,38 +238,6 @@ enum AppNotificationScheduler {
         }
     }
 
-    static func scheduleFeedbackStatusChange(
-        title: String,
-        state: String,
-        enabled: Bool,
-        postID: String,
-        center: UNUserNotificationCenter = .current()
-    ) async {
-        guard enabled else { return }
-        let authorization = await center.notificationSettings().authorizationStatus
-        guard authorization == .authorized || authorization == .provisional else { return }
-
-        let content = UNMutableNotificationContent()
-        content.title = "Feedback aktualisiert"
-        content.body = "\(title): \(state)"
-        content.sound = .default
-        content.threadIdentifier = "feedback"
-        content.categoryIdentifier = "feedback"
-        do {
-            try await center.add(
-                UNNotificationRequest(
-                    identifier: "feedback-status-\(postID)",
-                    content: content,
-                    trigger: immediateTrigger()
-                )
-            )
-        } catch {
-            AppLogger.persistence.error(
-                "Feedback-Benachrichtigung konnte nicht geplant werden: \(error)"
-            )
-        }
-    }
-
     private static func scheduleBudgetWarnings(
         budgets: [Budget],
         transactions: [Transaction],

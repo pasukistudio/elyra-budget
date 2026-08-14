@@ -37,6 +37,7 @@ struct SettingsView: View {
             supportSection
             cloudKitSyncSection
             dataTransferSection
+            legalSection
             aboutSection
 
             #if DEBUG
@@ -101,11 +102,9 @@ struct SettingsView: View {
     // MARK: - iCloud
 
     private var supportSection: some View {
-        Section("Hilfe & Feedback") {
-            NavigationLink {
-                FeedbackView()
-            } label: {
-                Label("Feedback & Roadmap", systemImage: "bubble.left.and.bubble.right.fill")
+        Section("Hilfe & Support") {
+            Link(destination: URL(string: "mailto:support@pasukistudio.de?subject=Elyra%20Budget%20Support")!) {
+                Label("Support per E-Mail", systemImage: "envelope.fill")
             }
         }
     }
@@ -178,6 +177,18 @@ struct SettingsView: View {
         }
     }
 
+    private var legalSection: some View {
+        Section("Rechtliches") {
+            Link(destination: URL(string: "https://pasukistudio.de/datenschutz/")!) {
+                Label("Datenschutz", systemImage: "hand.raised.fill")
+            }
+
+            Link(destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!) {
+                Label("Nutzungsbedingungen (EULA)", systemImage: "doc.text.fill")
+            }
+        }
+    }
+
     private var appVersion: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "–"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "–"
@@ -217,7 +228,6 @@ struct SettingsView: View {
             profile.forecastRiskNotificationsEnabled,
             profile.overdueFixedCostNotificationsEnabled,
             profile.syncRecoveryNotificationsEnabled,
-            profile.feedbackStatusNotificationsEnabled,
             profile.unusualExpenseNotificationsEnabled,
             profile.dailyDigestNotificationsEnabled
         ].filter { $0 }.count

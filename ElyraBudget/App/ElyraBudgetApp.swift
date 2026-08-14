@@ -1,4 +1,5 @@
 import SwiftData
+import OSLog
 import SwiftUI
 import UserNotifications
 
@@ -55,9 +56,29 @@ struct ElyraBudgetApp: App {
                 configurations: [configuration]
             )
         } catch {
-            fatalError(
-                "ModelContainer konnte nicht erstellt werden: \(error)"
+            AppLogger.persistence.error(
+                "CloudKit-ModelContainer konnte nicht erstellt werden: \(error.localizedDescription)"
             )
+
+            let recoveryConfiguration = ModelConfiguration(
+                "ElyraBudgetRecovery",
+                schema: schema,
+                isStoredInMemoryOnly: false
+            )
+
+            do {
+                return try ModelContainer(
+                    for: schema,
+                    configurations: [recoveryConfiguration]
+                )
+            } catch {
+                AppLogger.persistence.error(
+                    "Lokaler Recovery-ModelContainer konnte nicht erstellt werden: \(error.localizedDescription)"
+                )
+                fatalError(
+                    "ModelContainer konnte nicht erstellt werden: \(error)"
+                )
+            }
         }
     }()
 
@@ -110,12 +131,6 @@ struct ElyraBudgetApp: App {
                 intentIdentifiers: [],
                 options: []
             ),
-            UNNotificationCategory(
-                identifier: "feedback",
-                actions: [openAction],
-                intentIdentifiers: [],
-                options: []
-            )
         ])
     }
 

@@ -32,9 +32,6 @@
     "%@ verschieben" : {
 
     },
-    "%lld" : {
-
-    },
     "%lld %%" : {
 
     },
@@ -42,12 +39,6 @@
 
     },
     "%lld Buchungen werden importiert. Bestehende Buchungen bleiben unverändert." : {
-
-    },
-    "%lld Stimmen" : {
-
-    },
-    "•" : {
 
     },
     "0,00" : {
@@ -60,9 +51,6 @@
 
     },
     "Abbuchung" : {
-
-    },
-    "Abstimmung nicht gespeichert" : {
 
     },
     "Achte auf dein Budget" : {
@@ -97,9 +85,6 @@
 
     },
     "An Fälligkeit erinnern" : {
-
-    },
-    "Ansicht" : {
 
     },
     "Anteil" : {
@@ -343,9 +328,6 @@
     "Cyan" : {
 
     },
-    "Danke für deinen Beitrag" : {
-
-    },
     "Darstellung" : {
 
     },
@@ -370,13 +352,10 @@
     "Daten übertragen" : {
 
     },
+    "Datenschutz" : {
+
+    },
     "Datum" : {
-
-    },
-    "Dein Beitrag" : {
-
-    },
-    "Dein Beitrag wurde übermittelt und wird vor der Veröffentlichung geprüft." : {
 
     },
     "Dein Name" : {
@@ -428,16 +407,13 @@
     "Du erhältst am Fälligkeitstag eine lokale Mitteilung." : {
 
     },
-    "Du erhältst eine Mitteilung, sobald dein Beitrag geprüft, geplant oder umgesetzt wurde." : {
-
-    },
     "Du kannst Budgets, Währung und weitere Einstellungen später jederzeit ändern." : {
 
     },
     "Du kannst jederzeit zurückkommen und alles ändern." : {
 
     },
-    "Du kannst Pro später jederzeit in deinen Apple‑Account-Einstellungen verwalten." : {
+    "Du kannst Pro später jederzeit in deinen Apple‑Account‑Einstellungen verwalten." : {
 
     },
     "Dunkel" : {
@@ -498,9 +474,6 @@
     "Entfernen" : {
 
     },
-    "Erneut laden" : {
-
-    },
     "Erscheinungsbild" : {
 
     },
@@ -528,25 +501,10 @@
     "Fällig" : {
 
     },
-    "Feature vorschlagen" : {
-
-    },
-    "Feedback & Roadmap" : {
-
-    },
-    "Feedback hinzufügen" : {
-
-    },
-    "Feedback wird geladen …" : {
-
-    },
     "Fehler auf GitHub melden" : {
 
     },
     "Fehler ausblenden" : {
-
-    },
-    "Fehler melden" : {
 
     },
     "Fertig" : {
@@ -592,9 +550,6 @@
 
     },
     "Füge die erste Einzahlung für dieses %@ hinzu." : {
-
-    },
-    "Für Beitrag abstimmen" : {
 
     },
     "Für diese Fixkosten wurden noch keine Buchungen oder geplanten Termine gefunden." : {
@@ -675,7 +630,7 @@
     "Heute gibt es noch keine Buchungen." : {
 
     },
-    "Hilfe & Feedback" : {
+    "Hilfe & Support" : {
 
     },
     "Hinzufügen" : {
@@ -785,9 +740,6 @@
 
     },
     "Kontingent für diesen Monat" : {
-
-    },
-    "Kurzer Titel" : {
 
     },
     "Lege regelmäßige Ausgaben an und behalte deine monatliche Belastung im Blick." : {
@@ -954,6 +906,9 @@
     "Nur verknüpfen" : {
 
     },
+    "Nutzungsbedingungen (EULA)" : {
+
+    },
     "Öffnet weitere Optionen wie Bearbeiten und Verwalten." : {
 
     },
@@ -985,9 +940,6 @@
 
     },
     "PDF exportieren" : {
-
-    },
-    "Privater Support" : {
 
     },
     "PRO" : {
@@ -1023,6 +975,9 @@
     "Prüfe Identität …" : {
 
     },
+    "Rechtliches" : {
+
+    },
     "Rosa" : {
 
     },
@@ -1030,9 +985,6 @@
 
     },
     "Rot ab" : {
-
-    },
-    "Rückmeldung" : {
 
     },
     "Ruhezeiten" : {
@@ -1045,9 +997,6 @@
 
     },
     "Schritt %lld von 4" : {
-
-    },
-    "Senden" : {
 
     },
     "Sicherheit" : {
@@ -1101,9 +1050,6 @@
     "Statistiken und Monatsberichte" : {
 
     },
-    "Stimme entfernen" : {
-
-    },
     "Support per E-Mail" : {
 
     },
@@ -1113,13 +1059,7 @@
     "Teile die Datei oder speichere sie in der Dateien-App." : {
 
     },
-    "Teile Ideen, melde Fehler und stimme direkt in der App ab." : {
-
-    },
     "Teilen" : {
-
-    },
-    "Titel: 3–120 Zeichen · Beschreibung: 3–5.000 Zeichen" : {
 
     },
     "Türkis" : {
@@ -1132,9 +1072,6 @@
 
     },
     "Über Limit %@" : {
-
-    },
-    "Über Statusänderungen informieren" : {
 
     },
     "Übersicht" : {
@@ -1200,12 +1137,6 @@
     "Währung" : {
 
     },
-    "Was ist passiert?" : {
-
-    },
-    "Was würdest du dir wünschen?" : {
-
-    },
     "Weiter" : {
 
     },
@@ -1228,9 +1159,6 @@
 
     },
     "Willkommen bei Elyra Budget" : {
-
-    },
-    "Wird gespeichert" : {
 
     },
     "Zeigt schnelle Aktionen wie Archivieren oder Löschen." : {

@@ -1,5 +1,11 @@
+import Foundation
 import StoreKit
 import SwiftUI
+
+private enum AppLegalLinks {
+    static let privacyPolicy = URL(string: "https://pasukistudio.de/datenschutz/")!
+    static let termsOfUse = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
+}
 
 struct ProUpgradeView: View {
     @Environment(\.dismiss) private var dismiss
@@ -127,10 +133,21 @@ struct ProUpgradeView: View {
             .buttonStyle(.borderless)
             .disabled(proAccess.isRestoringPurchases)
 
-            Text("Du kannst Pro später jederzeit in deinen Apple‑Account-Einstellungen verwalten.")
+            Text("Du kannst Pro später jederzeit in deinen Apple‑Account‑Einstellungen verwalten.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+
+            Text(subscriptionTerms)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            HStack(spacing: 16) {
+                Link("Datenschutz", destination: AppLegalLinks.privacyPolicy)
+                Link("Nutzungsbedingungen (EULA)", destination: AppLegalLinks.termsOfUse)
+            }
+            .font(.footnote)
         }
     }
 
@@ -180,6 +197,15 @@ struct ProUpgradeView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var subscriptionTerms: String {
+        switch proAccess.selectedPlan {
+        case .monthly, .yearly:
+            "Das ausgewählte Abo verlängert sich automatisch, sofern es nicht mindestens 24 Stunden vor Ablauf gekündigt wird. Verwaltung und Kündigung erfolgen in den Apple‑Account‑Einstellungen."
+        case .lifetime:
+            "Für immer ist ein einmaliger Kauf ohne automatische Verlängerung."
+        }
     }
 
     private var platformNote: some View {

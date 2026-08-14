@@ -2,15 +2,6 @@
   "originHash" : "a2b47b975283c007063016d75469b395d89f8763da1d376160fb8c6dcfdb6109",
   "pins" : [
     {
-      "identity" : "supabase-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/supabase-community/supabase-swift",
-      "state" : {
-        "revision" : "b118484ae0eb4a6b6ce1b216711d660baf6ec1aa",
-        "version" : "2.54.1"
-      }
-    },
-    {
       "identity" : "swift-asn1",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-asn1.git",
