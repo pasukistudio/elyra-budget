@@ -2,13 +2,29 @@ import Foundation
 import SwiftData
 
 enum BudgetGroupMigration {
+    static func ensureAtLeastOneActiveGroup(
+        in modelContext: ModelContext
+    ) throws {
+        let groups = try modelContext.fetch(FetchDescriptor<BudgetGroup>())
+        guard !groups.isEmpty, groups.allSatisfy(\.isArchived),
+              let group = groups.first else {
+            return
+        }
+
+        group.isArchived = false
+        group.updatedAt = .now
+        try modelContext.save()
+    }
+
     @discardableResult
     static func ensureDefaultGroupAndMigrate(
         in modelContext: ModelContext
     ) throws -> BudgetGroup {
         let groups = try modelContext.fetch(FetchDescriptor<BudgetGroup>())
-        let group = groups.first(where: isPersonalGroup)
-            ?? groups.first(where: { !$0.isArchived })
+        let activeGroups = groups.filter { !$0.isArchived }
+        let group = activeGroups.first(where: isPersonalGroup)
+            ?? activeGroups.first
+            ?? groups.first(where: isPersonalGroup)
             ?? groups.first
             ?? BudgetGroup(
                 name: "Persönlich",
@@ -17,11 +33,18 @@ enum BudgetGroupMigration {
                 sortOrder: 0
             )
 
-        if groups.isEmpty {
-            modelContext.insert(group)
+        var didChange = false
+        if group.isArchived {
+            group.isArchived = false
+            group.updatedAt = .now
+            didChange = true
         }
 
-        var didChange = false
+        if groups.isEmpty {
+            modelContext.insert(group)
+            didChange = true
+        }
+
         let budgets = try modelContext.fetch(FetchDescriptor<Budget>())
         let fixedCosts = try modelContext.fetch(FetchDescriptor<FixedCost>())
         let savingsGoals = try modelContext.fetch(FetchDescriptor<SavingsGoal>())
@@ -44,7 +67,7 @@ enum BudgetGroupMigration {
             didChange = true
         }
 
-        if didChange || groups.isEmpty {
+        if didChange {
             try modelContext.save()
         }
 

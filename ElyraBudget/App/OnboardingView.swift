@@ -14,10 +14,18 @@ struct OnboardingView: View {
 
     @State private var step = 0
     @State private var name = ""
+    @State private var monthlyBudgetText = ""
     @State private var selectedTemplates: Set<String> = []
+    @State private var selectedSavingsExamples: Set<String> = []
+    @State private var selectedFixedCostExamples: Set<String> = []
+    @State private var includeExampleTransaction = true
     @State private var saveErrorMessage: String?
-    @State private var tutorialGestureOffset: CGFloat = -6
-    @State private var showingProUpgrade = false
+    @FocusState private var focusedField: InputField?
+
+    private enum InputField: Hashable {
+        case name
+        case monthlyBudget
+    }
 
     private static let templates: [BudgetTemplate] = [
         BudgetTemplate(name: "Lebensmittel", iconName: "cart.fill", iconColorHex: "#FF9500", limit: 400),
@@ -27,16 +35,54 @@ struct OnboardingView: View {
         BudgetTemplate(name: "Abonnements", iconName: "repeat", iconColorHex: "#34C759", limit: 75)
     ]
 
+    private static let savingsExamples: [StarterExample] = [
+        StarterExample(
+            id: "notgroschen",
+            title: "Notgroschen",
+            description: "100 € monatlich für unerwartete Ausgaben",
+            iconName: "shield.fill",
+            iconColorHex: "#34C759",
+            amount: 100
+        ),
+        StarterExample(
+            id: "urlaub",
+            title: "Urlaub",
+            description: "75 € monatlich für dein nächstes Reiseziel",
+            iconName: "airplane.departure",
+            iconColorHex: "#007AFF",
+            amount: 75
+        )
+    ]
+
+    private static let fixedCostExamples: [StarterExample] = [
+        StarterExample(
+            id: "miete",
+            title: "Miete",
+            description: "850 € monatlich am 1. des Monats",
+            iconName: "house.fill",
+            iconColorHex: "#5856D6",
+            amount: 850
+        ),
+        StarterExample(
+            id: "streaming",
+            title: "Streaming",
+            description: "15 € monatlich für ein Abonnement",
+            iconName: "play.tv.fill",
+            iconColorHex: "#FF2D55",
+            amount: 15
+        )
+    ]
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                ProgressView(value: Double(step + 1), total: 4)
+                ProgressView(value: Double(step + 1), total: 6)
                     .tint(.accentColor)
                     .padding(.horizontal)
                     .padding(.top, 12)
 
                 HStack(spacing: 7) {
-                    ForEach(0 ..< 4, id: \.self) { page in
+                    ForEach(0 ..< 6, id: \.self) { page in
                         Capsule(style: .continuous)
                             .fill(page == step ? Color.accentColor : Color.secondary.opacity(0.22))
                             .frame(width: page == step ? 20 : 7, height: 7)
@@ -45,13 +91,15 @@ struct OnboardingView: View {
                 }
                 .padding(.top, 10)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("Schritt \(step + 1) von 4")
+                .accessibilityLabel("Schritt \(step + 1) von 6")
 
                 TabView(selection: $step) {
                     welcomePage.tag(0)
                     profilePage.tag(1)
                     templatesPage.tag(2)
                     interactionPage.tag(3)
+                    savingsPage.tag(4)
+                    fixedCostsPage.tag(5)
                 }
                 #if os(iOS)
                 .tabViewStyle(.page(indexDisplayMode: .never))
@@ -68,8 +116,10 @@ struct OnboardingView: View {
 
                     Spacer()
 
-                    Button(step == 3 ? "Los geht's" : "Weiter") {
-                        if step == 3 {
+                    Button(step == 5 ? "Los geht's" : "Weiter") {
+                        focusedField = nil
+
+                        if step == 5 {
                             finishOnboarding()
                         } else {
                             withAnimation { step += 1 }
@@ -87,6 +137,7 @@ struct OnboardingView: View {
             .interactiveDismissDisabled()
             .task {
                 name = profiles.first?.name ?? ""
+                monthlyBudgetText = "1.800"
             }
             .saveErrorAlert(message: $saveErrorMessage)
         }
@@ -98,23 +149,32 @@ struct OnboardingView: View {
             systemImage: "chart.pie.fill",
             description: "Elyra Budget hilft dir, Budgets, Buchungen, Fixkosten und Sparziele an einem Ort zu organisieren."
         ) {
-            VStack(spacing: 12) {
-                HStack(spacing: 10) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                    Text("Einfach starten, jederzeit anpassen")
-                }
-                HStack(spacing: 10) {
-                    Image(systemName: "icloud.fill")
-                        .foregroundStyle(.blue)
-                    Text("Deine Daten bleiben auf deinen Geräten synchron")
-                }
+            VStack(spacing: 8) {
+                onboardingInfoCard(
+                    systemImage: "gauge.with.dots.needle.67percent",
+                    color: .accentColor,
+                    title: "Gesamtbudget",
+                    text: "Dein monatlicher Rahmen für alle Ausgaben."
+                )
+                onboardingInfoCard(
+                    systemImage: "square.grid.2x2.fill",
+                    color: .blue,
+                    title: "Budgets",
+                    text: "Teile dein Gesamtbudget auf, zum Beispiel für Lebensmittel oder Freizeit."
+                )
+                onboardingInfoCard(
+                    systemImage: "list.bullet.rectangle",
+                    color: .orange,
+                    title: "Buchungen",
+                    text: "Trage Einnahmen und Ausgaben ein – Elyra zeigt dir, was noch verfügbar ist."
+                )
+                onboardingInfoCard(
+                    systemImage: "calendar.badge.clock",
+                    color: .green,
+                    title: "Sparen & Fixkosten",
+                    text: "Plane regelmäßige Zahlungen und lege Geld für deine Ziele zurück."
+                )
             }
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
-            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
     }
 
@@ -128,6 +188,7 @@ struct OnboardingView: View {
                 .textFieldStyle(.roundedBorder)
                 .textContentType(.name)
                 .submitLabel(.done)
+                .focused($focusedField, equals: .name)
         }
     }
 
@@ -135,10 +196,28 @@ struct OnboardingView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 OnboardingPageHeader(
-                    title: "Mit Vorlagen starten",
+                    title: "Dein Monatsrahmen",
                     systemImage: "square.grid.2x2.fill",
-                    description: "Wähle häufige Budgets aus. Du kannst sie später bearbeiten oder löschen."
+                    description: "Das Gesamtbudget ist dein monatlicher Rahmen. Budgets zeigen dir, wofür du ihn ausgibst."
                 )
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Gesamtbudget pro Monat")
+                        .font(.headline)
+                    TextField("Zum Beispiel 1.800 €", text: $monthlyBudgetText)
+                        .textFieldStyle(.roundedBorder)
+                        .focused($focusedField, equals: .monthlyBudget)
+                        #if os(iOS)
+                        .keyboardType(.decimalPad)
+                        #endif
+                    Text("Du kannst den Betrag später für jeden Monat anpassen.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Text("Beispielbudgets auswählen")
+                    .font(.title3.bold())
+                    .padding(.top, 4)
 
                 ForEach(Self.templates) { template in
                     Button {
@@ -162,6 +241,7 @@ struct OnboardingView: View {
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
+                            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                             Spacer()
                             Image(systemName: selectedTemplates.contains(template.id) ? "checkmark.circle.fill" : "circle")
                                 .font(.title3)
@@ -196,85 +276,180 @@ struct OnboardingView: View {
 
     private var interactionPage: some View {
         OnboardingPage(
-            title: "Alles Wichtige auf einen Blick",
-            systemImage: "hand.draw.fill",
-            description: "Mit kleinen Gesten erreichst du die wichtigsten Funktionen deiner Karten.",
+            title: "Buchungen ausprobieren",
+            systemImage: "cart.fill",
+            description: "Mit einer Beispielbuchung siehst du direkt, wie Einnahmen und Ausgaben in Elyra Budget funktionieren.",
             content: {
-                VStack(spacing: 14) {
-                    tutorialCard(
-                        systemImage: "arrow.left.and.right",
-                        color: .accentColor,
-                        title: "Nach links wischen",
-                        message: "Zeigt schnelle Aktionen wie Archivieren oder Löschen."
-                    )
-
-                    tutorialCard(
-                        systemImage: "hand.tap.fill",
+                VStack(spacing: 10) {
+                    exampleToggle(
+                        isOn: $includeExampleTransaction,
+                        systemImage: "cart.fill",
                         color: .orange,
-                        title: "Gedrückt halten",
-                        message: "Öffnet weitere Optionen wie Bearbeiten und Verwalten."
+                        title: "Beispielbuchung",
+                        text: "Supermarkt · 48,60 €"
                     )
 
-                    HStack(spacing: 10) {
-                        Image(systemName: "hand.point.right.fill")
-                            .font(.title2)
-                            .foregroundStyle(Color.accentColor)
-                            .offset(x: tutorialGestureOffset)
-                            .animation(
-                                .easeInOut(duration: 0.9).repeatForever(autoreverses: true),
-                                value: tutorialGestureOffset
-                            )
-                        Text("Du kannst jederzeit zurückkommen und alles ändern.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 6)
-
-                    Button {
-                        showingProUpgrade = true
-                    } label: {
-                        Label("Pro kennenlernen", systemImage: "sparkles")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(.accentColor)
-                    .padding(.top, 4)
+                    Text("Du kannst das Beispiel später jederzeit bearbeiten oder löschen.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .onAppear { tutorialGestureOffset = 6 }
             }
         )
-        .sheet(isPresented: $showingProUpgrade) {
-            ProUpgradeView(feature: "Detaillierte Prognosen")
-        }
     }
 
-    private func tutorialCard(
+    private var savingsPage: some View {
+        OnboardingPage(
+            title: "Sparen planen",
+            systemImage: "target",
+            description: "Sparziele zeigen dir, wofür du regelmäßig Geld zurücklegst. Wähle ein Beispiel aus oder starte ohne Sparziel.",
+            content: {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        exampleSelectionSection(
+                            title: "Beispiele für Sparziele",
+                            description: "Zum Beispiel für einen Notgroschen oder deinen nächsten Urlaub.",
+                            examples: Self.savingsExamples,
+                            selection: $selectedSavingsExamples
+                        )
+
+                        Text("Du kannst Sparziele später jederzeit bearbeiten oder löschen.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        )
+    }
+
+    private var fixedCostsPage: some View {
+        OnboardingPage(
+            title: "Fixkosten im Blick behalten",
+            systemImage: "calendar.badge.clock",
+            description: "Fixkosten werden automatisch in deiner Monatsplanung berücksichtigt. Wähle Beispiele aus, damit du direkt starten kannst.",
+            content: {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        exampleSelectionSection(
+                            title: "Beispiele für Fixkosten",
+                            description: "Zum Beispiel Miete oder ein Streaming-Abonnement.",
+                            examples: Self.fixedCostExamples,
+                            selection: $selectedFixedCostExamples
+                        )
+
+                        Text("Du kannst Fixkosten später jederzeit bearbeiten oder löschen.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        )
+    }
+
+    private func onboardingInfoCard(
         systemImage: String,
         color: Color,
         title: LocalizedStringKey,
-        message: LocalizedStringKey
+        text: LocalizedStringKey
     ) -> some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 10) {
             Image(systemName: systemImage)
-                .font(.title3.weight(.semibold))
                 .foregroundStyle(color)
-                .frame(width: 42, height: 42)
-                .background(color.opacity(0.12), in: Circle())
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.headline)
-                Text(message)
-                    .font(.footnote)
+                .frame(width: 24)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title).font(.subheadline.weight(.semibold))
+                Text(text)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             Spacer(minLength: 0)
         }
-        .padding(14)
-        .background(cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(cardBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func exampleToggle(
+        isOn: Binding<Bool>,
+        systemImage: String,
+        color: Color,
+        title: LocalizedStringKey,
+        text: LocalizedStringKey
+    ) -> some View {
+        Toggle(isOn: isOn) {
+            HStack(spacing: 10) {
+                Image(systemName: systemImage)
+                    .foregroundStyle(color)
+                    .frame(width: 24)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(title).font(.subheadline.weight(.semibold))
+                    Text(text)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .toggleStyle(.switch)
+        .padding(12)
+        .background(cardBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func exampleSelectionSection(
+        title: LocalizedStringKey,
+        description: LocalizedStringKey,
+        examples: [StarterExample],
+        selection: Binding<Set<String>>
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text(title).font(.subheadline.bold())
+            Text(description)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            ForEach(examples) { example in
+                let isSelected = selection.wrappedValue.contains(example.id)
+                Button {
+                    if isSelected {
+                        selection.wrappedValue.remove(example.id)
+                    } else {
+                        selection.wrappedValue.insert(example.id)
+                    }
+                } label: {
+                    HStack(spacing: 10) {
+                        IconBadgeView(
+                            iconName: example.iconName,
+                            color: Color(hexString: example.iconColorHex),
+                            size: 34
+                        )
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(example.title)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.primary)
+                            Text(example.description)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                        Spacer(minLength: 0)
+                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                    }
+                    .padding(10)
+                    .background(cardBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(isSelected ? Color.accentColor : .clear, lineWidth: 2)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        }
     }
 
     private var cardBackground: Color {
@@ -295,15 +470,75 @@ struct OnboardingView: View {
         }
 
         let targetGroup = group ?? fetchOrCreateDefaultGroup()
+        if let monthlyBudgetAmount {
+            targetGroup.standardMonthlyBudget = monthlyBudgetAmount
+            targetGroup.updatedAt = .now
+        }
+
         let existingNames = Set((targetGroup.budgets ?? []).map { $0.name.localizedLowercase })
+        var availableBudgets = targetGroup.budgets ?? []
         for template in Self.templates where selectedTemplates.contains(template.id) {
             guard !existingNames.contains(template.name.localizedLowercase) else { continue }
+            let budget = Budget(
+                name: template.name,
+                iconName: template.iconName,
+                iconColorHex: template.iconColorHex,
+                limit: template.limit,
+                group: targetGroup
+            )
+            modelContext.insert(budget)
+            availableBudgets.append(budget)
+        }
+
+        if includeExampleTransaction {
+            let supermarketBudget = availableBudgets.first {
+                $0.name.localizedCaseInsensitiveCompare("Lebensmittel") == .orderedSame
+            }
+            let existingExample = (targetGroup.transactions ?? []).contains {
+                $0.title.localizedCaseInsensitiveCompare("Supermarkt") == .orderedSame
+            }
+            if !existingExample {
+                modelContext.insert(
+                    Transaction(
+                        title: "Supermarkt",
+                        amount: 48.60,
+                        date: .now,
+                        note: "Beispielbuchung zum Ausprobieren",
+                        budget: supermarketBudget,
+                        group: targetGroup
+                    )
+                )
+            }
+        }
+
+        let existingSavingsNames = Set((targetGroup.savingsGoals ?? []).map { $0.name.localizedLowercase })
+        for example in Self.savingsExamples where selectedSavingsExamples.contains(example.id) {
+            guard !existingSavingsNames.contains(example.title.localizedLowercase) else { continue }
+            let target: Decimal = example.id == "notgroschen" ? 3_000 : 1_200
             modelContext.insert(
-                Budget(
-                    name: template.name,
-                    iconName: template.iconName,
-                    iconColorHex: template.iconColorHex,
-                    limit: template.limit,
+                SavingsGoal(
+                    name: example.title,
+                    type: .goal,
+                    targetAmount: target,
+                    contributionAmount: example.amount,
+                    frequency: .monthly,
+                    anchorDate: .now,
+                    group: targetGroup
+                )
+            )
+        }
+
+        let existingFixedCostNames = Set((targetGroup.fixedCosts ?? []).map { $0.title.localizedLowercase })
+        for example in Self.fixedCostExamples where selectedFixedCostExamples.contains(example.id) {
+            guard !existingFixedCostNames.contains(example.title.localizedLowercase) else { continue }
+            modelContext.insert(
+                FixedCost(
+                    title: example.title,
+                    amount: example.amount,
+                    frequency: .monthly,
+                    schedule: .firstDayOfMonth,
+                    anchorDate: .now,
+                    dayOfMonth: 1,
                     group: targetGroup
                 )
             )
@@ -315,6 +550,14 @@ struct OnboardingView: View {
         } catch {
             saveErrorMessage = error.localizedDescription
         }
+    }
+
+    private var monthlyBudgetAmount: Decimal? {
+        let normalized = monthlyBudgetText
+            .replacingOccurrences(of: ".", with: "")
+            .replacingOccurrences(of: ",", with: ".")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return Decimal(string: normalized, locale: Locale(identifier: "en_US"))
     }
 
     private func fetchOrCreateDefaultGroup() -> BudgetGroup {
@@ -342,6 +585,15 @@ private struct BudgetTemplate: Identifiable {
     let limit: Decimal
 
     var id: String { name }
+}
+
+private struct StarterExample: Identifiable {
+    let id: String
+    let title: String
+    let description: String
+    let iconName: String
+    let iconColorHex: String
+    let amount: Decimal
 }
 
 private struct OnboardingPage<Content: View>: View {
@@ -375,9 +627,10 @@ private struct OnboardingPage<Content: View>: View {
                 .font(.body)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal)
             content()
-                .frame(maxWidth: 320)
+                .frame(maxWidth: .infinity)
             Spacer()
         }
         .padding()

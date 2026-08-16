@@ -56,6 +56,7 @@ struct BudgetGroupMenu: View {
 }
 
 struct BudgetGroupManagementView: View {
+    @Binding var selectedGroup: BudgetGroup?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(ProAccessManager.self) private var proAccess
@@ -77,7 +78,12 @@ struct BudgetGroupManagementView: View {
     @State private var sharingGroup: BudgetGroup?
     @State private var showingProUpgrade = false
     @State private var showingNewEditor = false
+    @State private var groupPendingDeletion: BudgetGroup?
     @State private var saveErrorMessage: String?
+
+    init(selectedGroup: Binding<BudgetGroup?> = .constant(nil)) {
+        _selectedGroup = selectedGroup
+    }
 
     var body: some View {
         NavigationStack {
@@ -116,10 +122,19 @@ struct BudgetGroupManagementView: View {
                                 }
 
                                 Button {
+                                    guard groups.count > 1 else { return }
                                     archive(group)
                                 } label: {
                                     Label("Archivieren", systemImage: "archivebox")
                                 }
+                                .disabled(groups.count == 1)
+
+                                Button(role: .destructive) {
+                                    groupPendingDeletion = group
+                                } label: {
+                                    Label("Bereich löschen", systemImage: "trash")
+                                }
+                                .disabled(groups.count == 1)
                             } label: {
                                 Image(systemName: "ellipsis.circle")
                                     .foregroundStyle(.secondary)
@@ -129,11 +144,13 @@ struct BudgetGroupManagementView: View {
                         .contentShape(Rectangle())
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button {
+                                guard groups.count > 1 else { return }
                                 archive(group)
                             } label: {
                                 Label("Archivieren", systemImage: "archivebox")
                             }
                             .tint(.orange)
+                            .disabled(groups.count == 1)
                         }
                     }
                     .onMove { source, destination in
@@ -148,6 +165,9 @@ struct BudgetGroupManagementView: View {
                         } catch {
                             saveErrorMessage = "Die Reihenfolge konnte nicht gespeichert werden."
                         }
+                    }
+                    if groups.count == 1 {
+                        Text("Der letzte aktive Bereich kann nicht archiviert werden.")
                     }
                 }
 
@@ -176,6 +196,14 @@ struct BudgetGroupManagementView: View {
                                 }
                                 .buttonStyle(.borderless)
                                 .foregroundStyle(.tint)
+                                Button {
+                                    groupPendingDeletion = group
+                                } label: {
+                                    Image(systemName: "trash")
+                                }
+                                .buttonStyle(.borderless)
+                                .foregroundStyle(.red)
+                                .accessibilityLabel("\(group.name) löschen")
                             }
                         }
                     }
@@ -212,17 +240,77 @@ struct BudgetGroupManagementView: View {
             .sheet(isPresented: $showingProUpgrade) {
                 ProUpgradeView(feature: "Geteilte Budgetbereiche")
             }
+            .alert(
+                "Bereich löschen?",
+                isPresented: Binding(
+                    get: { groupPendingDeletion != nil },
+                    set: { if !$0 { groupPendingDeletion = nil } }
+                )
+            ) {
+                Button("Bereich löschen", role: .destructive) {
+                    guard let group = groupPendingDeletion else { return }
+                    delete(group)
+                    groupPendingDeletion = nil
+                }
+                Button("Abbrechen", role: .cancel) {
+                    groupPendingDeletion = nil
+                }
+            } message: {
+                Text("Der Bereich \(groupPendingDeletion?.name ?? "") und alle darin enthaltenen Daten werden dauerhaft gelöscht.")
+            }
             .saveErrorAlert(message: $saveErrorMessage)
         }
     }
 
     private func archive(_ group: BudgetGroup) {
+        guard groups.count > 1 else {
+            saveErrorMessage = "Mindestens ein Budgetbereich muss aktiv bleiben."
+            return
+        }
+
         group.isArchived = true
         group.updatedAt = .now
         do {
             try modelContext.save()
         } catch {
             saveErrorMessage = "Der Budgetbereich konnte nicht archiviert werden."
+        }
+    }
+
+    private func delete(_ group: BudgetGroup) {
+        guard !groups.isEmpty else {
+            saveErrorMessage = "Mindestens ein Budgetbereich muss aktiv bleiben."
+            return
+        }
+
+        for allocation in group.monthlyAllocations ?? [] {
+            modelContext.delete(allocation)
+        }
+        for contribution in (group.savingsGoals ?? []).flatMap({ $0.contributions ?? [] }) {
+            modelContext.delete(contribution)
+        }
+        for budget in group.budgets ?? [] {
+            modelContext.delete(budget)
+        }
+        for fixedCost in group.fixedCosts ?? [] {
+            modelContext.delete(fixedCost)
+        }
+        for savingsGoal in group.savingsGoals ?? [] {
+            modelContext.delete(savingsGoal)
+        }
+        for transaction in group.transactions ?? [] {
+            modelContext.delete(transaction)
+        }
+
+        if selectedGroup?.id == group.id {
+            selectedGroup = nil
+        }
+        modelContext.delete(group)
+
+        do {
+            try modelContext.save()
+        } catch {
+            saveErrorMessage = "Der Bereich konnte nicht gelöscht werden."
         }
     }
 

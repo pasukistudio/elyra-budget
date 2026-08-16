@@ -74,6 +74,10 @@ struct ContentView: View {
     @State private var showingBudgetGroupManagement = false
     @State private var showingSettings = false
     @State private var showingOnboarding = false
+    @State private var showingReturningUserOnboardingPrompt = false
+    @State private var hasCompletedInitialStartup = false
+    @AppStorage("elyraBudget.cloudKitBootstrapCompleted")
+    private var cloudKitBootstrapCompleted = false
     @State private var showingOverviewAnalytics = false
     @State private var showingOverviewProUpgrade = false
     @AppStorage("elyraBudgetAppLaunchCount")
@@ -92,6 +96,8 @@ struct ContentView: View {
         Group {
             if showsOnboardingPreview {
                 OnboardingView(group: nil)
+            } else if !hasCompletedInitialStartup {
+                startupView
             } else {
                 #if os(macOS)
                 if proAccess.requiresMacPro {
@@ -116,21 +122,36 @@ struct ContentView: View {
                 restoreSelectedBudgetGroup()
             }
         }) {
-            BudgetGroupManagementView()
+            BudgetGroupManagementView(selectedGroup: $selectedBudgetGroup)
         }
         .task {
+            await importPendingCloudKitShareIfNeeded()
+            // Existing installations predate this marker. Their launch count
+            // lets us initialize the marker without treating an app update as
+            // a reinstall. A true reinstall resets both local values.
+            let isFreshLocalInstall = !cloudKitBootstrapCompleted && appLaunchCount == 0
+            if isFreshLocalInstall {
+                await cloudKitSyncMonitor.waitForInitialImport()
+                await ensureDefaultBudgetGroupAfterCloudKitSync()
+            }
+            restoreSelectedBudgetGroup()
+            ensureAtLeastOneActiveBudgetGroup()
+            if shouldOfferOnboardingAgain(isFreshLocalInstall: isFreshLocalInstall) {
+                showingReturningUserOnboardingPrompt = true
+            } else {
+                presentOnboardingIfNeeded()
+            }
+            hasCompletedInitialStartup = true
+            cloudKitBootstrapCompleted = true
+
             await proAccess.refreshEntitlement()
             appLockManager.lockIfNeeded(
                 isEnabled: userSettings.first?.appLockEnabled ?? false,
                 hasPro: proAccess.hasPro
             )
-            await importPendingCloudKitShareIfNeeded()
-            await ensureDefaultBudgetGroupAfterCloudKitSync()
             await pullSharedAreasIfNeeded()
-            restoreSelectedBudgetGroup()
             migrateLocalReceiptsToSyncableData()
             writeWidgetSnapshot()
-            presentOnboardingIfNeeded()
             registerAppLaunchIfNeeded()
             applyQuieterNotificationDefaultsIfNeeded()
             processAutomaticSavingsGoals()
@@ -382,8 +403,8 @@ struct ContentView: View {
     }
 
     private func ensureDefaultBudgetGroupAfterCloudKitSync() async {
-        // SwiftData imports CloudKit records asynchronously. Give an existing
-        // budget group time to arrive before creating the default one.
+        // Give SwiftData a short grace period to publish imported objects
+        // before creating a default group.
         for _ in 0..<6 {
             guard !Task.isCancelled else { return }
 
@@ -418,6 +439,16 @@ struct ContentView: View {
         }
     }
 
+    private func ensureAtLeastOneActiveBudgetGroup() {
+        do {
+            try BudgetGroupMigration.ensureAtLeastOneActiveGroup(in: modelContext)
+        } catch {
+            AppLogger.persistence.error(
+                "Aktiver Budgetbereich konnte nicht sichergestellt werden: \(error)"
+            )
+        }
+    }
+
     private func restoreSelectedBudgetGroup() {
         guard selectedBudgetGroup == nil else { return }
         if !persistedSelectedBudgetGroupID.isEmpty {
@@ -442,6 +473,30 @@ struct ContentView: View {
         let name = userSettings.first?.name.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard name.isEmpty else { return }
         showingOnboarding = true
+    }
+
+    private func shouldOfferOnboardingAgain(isFreshLocalInstall: Bool) -> Bool {
+        guard !ProcessInfo.processInfo.arguments.contains("-ui-testing-skip-onboarding"),
+              isFreshLocalInstall,
+              let profile = userSettings.first else {
+            return false
+        }
+
+        return !profile.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var startupView: some View {
+        ZStack {
+            #if os(iOS)
+            Color(uiColor: .systemGroupedBackground)
+            #else
+            Color(nsColor: .windowBackgroundColor)
+            #endif
+
+            ProgressView()
+                .controlSize(.regular)
+        }
+        .ignoresSafeArea()
     }
 
     private func registerAppLaunchIfNeeded() {
@@ -568,6 +623,17 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showingOnboarding) {
                 OnboardingView(group: selectedBudgetGroup)
+            }
+            .alert(
+                "Willkommen zurück",
+                isPresented: $showingReturningUserOnboardingPrompt
+            ) {
+                Button("Einführung ansehen") {
+                    showingOnboarding = true
+                }
+                Button("Später", role: .cancel) {}
+            } message: {
+                Text("Möchtest du die Einführung von Elyra Budget noch einmal ansehen?")
             }
             .sheet(
                 isPresented: $showingMonthPicker
