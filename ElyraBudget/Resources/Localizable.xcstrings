@@ -78,9 +78,6 @@
     "Alle verfügbaren Pro-Funktionen sind aktiv." : {
 
     },
-    "Alles Wichtige auf einen Blick" : {
-
-    },
     "Als Fixkosten übernehmen" : {
 
     },
@@ -141,9 +138,6 @@
     "Ausgabenverteilung" : {
 
     },
-    "Ausgewählten Tag filtern" : {
-
-    },
     "Auszahlung" : {
 
     },
@@ -180,6 +174,18 @@
     "Bearbeiten" : {
 
     },
+    "Beispielbuchung" : {
+
+    },
+    "Beispielbudgets auswählen" : {
+
+    },
+    "Beispiele für Fixkosten" : {
+
+    },
+    "Beispiele für Sparziele" : {
+
+    },
     "Beleg" : {
 
     },
@@ -203,6 +209,12 @@
 
     },
     "Bereich konnte nicht geteilt werden" : {
+
+    },
+    "Bereich löschen" : {
+
+    },
+    "Bereich löschen?" : {
 
     },
     "Bereich teilen" : {
@@ -251,6 +263,9 @@
 
     },
     "Buchungen aufrunden" : {
+
+    },
+    "Buchungen ausprobieren" : {
 
     },
     "Buchungen automatisch aufrunden?" : {
@@ -343,6 +358,9 @@
     "Das Budget „%@“ wird dauerhaft gelöscht." : {
 
     },
+    "Das Gesamtbudget ist dein monatlicher Rahmen. Budgets zeigen dir, wofür du ihn ausgibst." : {
+
+    },
     "Das Limit ist optional. Ohne Limit dient das Budget nur als Kategorie für deine Buchungen." : {
 
     },
@@ -367,6 +385,12 @@
     "Datum" : {
 
     },
+    "Dein monatlicher Rahmen für alle Ausgaben." : {
+
+    },
+    "Dein Monatsrahmen" : {
+
+    },
     "Dein Name" : {
       "localizations" : {
         "en" : {
@@ -380,9 +404,6 @@
     "Dein Name wird nur für die persönliche Begrüßung in der Übersicht verwendet." : {
 
     },
-    "Deine Daten bleiben auf deinen Geräten synchron" : {
-
-    },
     "Deine Einnahmen und Ausgaben erscheinen hier." : {
 
     },
@@ -390,6 +411,12 @@
 
     },
     "Deine Finanzen, einfach im Blick" : {
+
+    },
+    "Der Bereich %@ und alle darin enthaltenen Daten werden dauerhaft gelöscht." : {
+
+    },
+    "Der letzte aktive Bereich kann nicht archiviert werden." : {
 
     },
     "Der Wert gilt für diesen Monat. Andere Monate verwenden weiterhin ihren Standardwert." : {
@@ -422,10 +449,19 @@
     "Du kannst Budgets, Währung und weitere Einstellungen später jederzeit ändern." : {
 
     },
-    "Du kannst jederzeit zurückkommen und alles ändern." : {
+    "Du kannst das Beispiel später jederzeit bearbeiten oder löschen." : {
+
+    },
+    "Du kannst den Betrag später für jeden Monat anpassen." : {
+
+    },
+    "Du kannst Fixkosten später jederzeit bearbeiten oder löschen." : {
 
     },
     "Du kannst Pro später jederzeit in deinen Apple‑Account‑Einstellungen verwalten." : {
+
+    },
+    "Du kannst Sparziele später jederzeit bearbeiten oder löschen." : {
 
     },
     "Dunkel" : {
@@ -449,7 +485,7 @@
     "Eine verknüpfte Fixkostenposition bestimmt, wofür das Sparziel aufgebaut wird." : {
 
     },
-    "Einfach starten, jederzeit anpassen" : {
+    "Einführung ansehen" : {
 
     },
     "Einstellungen" : {
@@ -540,10 +576,16 @@
     "Fixkosten hinzufügen" : {
 
     },
+    "Fixkosten im Blick behalten" : {
+
+    },
     "Fixkosten löschen?" : {
 
     },
     "Fixkosten pausieren" : {
+
+    },
+    "Fixkosten werden automatisch in deiner Monatsplanung berücksichtigt. Wähle Beispiele aus, damit du direkt starten kannst." : {
 
     },
     "Fixkosten-Erinnerungen werden direkt bei der jeweiligen Fixkostenregel gesteuert." : {
@@ -576,10 +618,13 @@
     "Für diesen Bereich ist noch kein Monatsbudget festgelegt." : {
 
     },
-    "Gedrückt halten" : {
+    "Gesamt" : {
 
     },
-    "Gesamt" : {
+    "Gesamtbudget" : {
+
+    },
+    "Gesamtbudget pro Monat" : {
 
     },
     "gespart" : {
@@ -799,13 +844,13 @@
     "Mehr Überblick. Mehr Ruhe." : {
 
     },
+    "Mit einer Beispielbuchung siehst du direkt, wie Einnahmen und Ausgaben in Elyra Budget funktionieren." : {
+
+    },
     "Mit Face ID oder Touch ID entsperren" : {
 
     },
-    "Mit kleinen Gesten erreichst du die wichtigsten Funktionen deiner Karten." : {
-
-    },
-    "Mit Vorlagen starten" : {
+    "Möchtest du die Einführung von Elyra Budget noch einmal ansehen?" : {
 
     },
     "Monat" : {
@@ -846,9 +891,6 @@
 
     },
     "Nach diesem Datum wird die Fixkostenbuchung wieder fällig." : {
-
-    },
-    "Nach links wischen" : {
 
     },
     "Nach oben oder unten ziehen" : {
@@ -948,9 +990,6 @@
     "Nutzungsbedingungen (EULA)" : {
 
     },
-    "Öffnet weitere Optionen wie Bearbeiten und Verwalten." : {
-
-    },
     "OK" : {
 
     },
@@ -981,6 +1020,9 @@
     "PDF exportieren" : {
 
     },
+    "Plane regelmäßige Zahlungen und lege Geld für deine Ziele zurück." : {
+
+    },
     "PRO" : {
 
     },
@@ -994,9 +1036,6 @@
 
     },
     "Pro kaufen – %@" : {
-
-    },
-    "Pro kennenlernen" : {
 
     },
     "Pro-Angebot wird geladen …" : {
@@ -1035,7 +1074,7 @@
     "Schnellaktionen" : {
 
     },
-    "Schritt %lld von 4" : {
+    "Schritt %lld von 6" : {
 
     },
     "Sicherheit" : {
@@ -1050,7 +1089,13 @@
     "Sparen" : {
 
     },
+    "Sparen & Fixkosten" : {
+
+    },
     "Sparen hinzufügen" : {
+
+    },
+    "Sparen planen" : {
 
     },
     "Sparziel" : {
@@ -1071,6 +1116,12 @@
     "Sparziele" : {
 
     },
+    "Sparziele zeigen dir, wofür du regelmäßig Geld zurücklegst. Wähle ein Beispiel aus oder starte ohne Sparziel." : {
+
+    },
+    "Später" : {
+
+    },
     "Speichern" : {
 
     },
@@ -1089,19 +1140,31 @@
     "Statistiken und Monatsberichte" : {
 
     },
+    "Supermarkt · 48,60 €" : {
+
+    },
     "Support per E-Mail" : {
 
     },
     "System" : {
 
     },
+    "Tag" : {
+
+    },
     "Tag auswählen" : {
+
+    },
+    "Teile dein Gesamtbudget auf, zum Beispiel für Lebensmittel oder Freizeit." : {
 
     },
     "Teile die Datei oder speichere sie in der Dateien-App." : {
 
     },
     "Teilen" : {
+
+    },
+    "Trage Einnahmen und Ausgaben ein – Elyra zeigt dir, was noch verfügbar ist." : {
 
     },
     "Türkis" : {
@@ -1173,9 +1236,6 @@
     "Wähle dein Pro-Modell" : {
 
     },
-    "Wähle häufige Budgets aus. Du kannst sie später bearbeiten oder löschen." : {
-
-    },
     "Währung" : {
 
     },
@@ -1203,7 +1263,7 @@
     "Willkommen bei Elyra Budget" : {
 
     },
-    "Zeigt schnelle Aktionen wie Archivieren oder Löschen." : {
+    "Willkommen zurück" : {
 
     },
     "Ziehe den Griff links, um die Reihenfolge der Budgets zu ändern." : {
@@ -1231,6 +1291,15 @@
 
     },
     "Zuletzt aktualisiert: %@" : {
+
+    },
+    "Zum Beispiel 1.800 €" : {
+
+    },
+    "Zum Beispiel für einen Notgroschen oder deinen nächsten Urlaub." : {
+
+    },
+    "Zum Beispiel Miete oder ein Streaming-Abonnement." : {
 
     },
     "Zuordnung" : {

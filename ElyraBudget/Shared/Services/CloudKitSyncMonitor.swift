@@ -153,6 +153,35 @@ final class CloudKitSyncMonitor {
         status = .idle
         errorMessage = nil
     }
+
+    @MainActor
+    func waitForInitialImport() async {
+        guard isCloudKitEnabled else { return }
+        guard status != .succeeded else { return }
+
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { @MainActor in
+                for await notification in NotificationCenter.default.notifications(
+                    named: NSPersistentCloudKitContainer.eventChangedNotification
+                ) {
+                    guard let event = notification.userInfo?[
+                        NSPersistentCloudKitContainer.eventNotificationUserInfoKey
+                    ] as? NSPersistentCloudKitContainer.Event,
+                    event.type == .import,
+                    event.endDate != nil else { continue }
+
+                    return
+                }
+            }
+
+            group.addTask {
+                try? await Task.sleep(for: .seconds(10))
+            }
+
+            await group.next()
+            group.cancelAll()
+        }
+    }
 }
 
 struct CloudKitSyncStatusView: View {
