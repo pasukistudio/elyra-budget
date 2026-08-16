@@ -5,27 +5,81 @@ import SwiftUI
 #if os(iOS)
 import UIKit
 
-struct CloudKitSharingView: UIViewControllerRepresentable {
+struct CloudKitSharingView: View {
     let group: BudgetGroup
 
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        let itemProvider = NSItemProvider()
-        itemProvider.registerCKShare(
-            container: CKContainer(identifier: CloudKitSharedAreaService.containerIdentifier),
-            allowedSharingOptions: .standard
-        ) { @MainActor in
-            try await CloudKitSharedAreaService.shared.prepareShare(for: group)
-        }
+    @State private var share: CKShare?
+    @State private var errorMessage: String?
 
-        let configuration = UIActivityItemsConfiguration(itemProviders: [itemProvider])
-        configuration.metadataProvider = { key in
-            key == .title ? group.name : nil
+    var body: some View {
+        Group {
+            if let share {
+                CloudKitShareController(share: share, title: group.name)
+            } else {
+                ProgressView("Freigabe wird vorbereitet …")
+            }
         }
+        .task {
+            do {
+                share = try await CloudKitSharedAreaService.shared.prepareShare(for: group)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+        .alert("Bereich konnte nicht geteilt werden", isPresented: Binding(
+            get: { errorMessage != nil },
+            set: { if !$0 { errorMessage = nil } }
+        )) {
+            Button("OK") { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "Unbekannter Fehler")
+        }
+    }
+}
 
-        return UIActivityViewController(activityItemsConfiguration: configuration)
+private struct CloudKitShareController: UIViewControllerRepresentable {
+    let share: CKShare
+    let title: String
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(title: title)
     }
 
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+    func makeUIViewController(context: Context) -> UICloudSharingController {
+        let controller = UICloudSharingController(
+            share: share,
+            container: CKContainer(identifier: CloudKitSharedAreaService.containerIdentifier)
+        )
+        controller.delegate = context.coordinator
+        controller.availablePermissions = [.allowPrivate, .allowReadWrite]
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UICloudSharingController, context: Context) {}
+
+    final class Coordinator: NSObject, UICloudSharingControllerDelegate {
+        let title: String
+
+        init(title: String) {
+            self.title = title
+        }
+
+        private let logger = Logger(
+            subsystem: "de.pasukistudio.elyrabudget",
+            category: "CloudKit"
+        )
+
+        func cloudSharingController(
+            _ csc: UICloudSharingController,
+            failedToSaveShareWithError error: Error
+        ) {
+            logger.error("CloudKit share could not be saved: \(error.localizedDescription, privacy: .public)")
+        }
+
+        func itemTitle(for csc: UICloudSharingController) -> String? {
+            title
+        }
+    }
 }
 #endif
 

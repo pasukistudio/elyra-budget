@@ -11,6 +11,7 @@ struct OverviewView: View {
     @State private var dashboardPage = 0
     @State private var showingAnalytics = false
     @State private var showingProUpgrade = false
+    @State private var showingMonthlyBudgetEditor = false
 
     @Query(
         filter: #Predicate<Budget> { !$0.isArchived },
@@ -144,9 +145,10 @@ struct OverviewView: View {
     }
 
     private var todayTransactions: [Transaction] {
-        let calendar = Calendar.autoupdatingCurrent
         return visibleTransactions
-            .filter { calendar.isDateInToday($0.date) }
+            .filter {
+                return $0.date.isInSameMonth(as: selectedDate)
+            }
             .sorted { $0.date > $1.date }
     }
 
@@ -199,9 +201,10 @@ struct OverviewView: View {
                     through: monthInterval.end
                 )
                 .filter { occurrenceDate in
-                    !bookedOccurrences.contains(
+                    let isBooked = bookedOccurrences.contains(
                         FixedCostScheduler.marker(for: cost.id, date: occurrenceDate)
                     )
+                    return !isBooked
                 }
                 .map { FixedCostDueItem(fixedCost: cost, dueDate: $0) }
             }
@@ -226,27 +229,12 @@ struct OverviewView: View {
             VStack(alignment: .leading, spacing: 24) {
                 greetingSection
                 dashboardCard
-                todayTransactionsCard
-                budgetSnapshot
-                fixedCostsSnapshot
-                savingsSnapshot
+                periodOverviewCards
             }
             .padding()
         }
+        #if os(macOS)
         .toolbar {
-            #if os(iOS)
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    if proAccess.hasPro {
-                        showingAnalytics = true
-                    } else {
-                        showingProUpgrade = true
-                    }
-                } label: {
-                    Label("Statistiken", systemImage: "chart.xyaxis.line")
-                }
-            }
-            #else
             ToolbarItem {
                 Button {
                     if proAccess.hasPro {
@@ -258,15 +246,64 @@ struct OverviewView: View {
                     Label("Statistiken", systemImage: "chart.xyaxis.line")
                 }
             }
-            #endif
         }
+        #endif
         .sheet(isPresented: $showingAnalytics) {
             ProAnalyticsView(selectedDate: selectedDate, selectedGroup: selectedGroup)
         }
         .sheet(isPresented: $showingProUpgrade) {
             ProUpgradeView(feature: "Statistiken und Monatsberichte")
         }
+        .sheet(isPresented: $showingMonthlyBudgetEditor) {
+            MonthlyBudgetEditorView(
+                selectedGroup: selectedGroup,
+                selectedDate: selectedDate
+            )
+        }
     }
+
+    private var periodOverviewCards: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            todayTransactionsCard
+            budgetSnapshot
+            fixedCostsSnapshot
+            savingsSnapshot
+        }
+        #if os(iOS)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 40)
+                .onEnded { value in
+                    handleMonthSwipe(value)
+                }
+        )
+        #endif
+    }
+
+    #if os(iOS)
+    private func handleMonthSwipe(_ value: DragGesture.Value) {
+        let horizontalDistance = value.translation.width
+        let verticalDistance = value.translation.height
+        let minimumSwipeDistance: CGFloat = 60
+
+        guard abs(horizontalDistance) >= minimumSwipeDistance,
+              abs(horizontalDistance) > abs(verticalDistance) else {
+            return
+        }
+
+        let periodOffset = horizontalDistance > 0 ? -1 : 1
+        guard let newDate = Calendar.current.date(
+            byAdding: .month,
+            value: periodOffset,
+            to: selectedDate
+        ) else {
+            return
+        }
+
+        withAnimation(.snappy) {
+            selectedDate = newDate
+        }
+    }
+    #endif
 
     // MARK: - Begrüßung
 
@@ -459,10 +496,27 @@ struct OverviewView: View {
                 Label("Budgetstatus", systemImage: "chart.bar.fill")
                     .font(.headline)
                 Spacer()
-                Text(selectedGroup?.name ?? "Alle Bereiche")
+                Button {
+                    showingMonthlyBudgetEditor = true
+                } label: {
+                    Label(
+                        monthlyLimit > 0 ? "Anpassen" : "Festlegen",
+                        systemImage: "pencil"
+                    )
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityLabel(
+                    monthlyLimit > 0
+                        ? "Monatsbudget anpassen"
+                        : "Monatsbudget festlegen"
+                )
             }
+
+            Text(selectedGroup?.name ?? "Bereich auswählen")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
 
             HStack(spacing: 18) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -564,9 +618,9 @@ struct OverviewView: View {
     }
 
     private var todayTransactionsCard: some View {
-        OverviewCard(title: "Heute", systemImage: "calendar") {
+        OverviewCard(title: "Buchungen", systemImage: "calendar") {
             if todayTransactions.isEmpty {
-                OverviewEmptyRow(text: "Heute gibt es noch keine Buchungen.")
+                OverviewEmptyRow(text: "In diesem Monat gibt es keine Buchungen.")
             } else {
                 ForEach(Array(todayTransactions.prefix(4)), id: \.persistentModelID) { transaction in
                     HStack(spacing: 10) {

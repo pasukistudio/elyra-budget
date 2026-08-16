@@ -1,4 +1,5 @@
 import CloudKit
+import Foundation
 import os
 
 #if os(iOS)
@@ -25,6 +26,10 @@ final class CloudKitShareAppDelegate: NSObject, UIApplicationDelegate {
                 defaults.set(true, forKey: "elyraBudget.pendingCloudKitShare.failed")
             } else {
                 defaults.set(false, forKey: "elyraBudget.pendingCloudKitShare.failed")
+                NotificationCenter.default.post(
+                    name: .elyraBudgetCloudKitShareAccepted,
+                    object: nil
+                )
             }
         }
         CKContainer(identifier: CloudKitSharedAreaService.containerIdentifier)

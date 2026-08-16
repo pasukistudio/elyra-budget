@@ -21,14 +21,7 @@ struct BudgetGroupMenu: View {
 
     var body: some View {
         Menu {
-            Button {
-                selection = nil
-            } label: {
-                Label("Alle Bereiche", systemImage: selection == nil ? "checkmark" : "square.dashed")
-            }
-
             if !groups.isEmpty {
-                Divider()
                 ForEach(groups) { group in
                     Button {
                         selection = group
@@ -42,7 +35,9 @@ struct BudgetGroupMenu: View {
                 }
             }
 
-            Divider()
+            if !groups.isEmpty {
+                Divider()
+            }
             Button(action: manage) {
                 Label("Bereiche verwalten", systemImage: "slider.horizontal.3")
             }

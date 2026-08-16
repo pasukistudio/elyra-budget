@@ -49,12 +49,33 @@ struct TransactionsView: View {
     @State private var showingImportPreview = false
     @State private var importErrorMessage: String?
     @State private var showingRecurringTransactions = false
+    @State private var dayFilterEnabled = false
+    @State private var selectedDay = Date()
+    @State private var showingDayFilter = false
 
     private var displayedTransactions: [Transaction] {
-        transactions.filter {
+        let monthTransactions = transactions.filter {
             $0.date.isInSameMonth(as: selectedDate)
                 && (selectedGroup == nil || $0.effectiveGroup === selectedGroup)
         }
+
+        guard dayFilterEnabled else { return monthTransactions }
+
+        return monthTransactions.filter {
+            Calendar.autoupdatingCurrent.isDate($0.date, inSameDayAs: selectedDay)
+        }
+    }
+
+    private var selectedMonthDateRange: ClosedRange<Date> {
+        let calendar = Calendar.autoupdatingCurrent
+        let start = calendar.date(
+            from: calendar.dateComponents([.year, .month], from: selectedDate)
+        ) ?? selectedDate
+        let end = calendar.date(
+            byAdding: DateComponents(month: 1, second: -1),
+            to: start
+        ) ?? selectedDate
+        return start ... end
     }
 
     init(
@@ -70,16 +91,46 @@ struct TransactionsView: View {
     }
 
     var body: some View {
-        Group {
-            if displayedTransactions.isEmpty {
-                emptyState
-                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
-            } else {
-                transactionList
-                    .transition(.opacity)
+        VStack(spacing: 0) {
+            dayFilterBar
+
+            Group {
+                if displayedTransactions.isEmpty {
+                    emptyState
+                        .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                } else {
+                    transactionList
+                        .transition(.opacity)
+                }
             }
         }
         .animation(.snappy(duration: 0.3), value: displayedTransactions.isEmpty)
+        .onChange(of: selectedDate) { _, newDate in
+            guard dayFilterEnabled else { return }
+            selectedDay = newDate
+        }
+        .sheet(isPresented: $showingDayFilter) {
+            NavigationStack {
+                DatePicker(
+                    "Tag",
+                    selection: $selectedDay,
+                    in: selectedMonthDateRange,
+                    displayedComponents: [.date]
+                )
+                .datePickerStyle(.graphical)
+                .padding()
+                .navigationTitle("Tag auswählen")
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Fertig") {
+                            dayFilterEnabled = true
+                            showingDayFilter = false
+                        }
+                    }
+                }
+            }
+            .presentationDetents([.large])
+        }
         .onChange(of: requestedToolbarAction) { _, action in
             guard let action else { return }
             handleToolbarAction(action)
@@ -179,6 +230,48 @@ struct TransactionsView: View {
         } message: {
             Text(importErrorMessage ?? "Die Datei konnte nicht importiert werden.")
         }
+    }
+
+    private var dayFilterBar: some View {
+        HStack(spacing: 12) {
+            Menu {
+                Button {
+                    dayFilterEnabled = false
+                } label: {
+                    Label("Alle Tage", systemImage: "calendar")
+                }
+
+                Button {
+                    selectedDay = selectedDate
+                    dayFilterEnabled = true
+                    showingDayFilter = true
+                } label: {
+                    Label("Tag auswählen", systemImage: "calendar.badge.clock")
+                }
+
+            } label: {
+                Label(
+                    dayFilterEnabled
+                        ? selectedDay.formatted(.dateTime.day().month(.abbreviated))
+                        : "Tage filtern",
+                    systemImage: dayFilterEnabled
+                        ? "line.3.horizontal.decrease.circle.fill"
+                        : "line.3.horizontal.decrease.circle"
+                )
+            }
+            .buttonStyle(.bordered)
+
+            if dayFilterEnabled {
+                Text("Nur dieser Tag")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 10)
+        .background(.bar)
     }
 
     private func export(format: TransactionExportFormat) {
