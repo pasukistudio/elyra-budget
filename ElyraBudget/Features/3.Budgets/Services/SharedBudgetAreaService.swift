@@ -10,6 +10,7 @@ final class CloudKitSharedAreaService {
     private let container = CKContainer(identifier: containerIdentifier)
     private let zoneID = CKRecordZone.ID(zoneName: "SharedBudgetAreas", ownerName: CKCurrentUserDefaultName)
     private let sharedAreaPrefix = "elyraBudget.cloudKitSharedArea."
+    private let sharedAreaOwnerPrefix = "elyraBudget.cloudKitSharedAreaOwner."
 
     private init() {}
 
@@ -50,6 +51,7 @@ final class CloudKitSharedAreaService {
 
         _ = try await database.modifyRecords(saving: [root, share], deleting: [])
         UserDefaults.standard.set(true, forKey: sharedAreaKey(for: group.id))
+        UserDefaults.standard.set(zoneID.ownerName, forKey: sharedAreaOwnerKey(for: group.id))
         return share
     }
 
@@ -60,12 +62,17 @@ final class CloudKitSharedAreaService {
         guard let rootRecordID = metadata.hierarchicalRootRecordID else {
             throw SharedBudgetAreaError.invalidShareRecord
         }
-        let record = try await container.sharedCloudDatabase.record(for: rootRecordID)
+        let record = try await fetchSharedRecord(recordID: rootRecordID)
         guard let data = record["payload"] as? Data else {
             throw SharedBudgetAreaError.unsupportedPayload
         }
         let group = try SharedBudgetAreaSnapshot.decode(data).apply(to: modelContext)
         UserDefaults.standard.set(true, forKey: sharedAreaKey(for: group.id))
+        UserDefaults.standard.set(
+            rootRecordID.zoneID.ownerName,
+            forKey: sharedAreaOwnerKey(for: group.id)
+        )
+        try modelContext.save()
         return group
     }
 
@@ -81,15 +88,17 @@ final class CloudKitSharedAreaService {
             recordName: recordName,
             zoneID: CKRecordZone.ID(zoneName: zoneName, ownerName: ownerName)
         )
-        let record = try await container.sharedCloudDatabase.record(for: recordID)
+        let record = try await fetchSharedRecord(recordID: recordID)
         guard let data = record["payload"] as? Data else {
             throw SharedBudgetAreaError.unsupportedPayload
         }
         let group = try SharedBudgetAreaSnapshot.decode(data).apply(to: modelContext)
         defaults.set(true, forKey: sharedAreaKey(for: group.id))
+        defaults.set(ownerName, forKey: sharedAreaOwnerKey(for: group.id))
         defaults.removeObject(forKey: "elyraBudget.pendingCloudKitShare.recordName")
         defaults.removeObject(forKey: "elyraBudget.pendingCloudKitShare.zoneName")
         defaults.removeObject(forKey: "elyraBudget.pendingCloudKitShare.ownerName")
+        try modelContext.save()
         return group
     }
 
@@ -97,8 +106,7 @@ final class CloudKitSharedAreaService {
         group: BudgetGroup
     ) async throws {
         guard UserDefaults.standard.bool(forKey: sharedAreaKey(for: group.id)) else { return }
-        let database = container.privateCloudDatabase
-        let recordID = CKRecord.ID(recordName: group.id.uuidString, zoneID: zoneID)
+        let (database, recordID) = databaseAndRecordID(for: group.id)
         let record = try await database.record(for: recordID)
         record["name"] = group.name as CKRecordValue
         record["payload"] = try SharedBudgetAreaSnapshot(group: group).encodedData() as CKRecordValue
@@ -111,13 +119,8 @@ final class CloudKitSharedAreaService {
         modelContext: ModelContext
     ) async throws {
         guard UserDefaults.standard.bool(forKey: sharedAreaKey(for: group.id)) else { return }
-        let recordID = CKRecord.ID(recordName: group.id.uuidString, zoneID: zoneID)
-        let record: CKRecord
-        do {
-            record = try await container.privateCloudDatabase.record(for: recordID)
-        } catch {
-            record = try await container.sharedCloudDatabase.record(for: recordID)
-        }
+        let (database, recordID) = databaseAndRecordID(for: group.id)
+        let record = try await database.record(for: recordID)
         guard let data = record["payload"] as? Data else {
             throw SharedBudgetAreaError.unsupportedPayload
         }
@@ -127,6 +130,48 @@ final class CloudKitSharedAreaService {
     private func sharedAreaKey(for groupID: UUID) -> String {
         sharedAreaPrefix + groupID.uuidString
     }
+
+    private func sharedAreaOwnerKey(for groupID: UUID) -> String {
+        sharedAreaOwnerPrefix + groupID.uuidString
+    }
+
+    private func databaseAndRecordID(for groupID: UUID) -> (CKDatabase, CKRecord.ID) {
+        let ownerName = UserDefaults.standard.string(
+            forKey: sharedAreaOwnerKey(for: groupID)
+        ) ?? CKCurrentUserDefaultName
+        let recordZoneID = CKRecordZone.ID(
+            zoneName: zoneID.zoneName,
+            ownerName: ownerName
+        )
+        let database: CKDatabase = ownerName == CKCurrentUserDefaultName
+            ? container.privateCloudDatabase
+            : container.sharedCloudDatabase
+        return (
+            database,
+            CKRecord.ID(recordName: groupID.uuidString, zoneID: recordZoneID)
+        )
+    }
+
+    private func fetchSharedRecord(recordID: CKRecord.ID) async throws -> CKRecord {
+        var lastError: Error?
+        for attempt in 0..<4 {
+            do {
+                return try await container.sharedCloudDatabase.record(for: recordID)
+            } catch let error as CKError where error.code == .unknownItem && attempt < 3 {
+                lastError = error
+                try await Task.sleep(for: .seconds(Double(attempt + 1)))
+            } catch {
+                throw error
+            }
+        }
+        throw lastError ?? SharedBudgetAreaError.invalidShareRecord
+    }
+}
+
+extension Notification.Name {
+    static let elyraBudgetCloudKitShareAccepted = Notification.Name(
+        "elyraBudget.cloudKitShareAccepted"
+    )
 }
 
 enum SharedBudgetAreaError: LocalizedError {

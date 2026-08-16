@@ -18,6 +18,12 @@ struct MonthPickerSheet: View {
 
     private let calendar = Calendar.current
 
+    init(
+        selectedDate: Binding<Date>
+    ) {
+        _selectedDate = selectedDate
+    }
+
     // MARK: - Auswahlbindungen
 
     private var selectedMonth: Binding<Int> {
@@ -75,6 +81,7 @@ struct MonthPickerSheet: View {
             }
         }
         .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
     }
 
     // MARK: - Monatsauswahl

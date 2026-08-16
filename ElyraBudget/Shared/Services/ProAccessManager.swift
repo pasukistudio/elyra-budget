@@ -80,10 +80,14 @@ final class ProAccessManager {
     #endif
 
     init() {
+        #if INTERNAL_PRO
+        hasPro = true
+        #else
         #if DEBUG
         hasPro = UserDefaults.standard.bool(forKey: Self.testingProKey)
         #else
         hasPro = false
+        #endif
         #endif
 
         #if os(macOS)
@@ -156,6 +160,10 @@ final class ProAccessManager {
 
     @MainActor
     func refreshEntitlement() async {
+        #if INTERNAL_PRO
+        hasPro = true
+        return
+        #else
         #if DEBUG
         if UserDefaults.standard.bool(forKey: Self.testingProKey) {
             hasPro = true
@@ -177,6 +185,7 @@ final class ProAccessManager {
                 }
             }
         }
+        #endif
     }
 
     @MainActor

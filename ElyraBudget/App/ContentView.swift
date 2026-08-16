@@ -74,6 +74,8 @@ struct ContentView: View {
     @State private var showingBudgetGroupManagement = false
     @State private var showingSettings = false
     @State private var showingOnboarding = false
+    @State private var showingOverviewAnalytics = false
+    @State private var showingOverviewProUpgrade = false
     @AppStorage("elyraBudgetAppLaunchCount")
     private var appLaunchCount = 0
     @State private var hasCountedCurrentLaunch = false
@@ -111,6 +113,7 @@ struct ContentView: View {
         .sheet(isPresented: $showingBudgetGroupManagement, onDismiss: {
             if selectedBudgetGroup?.isArchived == true {
                 selectedBudgetGroup = nil
+                restoreSelectedBudgetGroup()
             }
         }) {
             BudgetGroupManagementView()
@@ -166,6 +169,18 @@ struct ContentView: View {
             guard oldPhase != .background, newPhase == .background else { return }
             Task {
                 await uploadSharedAreasIfNeeded()
+            }
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: .elyraBudgetCloudKitShareAccepted
+            )
+        ) { _ in
+            Task { @MainActor in
+                await importPendingCloudKitShareIfNeeded()
+                await ensureDefaultBudgetGroupAfterCloudKitSync()
+                await pullSharedAreasIfNeeded()
+                restoreSelectedBudgetGroup()
             }
         }
         .onChange(of: cloudKitSyncMonitor.status) { _, status in
@@ -405,17 +420,19 @@ struct ContentView: View {
 
     private func restoreSelectedBudgetGroup() {
         guard selectedBudgetGroup == nil else { return }
-        guard !persistedSelectedBudgetGroupID.isEmpty else { return }
+        if !persistedSelectedBudgetGroupID.isEmpty {
+            if let restoredGroup = budgetGroups.first(where: {
+                $0.id.uuidString == persistedSelectedBudgetGroupID
+            }) {
+                selectedBudgetGroup = restoredGroup
+                return
+            }
 
-        guard let restoredGroup = budgetGroups.first(where: {
-            $0.id.uuidString == persistedSelectedBudgetGroupID
-        }) else {
             // The saved group may have been deleted or archived on another device.
             persistedSelectedBudgetGroupID = ""
-            return
         }
 
-        selectedBudgetGroup = restoredGroup
+        selectedBudgetGroup = budgetGroups.first
     }
 
     private func presentOnboardingIfNeeded() {
@@ -582,6 +599,15 @@ struct ContentView: View {
                     group: selectedBudgetGroup
                 )
             }
+            .sheet(isPresented: $showingOverviewAnalytics) {
+                ProAnalyticsView(
+                    selectedDate: selectedDate,
+                    selectedGroup: selectedBudgetGroup
+                )
+            }
+            .sheet(isPresented: $showingOverviewProUpgrade) {
+                ProUpgradeView(feature: "Statistiken und Monatsberichte")
+            }
         }
         .tint(effectiveAccentColor)
         .preferredColorScheme(
@@ -595,7 +621,10 @@ struct ContentView: View {
     #if os(iOS)
     private var overviewTab: some View {
         appBackground {
-            OverviewView(selectedGroup: $selectedBudgetGroup, selectedDate: $selectedDate)
+            OverviewView(
+                selectedGroup: $selectedBudgetGroup,
+                selectedDate: $selectedDate
+            )
         }
         .tabItem {
             Label(
@@ -769,7 +798,7 @@ struct ContentView: View {
     #endif
 
     // MARK: - Gemeinsame Toolbar
-
+    
     @ToolbarContentBuilder
     private var sharedToolbar: some ToolbarContent {
         ToolbarItem(placement: budgetGroupToolbarPlacement) {
@@ -787,21 +816,38 @@ struct ContentView: View {
             MonthNavigationControl(
                 title: monthTitle,
                 onPrevious: {
-                    moveSelectedMonth(by: -1)
+                    moveSelectedPeriod(by: -1)
                 },
                 onSelectDate: {
                     showingMonthPicker = true
                 },
                 onNext: {
-                    moveSelectedMonth(by: 1)
+                    moveSelectedPeriod(by: 1)
                 }
             )
             .tint(effectiveAccentColor)
         }
 
-        ToolbarItem(
-            placement: .primaryAction
-        ) {
+        #if os(iOS)
+        if selectedSection == .overview {
+            ToolbarItem(placement: .primaryAction) {
+                overviewActionsMenu
+            }
+        } else {
+            ToolbarItem(placement: .primaryAction) {
+                if selectedSection == .transactions {
+                    transactionActionsMenu
+                } else if selectedSection == .budgets {
+                    budgetActionsMenu
+                } else if selectedSection == .savings {
+                    savingsActionsMenu
+                } else {
+                    standardAddButton
+                }
+            }
+        }
+        #else
+        ToolbarItem(placement: .primaryAction) {
             if selectedSection == .overview {
                 overviewActionsMenu
             } else if selectedSection == .transactions {
@@ -814,6 +860,7 @@ struct ContentView: View {
                 standardAddButton
             }
         }
+        #endif
     }
 
     private var budgetGroupToolbarPlacement: ToolbarItemPlacement {
@@ -828,6 +875,18 @@ struct ContentView: View {
 
     private var overviewActionsMenu: some View {
         Menu {
+            Button {
+                if proAccess.hasPro {
+                    showingOverviewAnalytics = true
+                } else {
+                    showingOverviewProUpgrade = true
+                }
+            } label: {
+                Label("Statistiken", systemImage: "chart.xyaxis.line")
+            }
+
+            Divider()
+
             Button { showingTransactionEditor = true } label: {
                 Label("Neue Buchung", systemImage: "arrow.up.right")
             }
@@ -1089,19 +1148,13 @@ struct ContentView: View {
     // MARK: - Monatsnavigation
 
     private var monthTitle: String {
-        selectedDate.formatted(
-            .dateTime
-                .month(.wide)
-                .year()
-        )
+        return selectedDate.formatted(.dateTime.month(.wide).year())
     }
 
-    private func moveSelectedMonth(
-        by months: Int
-    ) {
+    private func moveSelectedPeriod(by value: Int) {
         guard let newDate = Calendar.current.date(
             byAdding: .month,
-            value: months,
+            value: value,
             to: selectedDate
         ) else {
             return

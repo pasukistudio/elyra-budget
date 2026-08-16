@@ -72,7 +72,7 @@
         }
       }
     },
-    "Alle Bereiche" : {
+    "Alle Tage" : {
 
     },
     "Alle verfügbaren Pro-Funktionen sind aktiv." : {
@@ -85,6 +85,9 @@
 
     },
     "An Fälligkeit erinnern" : {
+
+    },
+    "Anpassen" : {
 
     },
     "Anteil" : {
@@ -136,6 +139,9 @@
 
     },
     "Ausgabenverteilung" : {
+
+    },
+    "Ausgewählten Tag filtern" : {
 
     },
     "Auszahlung" : {
@@ -194,6 +200,9 @@
 
     },
     "Bereich bearbeiten" : {
+
+    },
+    "Bereich konnte nicht geteilt werden" : {
 
     },
     "Bereich teilen" : {
@@ -383,6 +392,9 @@
     "Deine Finanzen, einfach im Blick" : {
 
     },
+    "Der Wert gilt für diesen Monat. Andere Monate verwenden weiterhin ihren Standardwert." : {
+
+    },
     "Detaillierte Prognosen" : {
 
     },
@@ -510,6 +522,9 @@
     "Fertig" : {
 
     },
+    "Festlegen" : {
+
+    },
     "Fixkosten" : {
 
     },
@@ -547,6 +562,9 @@
 
     },
     "Freie Rücklagen" : {
+
+    },
+    "Freigabe wird vorbereitet …" : {
 
     },
     "Füge die erste Einzahlung für dieses %@ hinzu." : {
@@ -624,12 +642,6 @@
     "Hell" : {
 
     },
-    "Heute" : {
-
-    },
-    "Heute gibt es noch keine Buchungen." : {
-
-    },
     "Hilfe & Support" : {
 
     },
@@ -667,6 +679,9 @@
 
     },
     "In den Archiv verschieben?" : {
+
+    },
+    "In diesem Monat gibt es keine Buchungen." : {
 
     },
     "In diesem Monat gibt es noch keine Budgetausgaben." : {
@@ -727,6 +742,9 @@
     "Keine archivierten Budgets" : {
 
     },
+    "Keine Bereiche vorhanden" : {
+
+    },
     "Keine Budgets" : {
 
     },
@@ -749,6 +767,9 @@
 
     },
     "Lege zuerst ein Sparziel oder eine freie Rücklage an." : {
+
+    },
+    "Lege zuerst einen Budgetbereich an." : {
 
     },
     "Lila" : {
@@ -807,6 +828,21 @@
 
     },
     "Monatsbericht als PDF teilen" : {
+
+    },
+    "Monatsbudget" : {
+
+    },
+    "Monatsbudget anpassen" : {
+
+    },
+    "Monatsbudget festlegen" : {
+
+    },
+    "Monatsbudget für (selectedGroup.name)" : {
+
+    },
+    "Monatsbudgets für (monthTitle)" : {
 
     },
     "Nach diesem Datum wird die Fixkostenbuchung wieder fällig." : {
@@ -901,6 +937,9 @@
 
     },
     "Notiz (optional)" : {
+
+    },
+    "Nur dieser Tag" : {
 
     },
     "Nur verknüpfen" : {
@@ -1054,6 +1093,9 @@
 
     },
     "System" : {
+
+    },
+    "Tag auswählen" : {
 
     },
     "Teile die Datei oder speichere sie in der Dateien-App." : {
