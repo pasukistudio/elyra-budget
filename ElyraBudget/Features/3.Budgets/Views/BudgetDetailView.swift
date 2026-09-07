@@ -346,7 +346,7 @@ struct BudgetDetailView: View {
                 return result
             }
 
-            return result + transaction.amount
+            return result + abs(transaction.amount)
         }
     }
 
@@ -359,12 +359,14 @@ struct BudgetDetailView: View {
                 return result
             }
 
-            return result + transaction.amount
+            return result + abs(transaction.amount)
         }
     }
 
     private var occupiedAmount: Decimal {
-        expenseAmount - refundAmount
+        monthTransactions.reduce(.zero) { result, transaction in
+            result + transaction.budgetImpact
+        }
     }
 
     private var remainingAmount: Decimal {
@@ -458,10 +460,45 @@ struct BudgetDetailView: View {
     private func deleteTransaction(
         _ transaction: Transaction
     ) {
+        let groupID = transaction.effectiveGroup?.id
+        var deletedContributionIDs = Set<UUID>()
+        let linkedContributionIDs = [
+            transaction.savingsContributionID,
+            transaction.roundUpSavingsContributionID
+        ].compactMap { $0 }
+        if !linkedContributionIDs.isEmpty {
+            do {
+                let contributions = try modelContext.fetch(
+                    FetchDescriptor<SavingsContribution>()
+                )
+                for contribution in contributions where linkedContributionIDs.contains(contribution.id) {
+                    deletedContributionIDs.insert(contribution.id)
+                    modelContext.delete(contribution)
+                }
+            } catch {
+                AppLogger.persistence.error(
+                    "Verknüpfte Sparbeiträge konnten nicht geladen werden: \(error)"
+                )
+            }
+        }
         modelContext.delete(transaction)
 
         do {
             try modelContext.save()
+            if let groupID {
+                for contributionID in deletedContributionIDs {
+                    CloudKitSharedAreaService.recordDeletion(
+                        key: contributionID.uuidString,
+                        kind: .contribution,
+                        groupID: groupID
+                    )
+                }
+                CloudKitSharedAreaService.recordDeletion(
+                    key: transaction.id.uuidString,
+                    kind: .transaction,
+                    groupID: groupID
+                )
+            }
             transactionToDelete = nil
         } catch {
             AppLogger.persistence.error(

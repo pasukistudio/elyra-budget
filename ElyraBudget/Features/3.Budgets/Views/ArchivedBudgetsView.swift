@@ -237,28 +237,38 @@ struct ArchivedBudgetsView: View {
     private func deleteBudget(
         _ budget: Budget
     ) {
+        let groupID = budget.group?.id
         modelContext.delete(budget)
 
-        saveChanges(
+        if saveChanges(
             errorMessage:
                 "Budget konnte nicht gelöscht werden"
-        )
+        ), let groupID {
+            CloudKitSharedAreaService.recordDeletion(
+                key: budget.id.uuidString,
+                kind: .budget,
+                groupID: groupID
+            )
+        }
 
         budgetToDelete = nil
     }
 
     // MARK: - Speichern
 
+    @discardableResult
     private func saveChanges(
         errorMessage: String
-    ) {
+    ) -> Bool {
         do {
             try modelContext.save()
+            return true
         } catch {
             AppLogger.persistence.error(
                 "\(errorMessage): \(error)"
             )
             saveErrorMessage = errorMessage
+            return false
         }
     }
 

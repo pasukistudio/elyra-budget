@@ -548,6 +548,7 @@ struct BudgetManagementView: View {
     private func deleteBudget(
         _ budget: Budget
     ) {
+        let groupID = budget.group?.id
         let remainingBudgets =
             budgets.filter {
                 $0.persistentModelID !=
@@ -560,10 +561,16 @@ struct BudgetManagementView: View {
             for: remainingBudgets
         )
 
-        saveChanges(
+        if saveChanges(
             errorMessage:
                 "Budget konnte nicht gelöscht werden"
-        )
+        ), let groupID {
+            CloudKitSharedAreaService.recordDeletion(
+                key: budget.id.uuidString,
+                kind: .budget,
+                groupID: groupID
+            )
+        }
 
         budgetToDelete = nil
     }
@@ -586,16 +593,19 @@ struct BudgetManagementView: View {
 
     // MARK: - Speichern
 
+    @discardableResult
     private func saveChanges(
         errorMessage: String
-    ) {
+    ) -> Bool {
         do {
             try modelContext.save()
+            return true
         } catch {
             AppLogger.persistence.error(
                 "\(errorMessage): \(error)"
             )
             saveErrorMessage = errorMessage
+            return false
         }
     }
 

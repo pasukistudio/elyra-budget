@@ -229,10 +229,18 @@ struct BudgetsView: View {
     private func deleteBudget(
         _ budget: Budget
     ) {
+        let groupID = budget.group?.id
         modelContext.delete(budget)
 
         do {
             try modelContext.save()
+            if let groupID {
+                CloudKitSharedAreaService.recordDeletion(
+                    key: budget.id.uuidString,
+                    kind: .budget,
+                    groupID: groupID
+                )
+            }
             budgetToDelete = nil
         } catch {
             AppLogger.persistence.error(

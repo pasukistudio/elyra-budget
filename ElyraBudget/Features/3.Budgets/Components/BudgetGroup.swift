@@ -16,6 +16,10 @@ final class BudgetGroup {
     /// The fallback monthly allowance used when a month has no override.
     /// A value of `0` means that no group allowance has been configured yet.
     var standardMonthlyBudget: Decimal = 0
+    /// Upper utilization percentage for the green budget status.
+    var greenBudgetThreshold: Int = 70
+    /// Upper utilization percentage for the orange budget status.
+    var orangeBudgetThreshold: Int = 100
     /// Rounds expense transactions up to the next full currency unit.
     var roundUpTransactionsEnabled: Bool = false
     /// Identifies the automatically created reserve that receives round-up differences.
@@ -56,7 +60,9 @@ final class BudgetGroup {
         iconName: String = "person.2.fill",
         iconColorHex: String = "#007AFF",
         sortOrder: Int = 0,
-        standardMonthlyBudget: Decimal = 0
+        standardMonthlyBudget: Decimal = 0,
+        greenBudgetThreshold: Int = 70,
+        orangeBudgetThreshold: Int = 100
     ) {
         self.id = UUID()
         self.name = name
@@ -64,6 +70,8 @@ final class BudgetGroup {
         self.iconColorHex = iconColorHex
         self.sortOrder = sortOrder
         self.standardMonthlyBudget = standardMonthlyBudget
+        self.greenBudgetThreshold = greenBudgetThreshold
+        self.orangeBudgetThreshold = orangeBudgetThreshold
         self.roundUpTransactionsEnabled = false
         self.roundUpReserveID = nil
         self.createdAt = .now

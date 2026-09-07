@@ -59,26 +59,11 @@ struct ElyraBudgetApp: App {
             AppLogger.persistence.error(
                 "CloudKit-ModelContainer konnte nicht erstellt werden: \(error.localizedDescription)"
             )
-
-            let recoveryConfiguration = ModelConfiguration(
-                "ElyraBudgetRecovery",
-                schema: schema,
-                isStoredInMemoryOnly: false
-            )
-
-            do {
-                return try ModelContainer(
-                    for: schema,
-                    configurations: [recoveryConfiguration]
-                )
-            } catch {
-                AppLogger.persistence.error(
-                    "Lokaler Recovery-ModelContainer konnte nicht erstellt werden: \(error.localizedDescription)"
-                )
-                fatalError(
-                    "ModelContainer konnte nicht erstellt werden: \(error)"
-                )
-            }
+            // Never silently switch to a new local store here. That would
+            // make the app appear empty and any subsequent edits would stay
+            // outside CloudKit. Failing closed protects the existing store
+            // and makes the configuration problem visible instead.
+            fatalError("ModelContainer konnte nicht erstellt werden: \(error)")
         }
     }()
 

@@ -416,12 +416,14 @@ struct TransactionEditorView: View {
             return
         }
 
+        var deletedSavingsContributionID: UUID?
         if let existingTransaction =
             transaction {
             existingTransaction.title =
                 cleanedTitle
 
             let amountChanged = existingTransaction.amount != normalizedAmount
+            let dateChanged = existingTransaction.date != date
             existingTransaction.amount =
                 normalizedAmount
 
@@ -442,6 +444,50 @@ struct TransactionEditorView: View {
 
             existingTransaction.group =
                 effectiveGroup
+
+            // A savings contribution is represented by a linked expense.
+            // If that expense is converted to another transaction type, the
+            // contribution must not remain in the savings goal unnoticed.
+            if selectedType != .expense,
+               let contributionID = existingTransaction.savingsContributionID {
+                if let contribution = savingsContributions.first(where: { $0.id == contributionID }) {
+                    modelContext.delete(contribution)
+                    deletedSavingsContributionID = contributionID
+                }
+                existingTransaction.savingsContributionID = nil
+                existingTransaction.savingsGoalID = nil
+                existingTransaction.savingsGoalOccurrenceDate = nil
+            } else if amountChanged || dateChanged,
+                      let contributionID = existingTransaction.savingsContributionID,
+                      let contribution = savingsContributions.first(where: { $0.id == contributionID }) {
+                let sign: Decimal = contribution.amount < 0 ? -1 : 1
+                let linkedAmount = existingTransaction.fixedCostID == nil
+                    ? normalizedAmount
+                    : min(abs(contribution.amount), normalizedAmount)
+                contribution.amount = linkedAmount * sign
+                contribution.date = date
+                contribution.updatedAt = .now
+                if contribution.occurrenceDate != nil {
+                    contribution.occurrenceDate = date
+                }
+                if existingTransaction.fixedCostID != nil {
+                    existingTransaction.savingsGoalCoveredAmount = linkedAmount > 0
+                        ? linkedAmount
+                        : nil
+                    existingTransaction.fixedCostOccurrenceDate = date
+                } else if existingTransaction.savingsGoalOccurrenceDate != nil {
+                    existingTransaction.savingsGoalOccurrenceDate = date
+                }
+            }
+
+            // A fixed-cost booking is always an expense. Do not leave its
+            // scheduler metadata attached after changing its type.
+            if selectedType != .expense {
+                existingTransaction.fixedCostID = nil
+                existingTransaction.fixedCostOccurrenceDate = nil
+                existingTransaction.fixedCostBookingAutomatic = nil
+                existingTransaction.savingsGoalCoveredAmount = nil
+            }
 
             // Only reset the base amount when the user actually changed the amount.
             // Editing the title or note must preserve an existing round-up.
@@ -497,6 +543,14 @@ struct TransactionEditorView: View {
 
         do {
             try modelContext.save()
+            if let deletedSavingsContributionID,
+               let groupID = effectiveGroup?.id {
+                CloudKitSharedAreaService.recordDeletion(
+                    key: deletedSavingsContributionID.uuidString,
+                    kind: .contribution,
+                    groupID: groupID
+                )
+            }
             dismiss()
         } catch {
             AppLogger.persistence.error(

@@ -29,8 +29,6 @@ struct SettingsView: View {
             profileSection
             appearanceSection
             currencySection
-            budgetStatusSection
-            securitySection
             notificationsSection
             accentColorSection
             proSection
@@ -235,34 +233,6 @@ struct SettingsView: View {
         return enabledCount == 0 ? "Aus" : "\(enabledCount) aktiv"
     }
 
-    private var securitySection: some View {
-        Section("Sicherheit") {
-            if let profile = profiles.first, proAccess.hasPro {
-                Toggle(
-                    "Face ID-/Touch-ID-Sperre",
-                    isOn: Binding(
-                        get: { profile.appLockEnabled },
-                        set: {
-                            profile.appLockEnabled = $0
-                            profile.updatedAt = .now
-                            saveSettings()
-                        }
-                    )
-                )
-                Text("Elyra Budget wird beim Verlassen der App geschützt.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            } else {
-                Button {
-                    proUpgradeFeature = "Face ID-/Touch-ID-Sperre"
-                    showingProUpgrade = true
-                } label: {
-                    Label("Face ID-/Touch-ID-Sperre mit Pro", systemImage: "faceid")
-                }
-            }
-        }
-    }
-
     private func requestNotificationPermissionIfNeeded(for isEnabled: Bool) {
         guard isEnabled else { return }
         Task {
@@ -294,58 +264,6 @@ struct SettingsView: View {
                     }
                 }
             }
-        }
-    }
-
-    // MARK: - Budgetstatus
-
-    private var budgetStatusSection: some View {
-        Section {
-            if let profile = profiles.first {
-                Stepper {
-                    LabeledContent("Grün bis") {
-                        Text("\(profile.greenBudgetThreshold) %")
-                            .foregroundStyle(.green)
-                    }
-                } onIncrement: {
-                    profile.greenBudgetThreshold = min(
-                        profile.greenBudgetThreshold + 1,
-                        profile.orangeBudgetThreshold - 1
-                    )
-                    saveSettings()
-                } onDecrement: {
-                    profile.greenBudgetThreshold = max(
-                        profile.greenBudgetThreshold - 1,
-                        1
-                    )
-                    saveSettings()
-                }
-
-                Stepper {
-                    LabeledContent("Orange bis") {
-                        Text("\(profile.orangeBudgetThreshold) %")
-                            .foregroundStyle(.orange)
-                    }
-                } onIncrement: {
-                    profile.orangeBudgetThreshold += 1
-                    saveSettings()
-                } onDecrement: {
-                    profile.orangeBudgetThreshold = max(
-                        profile.orangeBudgetThreshold - 1,
-                        profile.greenBudgetThreshold + 1
-                    )
-                    saveSettings()
-                }
-
-                LabeledContent("Rot ab") {
-                    Text("\(profile.orangeBudgetThreshold + 1) %")
-                        .foregroundStyle(.red)
-                }
-            }
-        } header: {
-            Text("Budgetstatus")
-        } footer: {
-            Text("Die Farben zeigen, wie viel des Monatsbudgets bereits verwendet wurde.")
         }
     }
 

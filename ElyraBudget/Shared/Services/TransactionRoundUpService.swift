@@ -20,18 +20,22 @@ enum TransactionRoundUpService {
         group.roundUpReserveID = reserve.id
         group.updatedAt = .now
 
+        var deletedContributionIDs: [UUID] = []
         for transaction in transactions where transaction.effectiveGroup === group {
-            try apply(
+            if let deletedContributionID = try apply(
                 to: transaction,
                 group: group,
                 reserve: reserve,
                 contributions: contributions,
                 modelContext: modelContext
-            )
+            ) {
+                deletedContributionIDs.append(deletedContributionID)
+            }
         }
 
         guard modelContext.hasChanges else { return }
         try modelContext.save()
+        recordDeletions(deletedContributionIDs, groupID: group.id)
     }
 
     static func applyIfNeeded(
@@ -51,13 +55,18 @@ enum TransactionRoundUpService {
             in: savingsGoals,
             modelContext: modelContext
         )
-        try apply(
+        let deletedContributionID = try apply(
             to: transaction,
             group: group,
             reserve: reserve,
             contributions: contributions,
             modelContext: modelContext
         )
+        guard modelContext.hasChanges else { return }
+        try modelContext.save()
+        if let deletedContributionID {
+            recordDeletions([deletedContributionID], groupID: group.id)
+        }
     }
 
     static func applyAllIfNeeded(
@@ -82,26 +91,35 @@ enum TransactionRoundUpService {
         try modelContext.save()
     }
 
+    private static func recordDeletions(_ ids: [UUID], groupID: UUID) {
+        for id in ids {
+            CloudKitSharedAreaService.recordDeletion(
+                key: id.uuidString,
+                kind: .contribution,
+                groupID: groupID
+            )
+        }
+    }
+
     private static func apply(
         to transaction: Transaction,
         group: BudgetGroup,
         reserve: SavingsGoal,
         contributions: [SavingsContribution],
         modelContext: ModelContext
-    ) throws {
+    ) throws -> UUID? {
         // Round spending only. Income and refunds must retain their exact amount.
         guard transaction.type == .expense,
               transaction.savingsGoalID == nil else {
-            removeExistingContribution(
+            return removeExistingContribution(
                 from: transaction,
                 contributions: contributions,
                 modelContext: modelContext
             )
-            return
         }
 
         var originalAmount = transaction.roundUpOriginalAmount ?? transaction.amount
-        guard originalAmount > 0 else { return }
+        guard originalAmount > 0 else { return nil }
 
         var roundedAmount = Decimal.zero
         NSDecimalRound(&roundedAmount, &originalAmount, 0, .up)
@@ -112,18 +130,18 @@ enum TransactionRoundUpService {
         transaction.updatedAt = .now
 
         guard difference > 0 else {
-            removeExistingContribution(
+            return removeExistingContribution(
                 from: transaction,
                 contributions: contributions,
                 modelContext: modelContext
             )
-            return
         }
 
         if let contributionID = transaction.roundUpSavingsContributionID,
            let existing = contributions.first(where: { $0.id == contributionID }) {
             existing.amount = difference
             existing.date = transaction.date
+            existing.updatedAt = .now
             existing.note = "Aufrundung für \(transaction.title)"
             existing.goal = reserve
         } else {
@@ -141,20 +159,22 @@ enum TransactionRoundUpService {
         }
 
         _ = group
+        return nil
     }
 
     private static func removeExistingContribution(
         from transaction: Transaction,
         contributions: [SavingsContribution],
         modelContext: ModelContext
-    ) {
+    ) -> UUID? {
         guard let contributionID = transaction.roundUpSavingsContributionID,
               let contribution = contributions.first(where: { $0.id == contributionID }) else {
             transaction.roundUpSavingsContributionID = nil
-            return
+            return nil
         }
         modelContext.delete(contribution)
         transaction.roundUpSavingsContributionID = nil
+        return contribution.id
     }
 
     private static func reserve(

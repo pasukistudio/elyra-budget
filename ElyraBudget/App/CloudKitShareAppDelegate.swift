@@ -8,8 +8,25 @@ import UIKit
 final class CloudKitShareAppDelegate: NSObject, UIApplicationDelegate {
     func application(
         _ application: UIApplication,
+        configurationForConnecting connectingSceneSession: UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+        let configuration = UISceneConfiguration(
+            name: "Default Configuration",
+            sessionRole: connectingSceneSession.role
+        )
+        configuration.delegateClass = CloudKitShareSceneDelegate.self
+        return configuration
+    }
+
+    func application(
+        _ application: UIApplication,
         userDidAcceptCloudKitShareWith metadata: CKShare.Metadata
     ) {
+        Self.accept(metadata: metadata)
+    }
+
+    static func accept(metadata: CKShare.Metadata) {
         guard let recordID = metadata.hierarchicalRootRecordID else {
             AppLogger.persistence.error("CloudKit-Bereich enthält keine Root-Record-ID.")
             return
@@ -26,14 +43,25 @@ final class CloudKitShareAppDelegate: NSObject, UIApplicationDelegate {
                 defaults.set(true, forKey: "elyraBudget.pendingCloudKitShare.failed")
             } else {
                 defaults.set(false, forKey: "elyraBudget.pendingCloudKitShare.failed")
-                NotificationCenter.default.post(
-                    name: .elyraBudgetCloudKitShareAccepted,
-                    object: nil
-                )
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(
+                        name: .elyraBudgetCloudKitShareAccepted,
+                        object: nil
+                    )
+                }
             }
         }
         CKContainer(identifier: CloudKitSharedAreaService.containerIdentifier)
             .add(operation)
+    }
+}
+
+final class CloudKitShareSceneDelegate: UIResponder, UIWindowSceneDelegate {
+    func windowScene(
+        _ windowScene: UIWindowScene,
+        userDidAcceptCloudKitShareWith cloudKitShareMetadata: CKShare.Metadata
+    ) {
+        CloudKitShareAppDelegate.accept(metadata: cloudKitShareMetadata)
     }
 }
 #endif

@@ -1,20 +1,24 @@
 import SwiftData
 import SwiftUI
+import os
 
 struct BudgetGroupMenu: View {
     @Binding var selection: BudgetGroup?
     let groups: [BudgetGroup]
+    let add: () -> Void
     let manage: () -> Void
     let settings: () -> Void
 
     init(
         selection: Binding<BudgetGroup?>,
         groups: [BudgetGroup],
+        add: @escaping () -> Void = {},
         manage: @escaping () -> Void,
         settings: @escaping () -> Void = {}
     ) {
         _selection = selection
         self.groups = groups
+        self.add = add
         self.manage = manage
         self.settings = settings
     }
@@ -38,6 +42,9 @@ struct BudgetGroupMenu: View {
             if !groups.isEmpty {
                 Divider()
             }
+            Button(action: add) {
+                Label("Neuen Bereich hinzufügen", systemImage: "plus")
+            }
             Button(action: manage) {
                 Label("Bereiche verwalten", systemImage: "slider.horizontal.3")
             }
@@ -47,11 +54,11 @@ struct BudgetGroupMenu: View {
             }
         } label: {
             Image(systemName: selection?.iconName ?? "person.2.fill")
-                .foregroundStyle(
-                    selection.map { Color(hexString: $0.iconColorHex) } ?? .secondary
-                )
+            .foregroundStyle(
+                selection.map { Color(hexString: $0.iconColorHex) } ?? .secondary
+            )
         }
-        .accessibilityLabel(selection?.name ?? "Budgetbereich auswählen")
+        .accessibilityLabel(selection?.name ?? "Bereich auswählen")
     }
 }
 
@@ -74,10 +81,8 @@ struct BudgetGroupManagementView: View {
         sort: [SortDescriptor<BudgetGroup>(\.updatedAt, order: .reverse)]
     ) private var archivedGroups: [BudgetGroup]
 
-    @State private var editingGroup: BudgetGroup?
     @State private var sharingGroup: BudgetGroup?
     @State private var showingProUpgrade = false
-    @State private var showingNewEditor = false
     @State private var groupPendingDeletion: BudgetGroup?
     @State private var saveErrorMessage: String?
 
@@ -91,24 +96,14 @@ struct BudgetGroupManagementView: View {
                 Section("Budgetbereiche") {
                     ForEach(groups) { group in
                         HStack(spacing: 12) {
-                            Button {
-                                editingGroup = group
-                            } label: {
-                                HStack(spacing: 12) {
-                                    IconBadgeView(
-                                        iconName: group.iconName,
-                                        color: Color(hexString: group.iconColorHex),
-                                        size: 34
-                                    )
-                                    Text(group.name)
-                                        .foregroundStyle(.primary)
-                                    Spacer()
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                            .buttonStyle(.plain)
+                            IconBadgeView(
+                                iconName: group.iconName,
+                                color: Color(hexString: group.iconColorHex),
+                                size: 34
+                            )
+                            Text(group.name)
+                                .foregroundStyle(.primary)
+                            Spacer()
 
                             Menu {
                                 Button {
@@ -171,14 +166,6 @@ struct BudgetGroupManagementView: View {
                     }
                 }
 
-                Section {
-                    Button {
-                        showingNewEditor = true
-                    } label: {
-                        Label("Neuen Bereich hinzufügen", systemImage: "plus")
-                    }
-                }
-
                 if !archivedGroups.isEmpty {
                     Section("Archivierte Bereiche") {
                         ForEach(archivedGroups) { group in
@@ -220,12 +207,6 @@ struct BudgetGroupManagementView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Fertig") { dismiss() }
                 }
-            }
-            .sheet(item: $editingGroup) { group in
-                BudgetGroupEditorView(group: group)
-            }
-            .sheet(isPresented: $showingNewEditor) {
-                BudgetGroupEditorView(group: nil)
             }
             .sheet(item: $sharingGroup) { group in
                 NavigationStack {
@@ -283,6 +264,19 @@ struct BudgetGroupManagementView: View {
             return
         }
 
+        let groupID = group.id
+        var deletedRecords: [(String, SharedBudgetAreaRecordKind)] = []
+        deletedRecords += (group.monthlyAllocations ?? []).map {
+            (CloudKitSharedAreaService.allocationKey(for: $0.monthStart), .allocation)
+        }
+        deletedRecords += (group.budgets ?? []).map { ($0.id.uuidString, .budget) }
+        deletedRecords += (group.fixedCosts ?? []).map { ($0.id.uuidString, .fixedCost) }
+        deletedRecords += (group.savingsGoals ?? []).flatMap { goal in
+            [(goal.id.uuidString, SharedBudgetAreaRecordKind.savingsGoal)]
+                + (goal.contributions ?? []).map { ($0.id.uuidString, .contribution) }
+        }
+        deletedRecords += (group.transactions ?? []).map { ($0.id.uuidString, .transaction) }
+
         for allocation in group.monthlyAllocations ?? [] {
             modelContext.delete(allocation)
         }
@@ -309,6 +303,21 @@ struct BudgetGroupManagementView: View {
 
         do {
             try modelContext.save()
+            for (key, kind) in deletedRecords {
+                CloudKitSharedAreaService.recordDeletion(key: key, kind: kind, groupID: groupID)
+            }
+            if CloudKitSharedAreaService.isShared(groupID: groupID) {
+                CloudKitSharedAreaService.suppressSharedArea(groupID: groupID)
+                Task {
+                    do {
+                        try await CloudKitSharedAreaService.deleteSharedArea(groupID: groupID)
+                    } catch {
+                        AppLogger.persistence.error(
+                            "Geteilter Budgetbereich konnte nicht aus CloudKit gelöscht werden: \(error.localizedDescription)"
+                        )
+                    }
+                }
+            }
         } catch {
             saveErrorMessage = "Der Bereich konnte nicht gelöscht werden."
         }
@@ -326,7 +335,7 @@ struct BudgetGroupManagementView: View {
     }
 }
 
-private struct BudgetGroupEditorView: View {
+struct BudgetGroupEditorView: View {
     let group: BudgetGroup?
 
     @Environment(\.dismiss) private var dismiss
@@ -339,7 +348,9 @@ private struct BudgetGroupEditorView: View {
     @State private var selectedIcon: String
     @State private var selectedColorHex: String
     @State private var standardMonthlyBudget: Decimal?
-    @State private var selectedMonth: Date
+    @State private var greenBudgetThreshold: Int
+    @State private var orangeBudgetThreshold: Int
+    private let selectedMonth: Date
     @State private var hasMonthlyOverride: Bool
     @State private var monthlyOverride: Decimal?
     @State private var showingIconPicker = false
@@ -354,14 +365,16 @@ private struct BudgetGroupEditorView: View {
 
     private let featuredIcons = CategoryIconLibrary.budgetFeatured
 
-    init(group: BudgetGroup?) {
+    init(group: BudgetGroup?, selectedDate: Date = .now) {
         self.group = group
         _name = State(initialValue: group?.name ?? "")
         _selectedIcon = State(initialValue: group?.iconName ?? "person.2.fill")
         _selectedColorHex = State(initialValue: group?.iconColorHex ?? ColorPreset.blue.hex)
         _standardMonthlyBudget = State(initialValue: group.flatMap { $0.standardMonthlyBudget > 0 ? $0.standardMonthlyBudget : nil })
-        let month = Calendar.current.dateInterval(of: .month, for: .now)?.start ?? .now
-        _selectedMonth = State(initialValue: month)
+        _greenBudgetThreshold = State(initialValue: group?.greenBudgetThreshold ?? 70)
+        _orangeBudgetThreshold = State(initialValue: group?.orangeBudgetThreshold ?? 100)
+        let month = Calendar.current.dateInterval(of: .month, for: selectedDate)?.start ?? selectedDate
+        self.selectedMonth = month
         _hasMonthlyOverride = State(initialValue: group?.monthlyAllocation(for: month) != nil)
         _monthlyOverride = State(initialValue: group?.monthlyAllocation(for: month)?.amount)
         _roundUpTransactionsEnabled = State(initialValue: group?.roundUpTransactionsEnabled ?? false)
@@ -376,7 +389,7 @@ private struct BudgetGroupEditorView: View {
 
                 Section {
                     HStack {
-                        Text("Standard pro Monat")
+                        Text("Jeden Monat automatisch")
                         Spacer()
                         TextField("Kein Kontingent", value: $standardMonthlyBudget, format: .number.precision(.fractionLength(0 ... 2)))
                             .multilineTextAlignment(.trailing)
@@ -385,27 +398,44 @@ private struct BudgetGroupEditorView: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    DatePicker("Monat", selection: $selectedMonth, displayedComponents: [.date])
-                        .datePickerStyle(.compact)
+                } header: {
+                    Text("Standardbudget")
+                } footer: {
+                    Text("Dieses Budget gilt automatisch für Monate ohne eigene Anpassung.")
+                }
 
-                    Toggle("Individuellen Monatswert verwenden", isOn: $hasMonthlyOverride)
+                Section {
+                    HStack {
+                        Text("Individueller Betrag für \(monthTitle)")
+                        Spacer()
+                        TextField(
+                            "Standard",
+                            value: monthlyOverrideBinding,
+                            format: .number.precision(.fractionLength(0 ... 2))
+                        )
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: 130)
+                        Text(currencySymbol)
+                            .foregroundStyle(.secondary)
+                    }
 
                     if hasMonthlyOverride {
-                        HStack {
-                            Text("Kontingent für diesen Monat")
-                            Spacer()
-                            TextField("Betrag", value: $monthlyOverride, format: .number.precision(.fractionLength(0 ... 2)))
-                                .multilineTextAlignment(.trailing)
-                                .frame(maxWidth: 130)
-                            Text(currencySymbol)
-                                .foregroundStyle(.secondary)
+                        Button("Standardbudget verwenden") {
+                            hasMonthlyOverride = false
+                            monthlyOverride = nil
                         }
+                    } else {
+                        Text("Aktuell wird das Standardbudget verwendet.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
                 } header: {
-                    Text("Monatliches Kontingent")
+                    Text("Budget diesen Monat")
                 } footer: {
-                    Text("Nicht angepasste Monate verwenden automatisch den Standardwert.")
+                    Text("Dieser Betrag gilt nur für \(monthTitle). In allen anderen Monaten wird das Standardbudget verwendet.")
                 }
+
+                budgetStatusSection
 
                 Section("Automatisches Sparen") {
                     Toggle("Buchungen aufrunden", isOn: Binding(
@@ -474,6 +504,41 @@ private struct BudgetGroupEditorView: View {
         }
     }
 
+    private var budgetStatusSection: some View {
+        Section {
+            Stepper {
+                LabeledContent("Grün bis") {
+                    Text("\(greenBudgetThreshold) %")
+                        .foregroundStyle(.green)
+                }
+            } onIncrement: {
+                greenBudgetThreshold = min(greenBudgetThreshold + 1, orangeBudgetThreshold - 1)
+            } onDecrement: {
+                greenBudgetThreshold = max(greenBudgetThreshold - 1, 1)
+            }
+
+            Stepper {
+                LabeledContent("Orange bis") {
+                    Text("\(orangeBudgetThreshold) %")
+                        .foregroundStyle(.orange)
+                }
+            } onIncrement: {
+                orangeBudgetThreshold += 1
+            } onDecrement: {
+                orangeBudgetThreshold = max(orangeBudgetThreshold - 1, greenBudgetThreshold + 1)
+            }
+
+            LabeledContent("Rot ab") {
+                Text("\(orangeBudgetThreshold + 1) %")
+                    .foregroundStyle(.red)
+            }
+        } header: {
+            Text("Budgetstatus")
+        } footer: {
+            Text("Die Farben der Budgetkarte zeigen, wie viel dieses Bereichs bereits verwendet wurde.")
+        }
+    }
+
     private func save() {
         let cleanedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanedName.isEmpty else { return }
@@ -484,12 +549,15 @@ private struct BudgetGroupEditorView: View {
         value.iconColorHex = selectedColorHex
         value.updatedAt = .now
         value.standardMonthlyBudget = normalizedStandardMonthlyBudget
+        value.greenBudgetThreshold = greenBudgetThreshold
+        value.orangeBudgetThreshold = orangeBudgetThreshold
         if group == nil {
             value.sortOrder = 0
             modelContext.insert(value)
         }
 
         let monthStart = Calendar.current.dateInterval(of: .month, for: selectedMonth)?.start ?? selectedMonth
+        var deletedMonthlyAllocationKey: String?
         if hasMonthlyOverride {
             if let existing = value.monthlyAllocation(for: monthStart) {
                 existing.amount = normalizedMonthlyOverride
@@ -503,6 +571,7 @@ private struct BudgetGroupEditorView: View {
                 modelContext.insert(allocation)
             }
         } else if let existing = value.monthlyAllocation(for: monthStart) {
+            deletedMonthlyAllocationKey = CloudKitSharedAreaService.allocationKey(for: existing.monthStart)
             modelContext.delete(existing)
         }
 
@@ -523,6 +592,13 @@ private struct BudgetGroupEditorView: View {
 
         do {
             try modelContext.save()
+            if let deletedMonthlyAllocationKey {
+                CloudKitSharedAreaService.recordDeletion(
+                    key: deletedMonthlyAllocationKey,
+                    kind: .allocation,
+                    groupID: value.id
+                )
+            }
             dismiss()
         } catch {
             saveErrorMessage = "Der Budgetbereich konnte nicht gespeichert werden."
@@ -531,6 +607,22 @@ private struct BudgetGroupEditorView: View {
 
     private var selectedColor: Color {
         Color(hexString: selectedColorHex)
+    }
+
+    private var monthTitle: String {
+        selectedMonth.formatted(.dateTime.month(.wide).year())
+    }
+
+    private var monthlyOverrideBinding: Binding<Decimal> {
+        Binding(
+            get: {
+                monthlyOverride ?? standardMonthlyBudget ?? .zero
+            },
+            set: { newValue in
+                monthlyOverride = newValue
+                hasMonthlyOverride = true
+            }
+        )
     }
 
     private var currencySymbol: String {

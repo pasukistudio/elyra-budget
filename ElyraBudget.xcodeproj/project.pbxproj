@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		60A48C010000000000000001 /* ElyraBudgetWidget.appex in CopyFiles */ = {isa = PBXBuildFile; fileRef = 60A48C020000000000000001 /* ElyraBudgetWidget.appex */; platformFilters = (ios, iphonesimulator, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		60A48C010000000000000001 /* ElyraBudgetWidget.appex in CopyFiles */ = {isa = PBXBuildFile; fileRef = 60A48C020000000000000001 /* ElyraBudgetWidget.appex */; platformFilters = (iphonesimulator, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		60A48C010000000000000002 /* ElyraBudgetWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60A48C030000000000000001 /* ElyraBudgetWidget.swift */; };
 /* End PBXBuildFile section */
 
@@ -359,7 +359,6 @@
 		60A48C0C0000000000000001 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			platformFilters = (
-				ios,
 				iphonesimulator,
 			);
 			target = 60A48C0A0000000000000001 /* ElyraBudgetWidget */;
@@ -376,7 +375,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ElyraBudget/Configuration/ElyraBudgetDev.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.4.4;
+				CURRENT_PROJECT_VERSION = 1.5.0;
 				DEVELOPMENT_TEAM = N56UYFA4DD;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -400,6 +399,7 @@
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
@@ -410,7 +410,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.5;
-				MARKETING_VERSION = 1.4.4;
+				MARKETING_VERSION = 1.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = de.pasukistudio.elyrabudget.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -418,13 +418,13 @@
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) INTERNAL_PRO";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				XROS_DEPLOYMENT_TARGET = 26.5;
 			};
 			name = Debug;
@@ -437,7 +437,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ElyraBudget/Configuration/ElyraBudget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.4.4;
+				CURRENT_PROJECT_VERSION = 1.5.0;
 				DEVELOPMENT_TEAM = N56UYFA4DD;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -460,6 +460,7 @@
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
@@ -470,7 +471,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.5;
-				MARKETING_VERSION = 1.4.4;
+				MARKETING_VERSION = 1.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = de.pasukistudio.elyrabudget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -483,7 +484,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				XROS_DEPLOYMENT_TARGET = 26.5;
 			};
 			name = Release;
@@ -708,17 +709,40 @@
 			};
 			name = Release;
 		};
+		50B1A306303F70FB0017240F /* TestFlight */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = "";
+				MARKETING_VERSION = "";
+				PRODUCT_NAME = ElyraBudgetWidget;
+			};
+			name = TestFlight;
+		};
+		50B1A307303F70FB0017240F /* TestFlight */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = ElyraBudgetTests;
+			};
+			name = TestFlight;
+		};
+		50B1A308303F70FB0017240F /* TestFlight */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = ElyraBudgetUITests;
+			};
+			name = TestFlight;
+		};
 		60A48C0F0000000000000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = ElyraBudgetWidget/ElyraBudgetWidgetDev.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.4.4;
+				CURRENT_PROJECT_VERSION = 1.5.0;
 				DEVELOPMENT_TEAM = N56UYFA4DD;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ElyraBudgetWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
-				MARKETING_VERSION = 1.4.4;
+				MARKETING_VERSION = 1.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = de.pasukistudio.elyrabudget.dev.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -734,12 +758,12 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = ElyraBudgetWidget/ElyraBudgetWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.4.4;
+				CURRENT_PROJECT_VERSION = 1.5.0;
 				DEVELOPMENT_TEAM = N56UYFA4DD;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ElyraBudgetWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
-				MARKETING_VERSION = 1.4.4;
+				MARKETING_VERSION = 1.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = de.pasukistudio.elyrabudget.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -751,6 +775,70 @@
 			};
 			name = Release;
 		};
+		70A48CD3302204A000A33848 /* TestFlight */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APS_ENVIRONMENT = production;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ElyraBudget/Configuration/ElyraBudget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1.5.0;
+				DEVELOPMENT_TEAM = N56UYFA4DD;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ElyraBudget/Configuration/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				MARKETING_VERSION = 1.5.0;
+				PRODUCT_BUNDLE_IDENTIFIER = de.pasukistudio.elyrabudget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) INTERNAL_PRO";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = TestFlight;
+		};
+		70A48CD5302204A000A33848 /* TestFlight */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = N56UYFA4DD;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = TestFlight;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -759,6 +847,7 @@
 			buildConfigurations = (
 				50A48CD4302204A000A33848 /* Debug */,
 				50A48CD5302204A000A33848 /* Release */,
+				70A48CD5302204A000A33848 /* TestFlight */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -768,6 +857,7 @@
 			buildConfigurations = (
 				50A48CD2302204A000A33848 /* Debug */,
 				50A48CD3302204A000A33848 /* Release */,
+				70A48CD3302204A000A33848 /* TestFlight */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -777,6 +867,7 @@
 			buildConfigurations = (
 				50A48CD7302204A000A33848 /* Debug */,
 				50A48CD8302204A000A33848 /* Release */,
+				50B1A307303F70FB0017240F /* TestFlight */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -786,6 +877,7 @@
 			buildConfigurations = (
 				50A48CDA302204A000A33848 /* Debug */,
 				50A48CDB302204A000A33848 /* Release */,
+				50B1A308303F70FB0017240F /* TestFlight */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -795,6 +887,7 @@
 			buildConfigurations = (
 				60A48C0F0000000000000001 /* Debug */,
 				60A48C100000000000000001 /* Release */,
+				50B1A306303F70FB0017240F /* TestFlight */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

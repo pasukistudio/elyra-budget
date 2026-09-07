@@ -59,7 +59,7 @@ struct SavingsContributionEditorView: View {
 
                 Section {
                     HStack {
-                        Text(kind == .deposit ? "Vom Budget abziehen" : "Auf Budget buchen")
+                        Text("Vom Budget abziehen")
                         Spacer()
                         Menu {
                             Button("Kein Budget") { selectedBudget = nil }
@@ -81,9 +81,7 @@ struct SavingsContributionEditorView: View {
                     }
                 } footer: {
                     Text(
-                        kind == .deposit
-                            ? "Die Einzahlung wird als Ausgabe vom ausgewählten Budget erfasst."
-                            : "Die Auszahlung wird als Einnahme im ausgewählten Budget erfasst."
+                        "Die Buchung wird als Ausgabe vom ausgewählten Budget erfasst."
                     )
                 }
             }
@@ -183,7 +181,7 @@ struct SavingsContributionEditorView: View {
             amount: amount,
             date: date,
             note: note.isEmpty ? goal.note : note,
-            type: kind == .deposit ? .expense : .income,
+            type: .expense,
             budget: selectedBudget,
             group: effectiveGroup
         )

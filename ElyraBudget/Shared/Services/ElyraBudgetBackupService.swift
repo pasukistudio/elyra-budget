@@ -57,6 +57,8 @@ struct GroupBackup: Codable {
     let createdAt: Date
     let updatedAt: Date
     let standardMonthlyBudget: Decimal
+    let greenBudgetThreshold: Int?
+    let orangeBudgetThreshold: Int?
     let roundUpTransactionsEnabled: Bool
     let roundUpReserveID: UUID?
 }
@@ -229,6 +231,8 @@ enum ElyraBudgetBackupService {
             group.createdAt = item.createdAt
             group.updatedAt = item.updatedAt
             group.standardMonthlyBudget = item.standardMonthlyBudget
+            group.greenBudgetThreshold = item.greenBudgetThreshold ?? 70
+            group.orangeBudgetThreshold = item.orangeBudgetThreshold ?? 100
             group.roundUpTransactionsEnabled = item.roundUpTransactionsEnabled
             group.roundUpReserveID = item.roundUpReserveID
             modelContext.insert(group)
@@ -455,6 +459,8 @@ private extension GroupBackup {
         createdAt = group.createdAt
         updatedAt = group.updatedAt
         standardMonthlyBudget = group.standardMonthlyBudget
+        greenBudgetThreshold = group.greenBudgetThreshold
+        orangeBudgetThreshold = group.orangeBudgetThreshold
         roundUpTransactionsEnabled = group.roundUpTransactionsEnabled
         roundUpReserveID = group.roundUpReserveID
     }
