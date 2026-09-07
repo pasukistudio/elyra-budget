@@ -12,7 +12,7 @@ A modern personal budgeting app for tracking expenses, managing budgets, plannin
 
 ![Swift](https://img.shields.io/badge/Swift-FA7343?logo=swift&logoColor=white)
 ![SwiftUI](https://img.shields.io/badge/SwiftUI-0D96F6?logo=swift&logoColor=white)
-![Platform](https://img.shields.io/badge/Platform-iPhone-black?logo=apple&logoColor=white)
+![Platform](https://img.shields.io/badge/Platform-iPhone%20%7C%20iPad%20%7C%20macOS-black?logo=apple&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Active%20Development-yellow)
 
 </div>
@@ -25,7 +25,7 @@ Elyra Budget is a native personal-finance app designed to make everyday budgetin
 
 The app combines transactions, monthly budgets, category limits, fixed costs and savings goals in one modern interface.
 
-Elyra Budget is currently being developed for iPhone. Dedicated versions for iPad and macOS are planned.
+Elyra Budget is a native Apple app for iPhone, iPad and macOS. The shared SwiftUI codebase provides a dedicated macOS layout with a sidebar and desktop navigation.
 
 ---
 
@@ -97,8 +97,8 @@ The project focuses on a modern SwiftUI architecture that can be reused across i
 | Platform | Status |
 |---|---|
 | iPhone | Active development |
-| iPad | Planned |
-| macOS | Planned |
+| iPad | Supported |
+| macOS | Native app in development |
 
 ---
 

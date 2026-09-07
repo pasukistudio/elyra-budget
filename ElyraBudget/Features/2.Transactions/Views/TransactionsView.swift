@@ -428,7 +428,9 @@ struct TransactionsView: View {
                 }
             }
             .navigationTitle("Filter")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Fertig") {
