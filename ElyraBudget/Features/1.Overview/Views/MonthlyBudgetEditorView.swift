@@ -4,6 +4,7 @@ import SwiftUI
 struct MonthlyBudgetEditorView: View {
     let selectedGroup: BudgetGroup?
     let selectedDate: Date
+    let isMonthlyStartPrompt: Bool
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -17,6 +18,16 @@ struct MonthlyBudgetEditorView: View {
 
     @State private var draftAmounts: [UUID: Decimal] = [:]
     @State private var saveErrorMessage: String?
+
+    init(
+        selectedGroup: BudgetGroup?,
+        selectedDate: Date,
+        isMonthlyStartPrompt: Bool = false
+    ) {
+        self.selectedGroup = selectedGroup
+        self.selectedDate = selectedDate
+        self.isMonthlyStartPrompt = isMonthlyStartPrompt
+    }
 
     private var editableGroups: [BudgetGroup] {
         if let selectedGroup {
@@ -42,9 +53,19 @@ struct MonthlyBudgetEditorView: View {
                     }
                 } else if let selectedGroup {
                     Section {
+                        standardAmountRow(for: selectedGroup)
+                    } header: {
+                        Text("Standardbudget")
+                    } footer: {
+                        Text("Das Standardbudget wird für alle Monate verwendet, für die du keinen eigenen Monatswert festlegst.")
+                    }
+
+                    Section {
                         amountRow(for: selectedGroup)
                     } header: {
-                        Text("Monatsbudget für (selectedGroup.name)")
+                        Text("Budget diesen Monat")
+                    } footer: {
+                        Text("Für \(monthTitle) kannst du das Standardbudget einmalig überschreiben.")
                     }
                 } else {
                     Section {
@@ -52,19 +73,33 @@ struct MonthlyBudgetEditorView: View {
                             amountRow(for: group)
                         }
                     } header: {
-                        Text("Monatsbudgets für (monthTitle)")
+                        Text("Monatsbudgets für \(monthTitle)")
                     } footer: {
                         Text("Der Wert gilt für diesen Monat. Andere Monate verwenden weiterhin ihren Standardwert.")
                     }
                 }
             }
-            .navigationTitle("Monatsbudget")
-            #if os(iOS)
+            .safeAreaInset(edge: .top) {
+                if isMonthlyStartPrompt {
+                    Label(
+                        "Ein neuer Monat hat begonnen. Lege jetzt dein Budget für \(monthTitle) fest.",
+                        systemImage: "calendar.badge.clock"
+                    )
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal)
+                    .padding(.vertical, 10)
+                    .background(.thinMaterial)
+                }
+            }
+            .navigationTitle(isMonthlyStartPrompt ? "Monatsbudget festlegen" : "Monatsbudget")
+#if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
-            #endif
+#endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen") { dismiss() }
+                    Button("Später") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Speichern") { save() }
@@ -75,6 +110,22 @@ struct MonthlyBudgetEditorView: View {
                 loadDraftAmounts()
             }
             .saveErrorAlert(message: $saveErrorMessage)
+        }
+    }
+
+    private func standardAmountRow(for group: BudgetGroup) -> some View {
+        HStack {
+            Label {
+                Text(group.name)
+            } icon: {
+                Image(systemName: group.iconName)
+                    .foregroundStyle(Color(hexString: group.iconColorHex))
+            }
+
+            Spacer()
+
+            Text(group.standardMonthlyBudget, format: .currency(code: currencyCode))
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -90,14 +141,14 @@ struct MonthlyBudgetEditorView: View {
             Spacer()
 
             TextField(
-                "Kein Budget",
+                "Standard",
                 value: amountBinding(for: group),
                 format: .number.precision(.fractionLength(0 ... 2))
             )
             .multilineTextAlignment(.trailing)
-            #if os(iOS)
+#if os(iOS)
             .keyboardType(.decimalPad)
-            #endif
+#endif
             .frame(maxWidth: 120)
 
             Text(currencySymbol)

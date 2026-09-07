@@ -10,10 +10,17 @@ enum TransactionToolbarAction: Equatable {
     case recurringTransactions
 }
 
+private enum TransactionBudgetFilter: Hashable {
+    case all
+    case withoutBudget
+    case budget(UUID)
+}
+
 struct TransactionsView: View {
     @Binding var selectedDate: Date
     @Binding var selectedGroup: BudgetGroup?
     @Binding var requestedToolbarAction: TransactionToolbarAction?
+    @Binding var showingSearch: Bool
     let onNewTransaction: () -> Void
     @Environment(\.appCurrencyCode) private var currencyCode
     @Environment(ProAccessManager.self) private var proAccess
@@ -51,7 +58,11 @@ struct TransactionsView: View {
     @State private var showingRecurringTransactions = false
     @State private var dayFilterEnabled = false
     @State private var selectedDay = Date()
-    @State private var showingDayFilter = false
+    @State private var showingFilters = false
+    @State private var selectedBudgetFilter: TransactionBudgetFilter = .all
+    @State private var selectedTransactionType: TransactionType?
+    @State private var searchText = ""
+    @FocusState private var searchFieldFocused: Bool
 
     private var displayedTransactions: [Transaction] {
         let monthTransactions = transactions.filter {
@@ -59,11 +70,55 @@ struct TransactionsView: View {
                 && (selectedGroup == nil || $0.effectiveGroup === selectedGroup)
         }
 
-        guard dayFilterEnabled else { return monthTransactions }
-
-        return monthTransactions.filter {
-            Calendar.autoupdatingCurrent.isDate($0.date, inSameDayAs: selectedDay)
+        return monthTransactions.filter { transaction in
+            let matchesDay = !dayFilterEnabled || Calendar.autoupdatingCurrent.isDate(
+                transaction.date,
+                inSameDayAs: selectedDay
+            )
+            let matchesBudget: Bool = switch selectedBudgetFilter {
+            case .all:
+                true
+            case .withoutBudget:
+                transaction.budget == nil
+            case .budget(let budgetID):
+                transaction.budget?.id == budgetID
+            }
+            let matchesType = selectedTransactionType == nil
+                || transaction.type == selectedTransactionType
+            let matchesSearch = normalizedSearchText.isEmpty
+                || searchableText(for: transaction).contains(normalizedSearchText)
+            return matchesDay && matchesBudget && matchesType && matchesSearch
         }
+    }
+
+    private var normalizedSearchText: String {
+        searchText
+            .folding(
+                options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive],
+                locale: .current
+            )
+            .filter { !$0.isWhitespace }
+    }
+
+    private func searchableText(for transaction: Transaction) -> String {
+        [
+            transaction.title,
+            transaction.note,
+            transaction.budget?.name ?? "",
+            transaction.type.title
+        ]
+        .joined(separator: " ")
+        .folding(
+            options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive],
+            locale: .current
+        )
+        .filter { !$0.isWhitespace }
+    }
+
+    private var availableBudgetFilters: [Budget] {
+        budgets
+            .filter { selectedGroup == nil || $0.group === selectedGroup }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
     private var selectedMonthDateRange: ClosedRange<Date> {
@@ -82,11 +137,13 @@ struct TransactionsView: View {
         selectedDate: Binding<Date>,
         selectedGroup: Binding<BudgetGroup?> = .constant(nil),
         requestedToolbarAction: Binding<TransactionToolbarAction?> = .constant(nil),
+        showingSearch: Binding<Bool> = .constant(false),
         onNewTransaction: @escaping () -> Void = {}
     ) {
         _selectedDate = selectedDate
         _selectedGroup = selectedGroup
         _requestedToolbarAction = requestedToolbarAction
+        _showingSearch = showingSearch
         self.onNewTransaction = onNewTransaction
     }
 
@@ -105,31 +162,18 @@ struct TransactionsView: View {
             }
         }
         .animation(.snappy(duration: 0.3), value: displayedTransactions.isEmpty)
+        .onChange(of: showingSearch) { _, isPresented in
+            searchFieldFocused = isPresented
+        }
         .onChange(of: selectedDate) { _, newDate in
             guard dayFilterEnabled else { return }
             selectedDay = newDate
         }
-        .sheet(isPresented: $showingDayFilter) {
-            NavigationStack {
-                DatePicker(
-                    "Tag",
-                    selection: $selectedDay,
-                    in: selectedMonthDateRange,
-                    displayedComponents: [.date]
-                )
-                .datePickerStyle(.graphical)
-                .padding()
-                .navigationTitle("Tag auswählen")
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Fertig") {
-                            dayFilterEnabled = true
-                            showingDayFilter = false
-                        }
-                    }
-                }
-            }
-            .presentationDetents([.large])
+        .onChange(of: selectedGroup?.id) { _, _ in
+            selectedBudgetFilter = .all
+        }
+        .sheet(isPresented: $showingFilters) {
+            filterSheet
         }
         .onChange(of: requestedToolbarAction) { _, action in
             guard let action else { return }
@@ -233,45 +277,185 @@ struct TransactionsView: View {
     }
 
     private var dayFilterBar: some View {
-        HStack(spacing: 12) {
-            Menu {
-                Button {
-                    dayFilterEnabled = false
-                } label: {
-                    Label("Alle Tage", systemImage: "calendar")
-                }
+        HStack {
+            if showingSearch {
+                TextField("Buchungen suchen", text: $searchText)
+                    .textFieldStyle(.roundedBorder)
+                    .focused($searchFieldFocused)
+                    .submitLabel(.search)
 
                 Button {
-                    selectedDay = selectedDate
-                    dayFilterEnabled = true
-                    showingDayFilter = true
+                    searchText = ""
+                    showingSearch = false
                 } label: {
-                    Label("Tag auswählen", systemImage: "calendar.badge.clock")
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Suche schließen")
+            } else {
+                Button {
+                    if !dayFilterEnabled {
+                        selectedDay = selectedDate
+                    }
+                    showingFilters = true
+                } label: {
+                    Label(
+                        "Filtern",
+                        systemImage: hasActiveFilters
+                            ? "line.3.horizontal.decrease.circle.fill"
+                            : "line.3.horizontal.decrease.circle"
+                    )
+                }
+                .buttonStyle(.bordered)
 
-            } label: {
-                Label(
-                    dayFilterEnabled
-                        ? selectedDay.formatted(.dateTime.day().month(.abbreviated))
-                        : "Tage filtern",
-                    systemImage: dayFilterEnabled
-                        ? "line.3.horizontal.decrease.circle.fill"
-                        : "line.3.horizontal.decrease.circle"
-                )
+                Spacer(minLength: 12)
+
+                Button {
+                    showingSearch = true
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                        .font(.body.weight(.medium))
+                        .frame(width: 20, height: 20)
+                }
+                .buttonStyle(.bordered)
+                .accessibilityLabel("Buchungen suchen")
             }
-            .buttonStyle(.bordered)
-
-            if dayFilterEnabled {
-                Text("Nur dieser Tag")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
         }
         .padding(.horizontal)
         .padding(.vertical, 10)
         .background(.bar)
+    }
+
+    private var hasActiveFilters: Bool {
+        dayFilterEnabled
+            || selectedBudgetFilter != .all
+            || selectedTransactionType != nil
+    }
+
+    private var filterSheet: some View {
+        NavigationStack {
+            List {
+                Section("Tage") {
+                    Button {
+                        dayFilterEnabled = false
+                    } label: {
+                        filterRow(
+                            title: "Alle Tage",
+                            systemImage: "calendar",
+                            isSelected: !dayFilterEnabled
+                        )
+                    }
+
+                    DatePicker(
+                        "Tag auswählen",
+                        selection: $selectedDay,
+                        in: selectedMonthDateRange,
+                        displayedComponents: [.date]
+                    )
+                    .onChange(of: selectedDay) { _, _ in
+                        dayFilterEnabled = true
+                    }
+                }
+
+                Section("Budget") {
+                    Button {
+                        selectedBudgetFilter = .all
+                    } label: {
+                        filterRow(
+                            title: "Alle Budgets",
+                            systemImage: "square.grid.2x2",
+                            isSelected: selectedBudgetFilter == .all
+                        )
+                    }
+
+                    Button {
+                        selectedBudgetFilter = .withoutBudget
+                    } label: {
+                        filterRow(
+                            title: "Ohne Budget",
+                            systemImage: "tray",
+                            isSelected: selectedBudgetFilter == .withoutBudget
+                        )
+                    }
+
+                    ForEach(availableBudgetFilters, id: \.id) { budget in
+                        Button {
+                            selectedBudgetFilter = .budget(budget.id)
+                        } label: {
+                            filterRow(
+                                title: budget.name,
+                                systemImage: budget.iconName,
+                                isSelected: selectedBudgetFilter == .budget(budget.id)
+                            )
+                        }
+                    }
+                }
+
+                Section("Buchungsart") {
+                    Button {
+                        selectedTransactionType = nil
+                    } label: {
+                        filterRow(
+                            title: "Alle Arten",
+                            systemImage: "arrow.up.arrow.down",
+                            isSelected: selectedTransactionType == nil
+                        )
+                    }
+
+                    ForEach(TransactionType.allCases) { type in
+                        Button {
+                            selectedTransactionType = type
+                        } label: {
+                            filterRow(
+                                title: type.title,
+                                systemImage: type.systemImage,
+                                isSelected: selectedTransactionType == type
+                            )
+                        }
+                    }
+                }
+
+                if hasActiveFilters {
+                    Section {
+                        Button("Filter zurücksetzen", role: .destructive) {
+                            dayFilterEnabled = false
+                            selectedBudgetFilter = .all
+                            selectedTransactionType = nil
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Filter")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fertig") {
+                        showingFilters = false
+                    }
+                }
+            }
+        }
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+    }
+
+    private func filterRow(
+        title: String,
+        systemImage: String,
+        isSelected: Bool
+    ) -> some View {
+        HStack(spacing: 12) {
+            Label(title, systemImage: systemImage)
+            Spacer(minLength: 12)
+            if isSelected {
+                Image(systemName: "checkmark")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
+            }
+        }
+        .foregroundStyle(isSelected ? Color.accentColor : .primary)
     }
 
     private func export(format: TransactionExportFormat) {
@@ -554,9 +738,17 @@ struct TransactionsView: View {
     private func deleteTransaction(
         _ transaction: Transaction
     ) {
-        if let contributionID = transaction.savingsContributionID {
+        let groupID = transaction.effectiveGroup?.id
+        var deletedContributionIDs = Set<UUID>()
+        let linkedContributionIDs = [
+            transaction.savingsContributionID,
+            transaction.roundUpSavingsContributionID
+        ].compactMap { $0 }
+        if !linkedContributionIDs.isEmpty {
             do {
-                if let contribution = try modelContext.fetch(FetchDescriptor<SavingsContribution>()).first(where: { $0.id == contributionID }) {
+                let contributions = try modelContext.fetch(FetchDescriptor<SavingsContribution>())
+                for contribution in contributions where linkedContributionIDs.contains(contribution.id) {
+                    deletedContributionIDs.insert(contribution.id)
                     modelContext.delete(contribution)
                 }
             } catch {
@@ -569,6 +761,20 @@ struct TransactionsView: View {
 
         do {
             try modelContext.save()
+            if let groupID {
+                for deletedContributionID in deletedContributionIDs {
+                    CloudKitSharedAreaService.recordDeletion(
+                        key: deletedContributionID.uuidString,
+                        kind: .contribution,
+                        groupID: groupID
+                    )
+                }
+                CloudKitSharedAreaService.recordDeletion(
+                    key: transaction.id.uuidString,
+                    kind: .transaction,
+                    groupID: groupID
+                )
+            }
             transactionToDelete = nil
         } catch {
             AppLogger.persistence.error(

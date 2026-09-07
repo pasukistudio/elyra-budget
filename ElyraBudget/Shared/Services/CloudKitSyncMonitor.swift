@@ -55,11 +55,21 @@ enum CloudKitSyncStatus: Equatable {
     }
 }
 
+extension Notification.Name {
+    static let elyraSharedSyncStarted = Notification.Name("ElyraBudget.sharedSyncStarted")
+    static let elyraSharedSyncSucceeded = Notification.Name("ElyraBudget.sharedSyncSucceeded")
+    static let elyraSharedSyncFailed = Notification.Name("ElyraBudget.sharedSyncFailed")
+}
+
 @Observable
 final class CloudKitSyncMonitor {
     private(set) var status: CloudKitSyncStatus
     private(set) var lastSyncDate: Date?
+    private(set) var lastImportDate: Date?
     private(set) var errorMessage: String?
+    private(set) var sharedStatus: CloudKitSyncStatus = .idle
+    private(set) var sharedLastSyncDate: Date?
+    private(set) var sharedErrorMessage: String?
 
     let isCloudKitEnabled: Bool
     private var observerTokens: [NSObjectProtocol] = []
@@ -69,6 +79,7 @@ final class CloudKitSyncMonitor {
             environment: environment
         )
         status = isCloudKitEnabled ? .idle : .unavailable
+        lastImportDate = nil
 
         guard isCloudKitEnabled else { return }
         let center = NotificationCenter.default
@@ -84,6 +95,26 @@ final class CloudKitSyncMonitor {
                 self?.handle(event: event)
             }
         )
+        observerTokens.append(
+            center.addObserver(forName: .elyraSharedSyncStarted, object: nil, queue: .main) { [weak self] _ in
+                self?.sharedStatus = .syncing
+                self?.sharedErrorMessage = nil
+            }
+        )
+        observerTokens.append(
+            center.addObserver(forName: .elyraSharedSyncSucceeded, object: nil, queue: .main) { [weak self] _ in
+                self?.sharedStatus = .succeeded
+                self?.sharedLastSyncDate = .now
+                self?.sharedErrorMessage = nil
+            }
+        )
+        observerTokens.append(
+            center.addObserver(forName: .elyraSharedSyncFailed, object: nil, queue: .main) { [weak self] notification in
+                self?.sharedStatus = .failed
+                self?.sharedErrorMessage = notification.userInfo?["message"] as? String
+                    ?? "Geteilter Bereich konnte nicht synchronisiert werden."
+            }
+        )
     }
 
     deinit {
@@ -92,6 +123,9 @@ final class CloudKitSyncMonitor {
     }
 
     func handle(event: NSPersistentCloudKitContainer.Event) {
+        if event.type == .import, event.endDate != nil, event.succeeded {
+            lastImportDate = event.endDate
+        }
         handle(
             type: event.type,
             isFinished: event.endDate != nil,
@@ -154,12 +188,18 @@ final class CloudKitSyncMonitor {
         errorMessage = nil
     }
 
-    @MainActor
-    func waitForInitialImport() async {
-        guard isCloudKitEnabled else { return }
-        guard status != .succeeded else { return }
+    func clearSharedError() {
+        guard sharedStatus == .failed else { return }
+        sharedStatus = .idle
+        sharedErrorMessage = nil
+    }
 
-        await withTaskGroup(of: Void.self) { group in
+    @MainActor
+    func waitForInitialImport() async -> Bool {
+        guard isCloudKitEnabled else { return false }
+        guard lastImportDate == nil else { return true }
+
+        return await withTaskGroup(of: Bool?.self) { group in
             group.addTask { @MainActor in
                 for await notification in NotificationCenter.default.notifications(
                     named: NSPersistentCloudKitContainer.eventChangedNotification
@@ -170,16 +210,19 @@ final class CloudKitSyncMonitor {
                     event.type == .import,
                     event.endDate != nil else { continue }
 
-                    return
+                    return event.succeeded
                 }
+                return nil
             }
 
             group.addTask {
                 try? await Task.sleep(for: .seconds(10))
+                return nil
             }
 
-            await group.next()
+            let result = await group.next() ?? nil
             group.cancelAll()
+            return result ?? false
         }
     }
 }
@@ -188,8 +231,15 @@ struct CloudKitSyncStatusView: View {
     let monitor: CloudKitSyncMonitor
 
     var body: some View {
+        let displayedStatus = monitor.sharedStatus == .failed ? .failed
+            : (monitor.status == .failed ? .failed : monitor.status)
         Menu {
-            Label(monitor.status.title, systemImage: monitor.status.systemImage)
+            Label(displayedStatus.title, systemImage: displayedStatus.systemImage)
+
+            if monitor.sharedStatus != .idle {
+                Divider()
+                Label("Geteilte Bereiche: \(monitor.sharedStatus.title)", systemImage: monitor.sharedStatus.systemImage)
+            }
 
             if let lastSyncDate = monitor.lastSyncDate {
                 Text("Zuletzt aktualisiert: \(lastSyncDate.formatted(date: .abbreviated, time: .shortened))")
@@ -203,11 +253,19 @@ struct CloudKitSyncStatusView: View {
                     monitor.clearError()
                 }
             }
+            if let sharedErrorMessage = monitor.sharedErrorMessage {
+                Divider()
+                Text(sharedErrorMessage)
+                    .foregroundStyle(.secondary)
+                Button("Fehler ausblenden") {
+                    monitor.clearSharedError()
+                }
+            }
         } label: {
-            Image(systemName: monitor.status.systemImage)
-                .symbolEffect(.pulse, isActive: monitor.status == .syncing)
+            Image(systemName: displayedStatus.systemImage)
+                .symbolEffect(.pulse, isActive: displayedStatus == .syncing)
         }
-        .tint(monitor.status == .failed ? .red : nil)
-        .accessibilityLabel(monitor.status.title)
+        .tint(displayedStatus == .failed ? .red : nil)
+        .accessibilityLabel(displayedStatus.title)
     }
 }

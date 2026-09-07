@@ -1,3 +1,12 @@
+
+
+
+
+
+
+
+
+
 import SwiftData
 import SwiftUI
 import os
@@ -76,13 +85,13 @@ struct OnboardingView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                ProgressView(value: Double(step + 1), total: 6)
+                ProgressView(value: Double(step + 1), total: 8)
                     .tint(.accentColor)
                     .padding(.horizontal)
                     .padding(.top, 12)
 
                 HStack(spacing: 7) {
-                    ForEach(0 ..< 6, id: \.self) { page in
+                    ForEach(0 ..< 8, id: \.self) { page in
                         Capsule(style: .continuous)
                             .fill(page == step ? Color.accentColor : Color.secondary.opacity(0.22))
                             .frame(width: page == step ? 20 : 7, height: 7)
@@ -91,7 +100,7 @@ struct OnboardingView: View {
                 }
                 .padding(.top, 10)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("Schritt \(step + 1) von 6")
+                .accessibilityLabel("Schritt \(step + 1) von 8")
 
                 TabView(selection: $step) {
                     welcomePage.tag(0)
@@ -100,6 +109,8 @@ struct OnboardingView: View {
                     interactionPage.tag(3)
                     savingsPage.tag(4)
                     fixedCostsPage.tag(5)
+                    swipeUsagePage.tag(6)
+                    longPressUsagePage.tag(7)
                 }
                 #if os(iOS)
                 .tabViewStyle(.page(indexDisplayMode: .never))
@@ -116,10 +127,10 @@ struct OnboardingView: View {
 
                     Spacer()
 
-                    Button(step == 5 ? "Los geht's" : "Weiter") {
+                    Button(step == 7 ? "Los geht's" : "Weiter") {
                         focusedField = nil
 
-                        if step == 5 {
+                        if step == 7 {
                             finishOnboarding()
                         } else {
                             withAnimation { step += 1 }
@@ -344,6 +355,149 @@ struct OnboardingView: View {
                 }
             }
         )
+    }
+
+    private var swipeUsagePage: some View {
+        OnboardingPage(
+            title: "Nach links wischen",
+            systemImage: "arrow.left",
+            description: "Wische eine Karte nach links, um weitere Inhalte oder Funktionen zu sehen.",
+            content: {
+                swipeTransactionDemo
+                    .padding(.horizontal)
+            }
+        )
+    }
+
+    private var longPressUsagePage: some View {
+        OnboardingPage(
+            title: "Gedrückt halten",
+            systemImage: "hand.tap.fill",
+            description: "Halte eine Karte oder einen Eintrag länger gedrückt, um ein Untermenü zu öffnen.",
+            content: {
+                savingsContextMenuDemo
+                    .padding(.horizontal)
+            }
+        )
+    }
+
+    private var swipeTransactionDemo: some View {
+        ZStack(alignment: .trailing) {
+            HStack(spacing: 8) {
+                swipeActionButton(title: "Bearbeiten", systemImage: "pencil", color: .blue)
+                swipeActionButton(title: "Löschen", systemImage: "trash", color: .teal)
+            }
+
+            HStack(spacing: 10) {
+                Image(systemName: "arrow.up.right")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.red)
+                    .frame(width: 44, height: 44)
+                    .background(Color.red.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Supermarkt")
+                        .font(.headline)
+                    Text("16. Aug. 2026")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 4)
+                Text("-48,60 €")
+                    .font(.headline)
+                    .foregroundStyle(.red)
+            }
+            .padding(12)
+            .background(cardBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .offset(x: -48)
+        }
+        .frame(height: 76)
+    }
+
+    private var savingsContextMenuDemo: some View {
+        VStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 10) {
+                    Image(systemName: "bicycle")
+                        .foregroundStyle(.green)
+                        .frame(width: 44, height: 44)
+                        .background(Color.green.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("BMW S1000RR")
+                            .font(.headline)
+                        Text("0,00 € von 23.000,00 €")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+                Capsule(style: .continuous)
+                    .fill(Color.secondary.opacity(0.18))
+                    .frame(height: 5)
+                HStack {
+                    Label("Manuelle Einzahlung", systemImage: "hand.tap")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("Einzahlen")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.teal)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.teal.opacity(0.12), in: Capsule())
+                }
+            }
+            .padding(12)
+            .background(cardBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 10) {
+                Label("Bearbeiten", systemImage: "pencil")
+                Label("Archivieren", systemImage: "archivebox")
+                Divider()
+                Label("Löschen", systemImage: "trash")
+                    .foregroundStyle(.red)
+            }
+            .font(.subheadline)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            .background(cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+    }
+
+    private func swipeActionButton(title: LocalizedStringKey, systemImage: String, color: Color) -> some View {
+        VStack(spacing: 2) {
+            Image(systemName: systemImage)
+                .font(.caption.weight(.semibold))
+            Text(title)
+                .font(.caption2)
+        }
+        .foregroundStyle(.white)
+        .frame(width: 48, height: 52)
+        .background(color, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private func interactionHintCard<Demo: View>(
+        systemImage: String,
+        color: Color,
+        title: LocalizedStringKey,
+        text: LocalizedStringKey,
+        @ViewBuilder demo: () -> Demo
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: systemImage)
+                    .foregroundStyle(color)
+                    .frame(width: 22)
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+            }
+            Text(text)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            demo()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 2)
     }
 
     private func onboardingInfoCard(
@@ -621,8 +775,10 @@ private struct OnboardingPage<Content: View>: View {
             .frame(width: 104, height: 104)
             .shadow(color: .accentColor.opacity(0.25), radius: 18, y: 8)
             Text(title)
-                .font(.title.bold())
+                .font(.title2.bold())
                 .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
             Text(description)
                 .font(.body)
                 .multilineTextAlignment(.center)

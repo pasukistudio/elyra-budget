@@ -43,6 +43,9 @@ struct PresetColorSelectionView: View {
                 }
             }
 
+            Divider()
+                .padding(.vertical, 4)
+
             if proAccess.hasPro {
                 ColorPicker(
                     selection: customColorBinding,

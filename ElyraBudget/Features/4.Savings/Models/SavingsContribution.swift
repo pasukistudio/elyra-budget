@@ -6,6 +6,7 @@ final class SavingsContribution {
     var id: UUID = UUID()
     var amount: Decimal = 0
     var date: Date = Date()
+    var updatedAt: Date = Date()
     var note: String = ""
     var automatic: Bool = false
     var occurrenceDate: Date?
@@ -23,6 +24,7 @@ final class SavingsContribution {
         self.id = UUID()
         self.amount = amount
         self.date = date
+        self.updatedAt = .now
         self.note = note
         self.automatic = automatic
         self.occurrenceDate = occurrenceDate

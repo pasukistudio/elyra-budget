@@ -4,6 +4,7 @@ import UserNotifications
 
 enum AppNotificationScheduler {
     private static let budgetPrefix = "budget-warning-"
+    private static let monthlyBudgetPrefix = "monthly-budget-reminder-"
     private static let savingsPrefix = "savings-contribution-"
     private static let syncPrefix = "icloud-sync-error-"
     private static let goalPrefix = "savings-goal-completed-"
@@ -37,6 +38,7 @@ enum AppNotificationScheduler {
         let pendingRequests = await pendingNotificationRequests(from: center)
         let removablePrefixes = [
             budgetPrefix,
+            monthlyBudgetPrefix,
             savingsPrefix,
             goalPrefix,
             summaryPrefix,
@@ -59,6 +61,9 @@ enum AppNotificationScheduler {
         }
 
         if settings?.budgetNotificationsEnabled ?? true {
+            await scheduleMonthlyBudgetReminder(
+                center: center
+            )
             await scheduleBudgetWarnings(
                 budgets: budgets,
                 transactions: transactions,
@@ -129,6 +134,36 @@ enum AppNotificationScheduler {
                 center: center,
                 now: now,
                 calendar: calendar
+            )
+        }
+    }
+
+    private static func scheduleMonthlyBudgetReminder(
+        center: UNUserNotificationCenter
+    ) async {
+        let content = UNMutableNotificationContent()
+        content.title = "Neuer Monat, neues Budget"
+        content.body = "Vergiss nicht, dein Monatsbudget für diesen Monat festzulegen."
+        content.sound = .default
+        content.threadIdentifier = "budget"
+        content.categoryIdentifier = "budget"
+
+        let trigger = UNCalendarNotificationTrigger(
+            dateMatching: DateComponents(day: 1, hour: reminderHour, minute: 0),
+            repeats: true
+        )
+
+        do {
+            try await center.add(
+                UNNotificationRequest(
+                    identifier: monthlyBudgetPrefix + "recurring",
+                    content: content,
+                    trigger: trigger
+                )
+            )
+        } catch {
+            AppLogger.persistence.error(
+                "Monatsbudget-Erinnerung konnte nicht geplant werden: \(error)"
             )
         }
     }
@@ -246,12 +281,11 @@ enum AppNotificationScheduler {
         now: Date,
         calendar: Calendar
     ) async {
-        let thresholds = [
-            settings?.greenBudgetThreshold ?? 70,
-            settings?.orangeBudgetThreshold ?? 100
-        ].filter { $0 > 0 }.sorted().removingDuplicates()
-
         for budget in budgets where !budget.isArchived && budget.limit > 0 {
+            let thresholds = [
+                budget.group?.greenBudgetThreshold ?? settings?.greenBudgetThreshold ?? 70,
+                budget.group?.orangeBudgetThreshold ?? settings?.orangeBudgetThreshold ?? 100
+            ].filter { $0 > 0 }.sorted().removingDuplicates()
             let spent = transactions
                 .filter { $0.budget === budget && $0.date.isInSameMonth(as: now, calendar: calendar) }
                 .reduce(Decimal.zero) { $0 + $1.budgetImpact }

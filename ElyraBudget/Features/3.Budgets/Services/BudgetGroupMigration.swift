@@ -2,6 +2,33 @@ import Foundation
 import SwiftData
 
 enum BudgetGroupMigration {
+    static func migrateBudgetStatusThresholds(
+        in modelContext: ModelContext
+    ) throws {
+        let groups = try modelContext.fetch(FetchDescriptor<BudgetGroup>())
+        guard !groups.isEmpty,
+              let profile = try modelContext.fetch(FetchDescriptor<UserSettings>()).first,
+              profile.greenBudgetThreshold != 70 || profile.orangeBudgetThreshold != 100
+        else {
+            return
+        }
+
+        var didChange = false
+        for group in groups where group.greenBudgetThreshold == 70 && group.orangeBudgetThreshold == 100 {
+            group.greenBudgetThreshold = profile.greenBudgetThreshold
+            group.orangeBudgetThreshold = max(
+                profile.orangeBudgetThreshold,
+                profile.greenBudgetThreshold + 1
+            )
+            group.updatedAt = .now
+            didChange = true
+        }
+
+        if didChange {
+            try modelContext.save()
+        }
+    }
+
     static func ensureAtLeastOneActiveGroup(
         in modelContext: ModelContext
     ) throws {

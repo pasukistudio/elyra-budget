@@ -4,6 +4,9 @@
     "" : {
 
     },
+    "-48,60 €" : {
+
+    },
     "·" : {
 
     },
@@ -29,6 +32,9 @@
     "%@ ist in Elyra Budget Pro enthalten." : {
 
     },
+    "%@ löschen" : {
+
+    },
     "%@ verschieben" : {
 
     },
@@ -41,7 +47,19 @@
     "%lld Buchungen werden importiert. Bestehende Buchungen bleiben unverändert." : {
 
     },
+    "%lld Prozent" : {
+
+    },
+    "%lld%%" : {
+
+    },
     "0,00" : {
+
+    },
+    "0,00 € von 23.000,00 €" : {
+
+    },
+    "16. Aug. 2026" : {
 
     },
     "Ab %lld:00 Uhr" : {
@@ -62,6 +80,9 @@
     "Aktiv" : {
 
     },
+    "Aktuell wird das Standardbudget verwendet." : {
+
+    },
     "Akzentfarbe" : {
       "localizations" : {
         "en" : {
@@ -71,9 +92,6 @@
           }
         }
       }
-    },
-    "Alle Tage" : {
-
     },
     "Alle verfügbaren Pro-Funktionen sind aktiv." : {
 
@@ -85,9 +103,6 @@
 
     },
     "Anpassen" : {
-
-    },
-    "Anteil" : {
 
     },
     "Archiv" : {
@@ -112,9 +127,6 @@
 
     },
     "Art" : {
-
-    },
-    "Auf Budget buchen" : {
 
     },
     "Aufrundung aktivieren" : {
@@ -247,6 +259,9 @@
     "Blau" : {
 
     },
+    "BMW S1000RR" : {
+
+    },
     "Buchung" : {
 
     },
@@ -271,7 +286,16 @@
     "Buchungen automatisch aufrunden?" : {
 
     },
+    "Buchungen durchsuchen" : {
+
+    },
+    "Buchungen suchen" : {
+
+    },
     "Buchungsaktionen" : {
+
+    },
+    "Buchungsart" : {
 
     },
     "Buchungstyp" : {
@@ -287,6 +311,9 @@
 
     },
     "Budget bearbeiten" : {
+
+    },
+    "Budget diesen Monat" : {
 
     },
     "Budget endgültig löschen?" : {
@@ -367,6 +394,9 @@
     "Das Pro-Angebot ist noch nicht im App Store konfiguriert." : {
 
     },
+    "Das Standardbudget wird für alle Monate verwendet, für die du keinen eigenen Monatswert festlegst." : {
+
+    },
     "Dashboard-Seite %lld von 2" : {
 
     },
@@ -428,19 +458,22 @@
     "Detaillierte Sparprognosen sind in Pro verfügbar." : {
 
     },
-    "Die Auszahlung wird als Einnahme im ausgewählten Budget erfasst." : {
-
-    },
     "Die Buchung „%@“ wird dauerhaft gelöscht." : {
 
     },
-    "Die Einzahlung wird als Ausgabe vom ausgewählten Budget erfasst." : {
+    "Die Buchung wird als Ausgabe vom ausgewählten Budget erfasst." : {
 
     },
-    "Die Farben zeigen, wie viel des Monatsbudgets bereits verwendet wurde." : {
+    "Die Farben der Budgetkarte zeigen, wie viel dieses Bereichs bereits verwendet wurde." : {
 
     },
     "Die lokalen Daten dieser App werden durch die Sicherung ersetzt. Dieser Schritt kann nicht rückgängig gemacht werden." : {
+
+    },
+    "Dieser Betrag gilt nur für %@. In allen anderen Monaten wird das Standardbudget verwendet." : {
+
+    },
+    "Dieses Budget gilt automatisch für Monate ohne eigene Anpassung." : {
 
     },
     "Du erhältst am Fälligkeitstag eine lokale Mitteilung." : {
@@ -474,6 +507,9 @@
 
     },
     "Eigene Farben sind Bestandteil von Elyra Budget Pro." : {
+
+    },
+    "Ein neuer Monat hat begonnen. Lege jetzt dein Budget für %@ fest." : {
 
     },
     "Ein Sparziel benötigt einen Zielbetrag." : {
@@ -513,9 +549,6 @@
     "Elyra Budget startet mit iOS. Eine optimierte iPadOS-Version und die Mac-App folgen nach einer eigenen Testphase. Die Mac-App kann zunächst 7 Tage kostenlos getestet werden und benötigt danach Pro." : {
 
     },
-    "Elyra Budget wird beim Verlassen der App geschützt." : {
-
-    },
     "Endgültig löschen" : {
 
     },
@@ -543,9 +576,6 @@
     "Face ID-/Touch-ID-Sperre" : {
 
     },
-    "Face ID-/Touch-ID-Sperre mit Pro" : {
-
-    },
     "Fällig" : {
 
     },
@@ -559,6 +589,15 @@
 
     },
     "Festlegen" : {
+
+    },
+    "Filter" : {
+
+    },
+    "Filter zurücksetzen" : {
+
+    },
+    "Filtern" : {
 
     },
     "Fixkosten" : {
@@ -591,6 +630,9 @@
     "Fixkosten-Erinnerungen werden direkt bei der jeweiligen Fixkostenregel gesteuert." : {
 
     },
+    "Fortschritt" : {
+
+    },
     "Foto oder PDF hinzufügen" : {
 
     },
@@ -612,10 +654,16 @@
     "Füge die erste Einzahlung für dieses %@ hinzu." : {
 
     },
+    "Für %@ kannst du das Standardbudget einmalig überschreiben." : {
+
+    },
     "Für diese Fixkosten wurden noch keine Buchungen oder geplanten Termine gefunden." : {
 
     },
     "Für diesen Bereich ist noch kein Monatsbudget festgelegt." : {
+
+    },
+    "Gedrückt halten" : {
 
     },
     "Gesamt" : {
@@ -631,6 +679,9 @@
 
     },
     "Gespart" : {
+
+    },
+    "Geteilte Bereiche: %@" : {
 
     },
     "Geteilte Budgetbereiche" : {
@@ -676,6 +727,9 @@
 
     },
     "Guten Nachmittag," : {
+
+    },
+    "Halte eine Karte oder einen Eintrag länger gedrückt, um ein Untermenü zu öffnen." : {
 
     },
     "Häufigkeit" : {
@@ -738,7 +792,7 @@
     "Indigo" : {
 
     },
-    "Individuellen Monatswert verwenden" : {
+    "Individueller Betrag für %@" : {
 
     },
     "Intervall" : {
@@ -756,6 +810,9 @@
           }
         }
       }
+    },
+    "Jeden Monat automatisch" : {
+
     },
     "Jetzt buchen" : {
 
@@ -800,9 +857,6 @@
 
     },
     "Keine variablen Buchungen in diesem Monat" : {
-
-    },
-    "Kontingent für diesen Monat" : {
 
     },
     "Lege regelmäßige Ausgaben an und behalte deine monatliche Belastung im Blick." : {
@@ -869,9 +923,6 @@
     "Monatlicher Sparbetrag" : {
 
     },
-    "Monatliches Kontingent" : {
-
-    },
     "Monatsbericht als PDF teilen" : {
 
     },
@@ -884,13 +935,13 @@
     "Monatsbudget festlegen" : {
 
     },
-    "Monatsbudget für (selectedGroup.name)" : {
-
-    },
-    "Monatsbudgets für (monthTitle)" : {
+    "Monatsbudgets für %@" : {
 
     },
     "Nach diesem Datum wird die Fixkostenbuchung wieder fällig." : {
+
+    },
+    "Nach links wischen" : {
 
     },
     "Nach oben oder unten ziehen" : {
@@ -945,9 +996,6 @@
     "Neues Sparziel" : {
 
     },
-    "Nicht angepasste Monate verwenden automatisch den Standardwert." : {
-
-    },
     "Noch keine aktiven Sparziele oder freien Rücklagen." : {
 
     },
@@ -979,9 +1027,6 @@
 
     },
     "Notiz (optional)" : {
-
-    },
-    "Nur dieser Tag" : {
 
     },
     "Nur verknüpfen" : {
@@ -1074,10 +1119,7 @@
     "Schnellaktionen" : {
 
     },
-    "Schritt %lld von 6" : {
-
-    },
-    "Sicherheit" : {
+    "Schritt %lld von 8" : {
 
     },
     "Sobald eine Ausgabe regelmäßig wiederkehrt, wird sie hier vorgeschlagen." : {
@@ -1128,7 +1170,13 @@
     "Speichern fehlgeschlagen" : {
 
     },
-    "Standard pro Monat" : {
+    "Standard" : {
+
+    },
+    "Standardbudget" : {
+
+    },
+    "Standardbudget verwenden" : {
 
     },
     "Startdatum" : {
@@ -1140,6 +1188,9 @@
     "Statistiken und Monatsberichte" : {
 
     },
+    "Supermarkt" : {
+
+    },
     "Supermarkt · 48,60 €" : {
 
     },
@@ -1149,10 +1200,10 @@
     "System" : {
 
     },
-    "Tag" : {
+    "Tag auswählen" : {
 
     },
-    "Tag auswählen" : {
+    "Tage" : {
 
     },
     "Teile dein Gesamtbudget auf, zum Beispiel für Lebensmittel oder Freizeit." : {
@@ -1264,6 +1315,9 @@
 
     },
     "Willkommen zurück" : {
+
+    },
+    "Wische eine Karte nach links, um weitere Inhalte oder Funktionen zu sehen." : {
 
     },
     "Ziehe den Griff links, um die Reihenfolge der Budgets zu ändern." : {

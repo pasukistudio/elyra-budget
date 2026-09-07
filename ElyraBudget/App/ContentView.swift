@@ -28,6 +28,15 @@ struct ContentView: View {
         ]
     )
     private var budgetGroups: [BudgetGroup]
+    // Shared areas must continue syncing after they are archived. The active
+    // query above is intentionally kept for the visible app UI.
+    @Query(
+        sort: [
+            SortDescriptor<BudgetGroup>(\.sortOrder),
+            SortDescriptor<BudgetGroup>(\.createdAt)
+        ]
+    )
+    private var allBudgetGroups: [BudgetGroup]
     @Query(sort: [SortDescriptor<Budget>(\.sortOrder)])
     private var budgets: [Budget]
     @Query(sort: [SortDescriptor<FixedCost>(\.createdAt)])
@@ -62,6 +71,7 @@ struct ContentView: View {
     @State private var showingBudgetManagement = false
     @State private var showingArchivedBudgets = false
     @State private var showingTransactionEditor = false
+    @State private var showingTransactionSearch = false
     @State private var requestedTransactionToolbarAction: TransactionToolbarAction?
     @State private var requestingFixedCostEditor = false
     @State private var requestingSavingsGoalEditor = false
@@ -72,6 +82,8 @@ struct ContentView: View {
     @AppStorage("elyraBudget.selectedBudgetGroupID")
     private var persistedSelectedBudgetGroupID = ""
     @State private var showingBudgetGroupManagement = false
+    @State private var showingNewBudgetGroupEditor = false
+    @State private var showingMonthlyBudgetPrompt = false
     @State private var showingSettings = false
     @State private var showingOnboarding = false
     @State private var showingReturningUserOnboardingPrompt = false
@@ -87,8 +99,6 @@ struct ContentView: View {
     private var cloudKitSyncMonitor
     @Environment(ProAccessManager.self)
     private var proAccess
-    @Environment(AppLockManager.self)
-    private var appLockManager
 
     // MARK: - Hauptansicht
 
@@ -110,11 +120,6 @@ struct ContentView: View {
                 #endif
             }
         }
-        .overlay {
-            if appLockManager.isLocked {
-                AppLockView()
-            }
-        }
         .environment(\.appCurrencyCode, appCurrencyCode)
         .sheet(isPresented: $showingBudgetGroupManagement, onDismiss: {
             if selectedBudgetGroup?.isArchived == true {
@@ -124,31 +129,73 @@ struct ContentView: View {
         }) {
             BudgetGroupManagementView(selectedGroup: $selectedBudgetGroup)
         }
+        .sheet(isPresented: $showingNewBudgetGroupEditor) {
+            BudgetGroupEditorView(group: nil)
+        }
+        .sheet(isPresented: $showingMonthlyBudgetPrompt) {
+            MonthlyBudgetEditorView(
+                selectedGroup: selectedBudgetGroup,
+                selectedDate: .now,
+                isMonthlyStartPrompt: true
+            )
+        }
         .task {
+            if cloudKitSyncMonitor.isCloudKitEnabled {
+                await CloudKitSharedAreaService.retryPendingSharedAreaDeletions()
+            }
             await importPendingCloudKitShareIfNeeded()
             // Existing installations predate this marker. Their launch count
             // lets us initialize the marker without treating an app update as
             // a reinstall. A true reinstall resets both local values.
-            let isFreshLocalInstall = !cloudKitBootstrapCompleted && appLaunchCount == 0
+            let awaitingInitialCloudKitImport = UserDefaults.standard.bool(
+                forKey: "elyraBudget.awaitingInitialCloudKitImport"
+            )
+            let isFreshLocalInstall = !cloudKitBootstrapCompleted
+                && (appLaunchCount == 0 || awaitingInitialCloudKitImport)
+            var initialImportFinished = true
             if isFreshLocalInstall {
-                await cloudKitSyncMonitor.waitForInitialImport()
-                await ensureDefaultBudgetGroupAfterCloudKitSync()
+                initialImportFinished = await cloudKitSyncMonitor.waitForInitialImport()
+                if initialImportFinished {
+                    await ensureDefaultBudgetGroupAfterCloudKitSync()
+                } else {
+                    UserDefaults.standard.set(
+                        true,
+                        forKey: "elyraBudget.awaitingInitialCloudKitImport"
+                    )
+                    AppLogger.persistence.error(
+                        "Initialer iCloud-Import wurde nicht innerhalb des Sicherheitsfensters bestätigt. Es wird kein neuer Standardbereich angelegt."
+                    )
+                }
+            } else {
+                UserDefaults.standard.set(
+                    false,
+                    forKey: "elyraBudget.awaitingInitialCloudKitImport"
+                )
             }
             restoreSelectedBudgetGroup()
-            ensureAtLeastOneActiveBudgetGroup()
-            if shouldOfferOnboardingAgain(isFreshLocalInstall: isFreshLocalInstall) {
+            if !isFreshLocalInstall || initialImportFinished {
+                ensureAtLeastOneActiveBudgetGroup()
+            }
+            migrateBudgetStatusThresholds()
+            if shouldOfferOnboardingAgain(
+                isFreshLocalInstall: isFreshLocalInstall,
+                initialImportFinished: initialImportFinished
+            ) {
                 showingReturningUserOnboardingPrompt = true
-            } else {
+            } else if !isFreshLocalInstall || initialImportFinished {
                 presentOnboardingIfNeeded()
+                scheduleMonthlyBudgetPromptIfNeeded()
             }
             hasCompletedInitialStartup = true
-            cloudKitBootstrapCompleted = true
+            if !isFreshLocalInstall || initialImportFinished {
+                cloudKitBootstrapCompleted = true
+                UserDefaults.standard.set(
+                    false,
+                    forKey: "elyraBudget.awaitingInitialCloudKitImport"
+                )
+            }
 
             await proAccess.refreshEntitlement()
-            appLockManager.lockIfNeeded(
-                isEnabled: userSettings.first?.appLockEnabled ?? false,
-                hasPro: proAccess.hasPro
-            )
             await pullSharedAreasIfNeeded()
             migrateLocalReceiptsToSyncableData()
             writeWidgetSnapshot()
@@ -162,48 +209,19 @@ struct ContentView: View {
         .task {
             await proAccess.listenForTransactionUpdates()
         }
+        .task(id: scenePhase) {
+            await runSharedAreaSyncLoop()
+        }
         .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .background || newPhase == .inactive {
-                appLockManager.lockIfNeeded(
-                    isEnabled: userSettings.first?.appLockEnabled ?? false,
-                    hasPro: proAccess.hasPro
-                )
-            }
-            guard newPhase == .active else { return }
-            registerAppLaunchIfNeeded()
-            Task {
-                await proAccess.refreshEntitlement()
-                await importPendingCloudKitShareIfNeeded()
-                await pullSharedAreasIfNeeded()
-                migrateLocalReceiptsToSyncableData()
-                writeWidgetSnapshot()
-            }
-            processAutomaticSavingsGoals()
-            processAutomaticFixedCosts()
-            processRoundUps()
-            rescheduleAppNotifications()
+            handleScenePhaseChange(newPhase)
         }
         .onChange(of: selectedBudgetGroup?.id) { _, newID in
             persistedSelectedBudgetGroupID = newID?.uuidString ?? ""
         }
-        .onChange(of: scenePhase) { oldPhase, newPhase in
-            guard oldPhase != .background, newPhase == .background else { return }
-            Task {
-                await uploadSharedAreasIfNeeded()
-            }
-        }
         .onReceive(
-            NotificationCenter.default.publisher(
-                for: .elyraBudgetCloudKitShareAccepted
-            )
-        ) { _ in
-            Task { @MainActor in
-                await importPendingCloudKitShareIfNeeded()
-                await ensureDefaultBudgetGroupAfterCloudKitSync()
-                await pullSharedAreasIfNeeded()
-                restoreSelectedBudgetGroup()
-            }
-        }
+            NotificationCenter.default.publisher(for: .elyraBudgetCloudKitShareAccepted),
+            perform: handleCloudKitShareAccepted
+        )
         .onChange(of: cloudKitSyncMonitor.status) { _, status in
             switch status {
             case .failed:
@@ -229,36 +247,120 @@ struct ContentView: View {
     }
 
     @MainActor
+    private func runSharedAreaSyncLoop() async {
+        guard scenePhase == .active else { return }
+
+        // CloudKit sharing is synchronized while the app is open as well as
+        // when it goes to the background, so edits do not remain only on one
+        // device while the app is running.
+        while !Task.isCancelled {
+            await uploadSharedAreasIfNeeded()
+            do {
+                try await Task.sleep(for: .seconds(15))
+            } catch {
+                return
+            }
+        }
+    }
+
+    @MainActor
+    private func handleScenePhaseChange(_ newPhase: ScenePhase) {
+        if newPhase == .background {
+            Task { await uploadSharedAreasIfNeeded() }
+            return
+        }
+        guard newPhase == .active else { return }
+        registerAppLaunchIfNeeded()
+        Task {
+            await proAccess.refreshEntitlement()
+            await importPendingCloudKitShareIfNeeded()
+            await pullSharedAreasIfNeeded()
+            migrateLocalReceiptsToSyncableData()
+            writeWidgetSnapshot()
+            scheduleMonthlyBudgetPromptIfNeeded()
+        }
+        processAutomaticSavingsGoals()
+        processAutomaticFixedCosts()
+        processRoundUps()
+        rescheduleAppNotifications()
+    }
+
+    @MainActor
+    private func handleCloudKitShareAccepted(_ notification: Notification) {
+        Task {
+            await importPendingCloudKitShareIfNeeded()
+            await ensureDefaultBudgetGroupAfterCloudKitSync()
+            await pullSharedAreasIfNeeded()
+            restoreSelectedBudgetGroup()
+        }
+    }
+
+    @MainActor
     private func importPendingCloudKitShareIfNeeded() async {
         guard cloudKitSyncMonitor.isCloudKitEnabled else { return }
         do {
-            _ = try await CloudKitSharedAreaService.shared.importPendingShare(modelContext: modelContext)
+            if let importedGroup = try await CloudKitSharedAreaService.shared.importPendingShare(
+                modelContext: modelContext
+            ) {
+                selectedBudgetGroup = importedGroup
+                persistedSelectedBudgetGroupID = importedGroup.id.uuidString
+            }
         } catch {
-            AppLogger.persistence.error("Geteilter CloudKit-Bereich konnte nicht importiert werden: \(error.localizedDescription)")
+            // A stale pending invitation must not prevent discovery of a
+            // different, already accepted shared area.
+            AppLogger.persistence.error("Ausstehende CloudKit-Einladung konnte nicht importiert werden: \(error.localizedDescription)")
+        }
+
+        do {
+            let discoveredGroups = try await CloudKitSharedAreaService.shared
+                .discoverAndImportSharedAreas(modelContext: modelContext)
+            if let discoveredGroup = discoveredGroups.first {
+                selectedBudgetGroup = discoveredGroup
+                persistedSelectedBudgetGroupID = discoveredGroup.id.uuidString
+            }
+        } catch {
+            AppLogger.persistence.error("Geteilte CloudKit-Bereiche konnten nicht entdeckt werden: \(error.localizedDescription)")
         }
     }
 
     @MainActor
     private func pullSharedAreasIfNeeded() async {
         guard cloudKitSyncMonitor.isCloudKitEnabled else { return }
-        for group in budgetGroups {
+        NotificationCenter.default.post(name: .elyraSharedSyncStarted, object: nil)
+        var firstError: Error?
+        for group in allBudgetGroups {
             do {
                 try await CloudKitSharedAreaService.shared.pullSharedArea(
                     group: group,
                     modelContext: modelContext
                 )
             } catch {
+                firstError = firstError ?? error
                 AppLogger.persistence.error("Geteilter Bereich konnte nicht aktualisiert werden: \(error.localizedDescription)")
             }
+        }
+        if let firstError {
+            NotificationCenter.default.post(
+                name: .elyraSharedSyncFailed,
+                object: nil,
+                userInfo: ["message": firstError.localizedDescription]
+            )
+        } else {
+            NotificationCenter.default.post(name: .elyraSharedSyncSucceeded, object: nil)
         }
     }
 
     @MainActor
     private func uploadSharedAreasIfNeeded() async {
         guard cloudKitSyncMonitor.isCloudKitEnabled else { return }
-        for group in budgetGroups {
+        for group in allBudgetGroups {
             do {
-                try await CloudKitSharedAreaService.shared.updateSharedArea(group: group)
+                // The conflict-aware path must also be used for background
+                // and periodic sync. Never overwrite a newer remote edit.
+                try await CloudKitSharedAreaService.shared.pullSharedArea(
+                    group: group,
+                    modelContext: modelContext
+                )
             } catch {
                 AppLogger.persistence.error("Geteilter Bereich konnte nicht gespeichert werden: \(error.localizedDescription)")
             }
@@ -426,7 +528,10 @@ struct ContentView: View {
             try? await Task.sleep(for: .milliseconds(500))
         }
 
-        ensureDefaultBudgetGroup()
+        // A timeout must never be interpreted as an empty iCloud store. The
+        // onboarding flow can still create the first local group explicitly.
+        // This prevents a delayed CloudKit import from producing a duplicate
+        // "Persönlich" group which could later be mistaken for user data.
     }
 
     private func ensureDefaultBudgetGroup() {
@@ -445,6 +550,16 @@ struct ContentView: View {
         } catch {
             AppLogger.persistence.error(
                 "Aktiver Budgetbereich konnte nicht sichergestellt werden: \(error)"
+            )
+        }
+    }
+
+    private func migrateBudgetStatusThresholds() {
+        do {
+            try BudgetGroupMigration.migrateBudgetStatusThresholds(in: modelContext)
+        } catch {
+            AppLogger.persistence.error(
+                "Budgetstatus-Grenzwerte konnten nicht migriert werden: \(error)"
             )
         }
     }
@@ -475,9 +590,30 @@ struct ContentView: View {
         showingOnboarding = true
     }
 
-    private func shouldOfferOnboardingAgain(isFreshLocalInstall: Bool) -> Bool {
+    private func scheduleMonthlyBudgetPromptIfNeeded() {
+        guard !showingOnboarding,
+              !showingReturningUserOnboardingPrompt,
+              let group = selectedBudgetGroup,
+              !group.isArchived,
+              group.monthlyAllocation(for: .now) == nil else {
+            return
+        }
+
+        let monthKey = Date.now.formatted(.dateTime.year().month())
+        let key = "elyraBudget.monthlyBudgetPrompt.\(group.id.uuidString).\(monthKey)"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+
+        UserDefaults.standard.set(true, forKey: key)
+        showingMonthlyBudgetPrompt = true
+    }
+
+    private func shouldOfferOnboardingAgain(
+        isFreshLocalInstall: Bool,
+        initialImportFinished: Bool
+    ) -> Bool {
         guard !ProcessInfo.processInfo.arguments.contains("-ui-testing-skip-onboarding"),
               isFreshLocalInstall,
+              initialImportFinished,
               let profile = userSettings.first else {
             return false
         }
@@ -708,6 +844,7 @@ struct ContentView: View {
                 selectedDate: $selectedDate,
                 selectedGroup: $selectedBudgetGroup,
                 requestedToolbarAction: $requestedTransactionToolbarAction,
+                showingSearch: $showingTransactionSearch,
                 onNewTransaction: { showingTransactionEditor = true }
             )
         }
@@ -871,6 +1008,7 @@ struct ContentView: View {
             BudgetGroupMenu(
                 selection: $selectedBudgetGroup,
                 groups: budgetGroups,
+                add: { showingNewBudgetGroupEditor = true },
                 manage: { showingBudgetGroupManagement = true },
                 settings: { showingSettings = true }
             )

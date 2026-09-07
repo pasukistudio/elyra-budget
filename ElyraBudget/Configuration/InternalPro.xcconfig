@@ -1,3 +1,4 @@
-// Apply this file only when archiving the private TestFlight build.
-// The normal Debug and Release configurations do not enable INTERNAL_PRO.
+// TestFlight-only configuration. The App Store Release configuration stays
+// free of INTERNAL_PRO; the shared TestFlight scheme uses the TestFlight
+// build configuration defined in the Xcode project.
 SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) INTERNAL_PRO

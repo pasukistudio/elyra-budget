@@ -331,8 +331,26 @@ struct SavingsView: View {
     }
 
     private func delete(_ goal: SavingsGoal) {
+        let groupID = goal.group?.id
+        let contributionIDs = (goal.contributions ?? []).map(\.id)
         modelContext.delete(goal)
-        do { try modelContext.save() }
+        do {
+            try modelContext.save()
+            if let groupID {
+                CloudKitSharedAreaService.recordDeletion(
+                    key: goal.id.uuidString,
+                    kind: .savingsGoal,
+                    groupID: groupID
+                )
+                for contributionID in contributionIDs {
+                    CloudKitSharedAreaService.recordDeletion(
+                        key: contributionID.uuidString,
+                        kind: .contribution,
+                        groupID: groupID
+                    )
+                }
+            }
+        }
         catch { saveErrorMessage = error.localizedDescription }
         goalToDelete = nil
     }
@@ -519,9 +537,25 @@ private struct SavingsManagementView: View {
     }
 
     private func delete(_ goal: SavingsGoal) {
+        let groupID = goal.group?.id
+        let contributionIDs = (goal.contributions ?? []).map(\.id)
         modelContext.delete(goal)
         do {
             try modelContext.save()
+            if let groupID {
+                CloudKitSharedAreaService.recordDeletion(
+                    key: goal.id.uuidString,
+                    kind: .savingsGoal,
+                    groupID: groupID
+                )
+                for contributionID in contributionIDs {
+                    CloudKitSharedAreaService.recordDeletion(
+                        key: contributionID.uuidString,
+                        kind: .contribution,
+                        groupID: groupID
+                    )
+                }
+            }
         } catch {
             saveErrorMessage = error.localizedDescription
         }
@@ -609,16 +643,34 @@ private struct ArchivedSavingsView: View {
     }
 
     private func delete(_ goal: SavingsGoal) {
+        let groupID = goal.group?.id
+        let contributionIDs = (goal.contributions ?? []).map(\.id)
         modelContext.delete(goal)
-        saveChanges()
+        if saveChanges(), let groupID {
+            CloudKitSharedAreaService.recordDeletion(
+                key: goal.id.uuidString,
+                kind: .savingsGoal,
+                groupID: groupID
+            )
+            for contributionID in contributionIDs {
+                CloudKitSharedAreaService.recordDeletion(
+                    key: contributionID.uuidString,
+                    kind: .contribution,
+                    groupID: groupID
+                )
+            }
+        }
         goalToDelete = nil
     }
 
-    private func saveChanges() {
+    @discardableResult
+    private func saveChanges() -> Bool {
         do {
             try modelContext.save()
+            return true
         } catch {
             saveErrorMessage = error.localizedDescription
+            return false
         }
     }
 }

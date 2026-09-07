@@ -11,7 +11,7 @@ struct OverviewView: View {
     @State private var dashboardPage = 0
     @State private var showingAnalytics = false
     @State private var showingProUpgrade = false
-    @State private var showingMonthlyBudgetEditor = false
+    @State private var showingSelectedGroupEditor = false
 
     @Query(
         filter: #Predicate<Budget> { !$0.isArchived },
@@ -130,11 +130,11 @@ struct OverviewView: View {
     }
 
     private var greenThreshold: Double {
-        Double(profiles.first?.greenBudgetThreshold ?? 70) / 100
+        Double(selectedGroup?.greenBudgetThreshold ?? profiles.first?.greenBudgetThreshold ?? 70) / 100
     }
 
     private var orangeThreshold: Double {
-        Double(profiles.first?.orangeBudgetThreshold ?? 100) / 100
+        Double(selectedGroup?.orangeBudgetThreshold ?? profiles.first?.orangeBudgetThreshold ?? 100) / 100
     }
 
     private var monthlyExpenseTransactions: [Transaction] {
@@ -218,6 +218,49 @@ struct OverviewView: View {
         }
     }
 
+    private var overviewBudgets: [Budget] {
+        Array(visibleBudgets.sorted { lhs, rhs in
+            let lhsUsage = budgetUsage(for: lhs)
+            let rhsUsage = budgetUsage(for: rhs)
+            let lhsIsOverLimit = lhs.limit > 0 && lhsUsage >= lhs.limit
+            let rhsIsOverLimit = rhs.limit > 0 && rhsUsage >= rhs.limit
+            let lhsProgress = lhs.limit > 0
+                ? NSDecimalNumber(decimal: lhsUsage / lhs.limit).doubleValue
+                : 0
+            let rhsProgress = rhs.limit > 0
+                ? NSDecimalNumber(decimal: rhsUsage / rhs.limit).doubleValue
+                : 0
+
+            if lhsIsOverLimit != rhsIsOverLimit {
+                return lhsIsOverLimit
+            }
+            if lhsProgress != rhsProgress {
+                return lhsProgress > rhsProgress
+            }
+            if lhsUsage != rhsUsage {
+                return lhsUsage > rhsUsage
+            }
+            return lhs.sortOrder < rhs.sortOrder
+        }.prefix(3))
+    }
+
+    private var overviewSavingsGoals: [SavingsGoal] {
+        Array(visibleSavingsGoals.sorted { lhs, rhs in
+            let lhsHasDate = lhs.targetDate != nil
+            let rhsHasDate = rhs.targetDate != nil
+            if lhsHasDate != rhsHasDate {
+                return lhsHasDate
+            }
+            if let lhsDate = lhs.targetDate, let rhsDate = rhs.targetDate, lhsDate != rhsDate {
+                return lhsDate < rhsDate
+            }
+            if lhs.visualProgress != rhs.visualProgress {
+                return lhs.visualProgress < rhs.visualProgress
+            }
+            return lhs.sortOrder < rhs.sortOrder
+        }.prefix(3))
+    }
+
     private var totalSaved: Decimal {
         visibleSavingsGoals.reduce(.zero) { result, goal in
             result + goal.savedAmount(asOf: monthInterval.end.addingTimeInterval(-1))
@@ -254,11 +297,10 @@ struct OverviewView: View {
         .sheet(isPresented: $showingProUpgrade) {
             ProUpgradeView(feature: "Statistiken und Monatsberichte")
         }
-        .sheet(isPresented: $showingMonthlyBudgetEditor) {
-            MonthlyBudgetEditorView(
-                selectedGroup: selectedGroup,
-                selectedDate: selectedDate
-            )
+        .sheet(isPresented: $showingSelectedGroupEditor) {
+            if let selectedGroup {
+                BudgetGroupEditorView(group: selectedGroup, selectedDate: selectedDate)
+            }
         }
     }
 
@@ -470,7 +512,7 @@ struct OverviewView: View {
             #else
             .tabViewStyle(.automatic)
             #endif
-            .frame(height: 244)
+            .frame(height: 260)
             .background(cardBackground, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -491,13 +533,13 @@ struct OverviewView: View {
     }
 
     private var budgetSummaryPage: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Label("Budgetstatus", systemImage: "chart.bar.fill")
                     .font(.headline)
                 Spacer()
                 Button {
-                    showingMonthlyBudgetEditor = true
+                    showingSelectedGroupEditor = true
                 } label: {
                     Label(
                         monthlyLimit > 0 ? "Anpassen" : "Festlegen",
@@ -518,8 +560,8 @@ struct OverviewView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            HStack(spacing: 18) {
-                VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .center, spacing: 20) {
+                VStack(alignment: .leading, spacing: 5) {
                     Text(statusTitle)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(statusColor)
@@ -545,22 +587,20 @@ struct OverviewView: View {
                 .frame(width: 78, height: 78)
             }
 
-            if monthlyLimit > 0 {
-                ProgressView(value: monthlyProgress)
-                    .tint(statusColor)
-                    .scaleEffect(y: 1.35)
-            } else {
+            if monthlyLimit <= 0 {
                 Text("Für diesen Bereich ist noch kein Monatsbudget festgelegt.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
+            RoundedRectangle(cornerRadius: 3, style: .continuous)
+                .fill(statusColor)
+                .frame(height: 6)
+
             HStack(spacing: 0) {
                 DashboardMetric(title: "Gesamt", value: monthlyLimit, currencyCode: currencyCode)
                 Spacer()
                 DashboardMetric(title: "Verwendet", value: monthlyUsed, currencyCode: currencyCode)
-                Spacer()
-                DashboardMetric(title: "Anteil", value: Decimal(monthlyProgress * 100), suffix: "%")
             }
         }
         .padding(20)
@@ -635,6 +675,7 @@ struct OverviewView: View {
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(transaction.type == .expense ? Color.red : Color.green)
                     }
+                    .padding(.vertical, 3)
                 }
             }
         }
@@ -645,7 +686,7 @@ struct OverviewView: View {
             if visibleBudgets.isEmpty {
                 OverviewEmptyRow(text: "Noch keine Budgets angelegt.")
             } else {
-                ForEach(Array(visibleBudgets.prefix(3)), id: \.persistentModelID) { budget in
+                ForEach(overviewBudgets, id: \.persistentModelID) { budget in
                     OverviewBudgetRow(
                         budget: budget,
                         transactions: visibleTransactions,
@@ -666,6 +707,7 @@ struct OverviewView: View {
                     HStack(spacing: 12) {
                         Image(systemName: "calendar.badge.clock")
                             .foregroundStyle(.secondary)
+                            .frame(width: 24)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.fixedCost.title).font(.subheadline.weight(.semibold))
                             Text(item.dueDate, format: .dateTime.day().month(.abbreviated))
@@ -694,7 +736,7 @@ struct OverviewView: View {
                         .font(.subheadline.weight(.semibold))
                 }
 
-                ForEach(Array(visibleSavingsGoals.prefix(3)), id: \.persistentModelID) { goal in
+                ForEach(overviewSavingsGoals, id: \.persistentModelID) { goal in
                     HStack(spacing: 12) {
                         IconBadgeView(
                             iconName: goal.iconName,
@@ -714,19 +756,37 @@ struct OverviewView: View {
                             }
                         }
                         Spacer()
-                        Text(goal.savedAmount(asOf: monthInterval.end.addingTimeInterval(-1)), format: .currency(code: currencyCode))
-                            .font(.subheadline.weight(.semibold))
+                        if goal.targetAmount != nil {
+                            ProgressRingView(
+                                progress: goal.visualProgress,
+                                color: Color(hexString: goal.iconColorHex)
+                            )
+                        } else {
+                            Text(goal.savedAmount(asOf: monthInterval.end.addingTimeInterval(-1)), format: .currency(code: currencyCode))
+                                .font(.subheadline.weight(.semibold))
+                        }
                     }
                 }
             }
         }
     }
+
 }
 
 private struct OverviewCard<Content: View>: View {
     let title: LocalizedStringKey
     let systemImage: String
     @ViewBuilder let content: () -> Content
+
+    init(
+        title: LocalizedStringKey,
+        systemImage: String,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.title = title
+        self.systemImage = systemImage
+        self.content = content
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -750,6 +810,28 @@ private struct OverviewCard<Content: View>: View {
         #else
         Color(nsColor: .controlBackgroundColor)
         #endif
+    }
+}
+
+private struct ProgressRingView: View {
+    let progress: Double
+    let color: Color
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(color.opacity(0.16), lineWidth: 4)
+            Circle()
+                .trim(from: 0, to: min(max(progress, 0), 1))
+                .stroke(color, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            Text("\(Int(progress * 100))%")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(color)
+        }
+        .frame(width: 42, height: 42)
+        .accessibilityLabel("Fortschritt")
+        .accessibilityValue("\(Int(progress * 100)) Prozent")
     }
 }
 

@@ -90,8 +90,9 @@ enum FixedCostScheduler {
         let availableAmount = linkedGoal?.savedAmount(asOf: dueDate) ?? 0
         let coveredAmount = min(max(availableAmount, 0), fixedCost.amount)
 
+        var redemption: SavingsContribution?
         if let linkedGoal, coveredAmount > 0 {
-            let redemption = SavingsContribution(
+            let contribution = SavingsContribution(
                 amount: -coveredAmount,
                 date: dueDate,
                 note: "Fixkosten bezahlt: \(fixedCost.title)",
@@ -99,7 +100,8 @@ enum FixedCostScheduler {
                 occurrenceDate: dueDate,
                 goal: linkedGoal
             )
-            modelContext.insert(redemption)
+            redemption = contribution
+            modelContext.insert(contribution)
         }
 
         let transaction = Transaction(
@@ -115,6 +117,12 @@ enum FixedCostScheduler {
         transaction.fixedCostOccurrenceDate = dueDate
         transaction.fixedCostBookingAutomatic = automatic
         transaction.savingsGoalCoveredAmount = coveredAmount > 0 ? coveredAmount : nil
+        if let redemption {
+            // Keep the fixed-cost booking and the goal redemption together so
+            // deleting or syncing one cannot leave the other behind.
+            transaction.savingsContributionID = redemption.id
+            redemption.transactionID = transaction.id
+        }
         modelContext.insert(transaction)
     }
 

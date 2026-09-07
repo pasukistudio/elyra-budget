@@ -14,7 +14,11 @@ struct CloudKitSharingView: View {
     var body: some View {
         Group {
             if let share {
-                CloudKitShareController(share: share, title: group.name)
+                CloudKitShareController(
+                    share: share,
+                    title: group.name,
+                    errorMessage: $errorMessage
+                )
             } else {
                 ProgressView("Freigabe wird vorbereitet …")
             }
@@ -40,9 +44,10 @@ struct CloudKitSharingView: View {
 private struct CloudKitShareController: UIViewControllerRepresentable {
     let share: CKShare
     let title: String
+    @Binding var errorMessage: String?
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(title: title)
+        Coordinator(title: title, errorMessage: $errorMessage)
     }
 
     func makeUIViewController(context: Context) -> UICloudSharingController {
@@ -59,9 +64,11 @@ private struct CloudKitShareController: UIViewControllerRepresentable {
 
     final class Coordinator: NSObject, UICloudSharingControllerDelegate {
         let title: String
+        let errorMessage: Binding<String?>
 
-        init(title: String) {
+        init(title: String, errorMessage: Binding<String?>) {
             self.title = title
+            self.errorMessage = errorMessage
         }
 
         private let logger = Logger(
@@ -74,6 +81,9 @@ private struct CloudKitShareController: UIViewControllerRepresentable {
             failedToSaveShareWithError error: Error
         ) {
             logger.error("CloudKit share could not be saved: \(error.localizedDescription, privacy: .public)")
+            DispatchQueue.main.async { [errorMessage] in
+                errorMessage.wrappedValue = error.localizedDescription
+            }
         }
 
         func itemTitle(for csc: UICloudSharingController) -> String? {

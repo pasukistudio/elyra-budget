@@ -255,9 +255,17 @@ struct FixedCostsView: View {
     }
 
     private func delete(_ fixedCost: FixedCost) {
+        let groupID = fixedCost.group?.id
         modelContext.delete(fixedCost)
         do {
             try modelContext.save()
+            if let groupID {
+                CloudKitSharedAreaService.recordDeletion(
+                    key: fixedCost.id.uuidString,
+                    kind: .fixedCost,
+                    groupID: groupID
+                )
+            }
             rescheduleNotifications()
         } catch {
             saveErrorMessage = error.localizedDescription

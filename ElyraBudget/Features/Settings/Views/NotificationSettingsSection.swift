@@ -8,7 +8,7 @@ struct NotificationSettingsSection: View {
     var body: some View {
         Section("Benachrichtigungen") {
             if let profile {
-                notificationToggle("Budgetwarnungen", value: \.budgetNotificationsEnabled, profile: profile)
+                notificationToggle("Budgetwarnungen und Monatsstart", value: \.budgetNotificationsEnabled, profile: profile)
                 notificationToggle("Sparbeiträge", value: \.savingsContributionNotificationsEnabled, profile: profile)
                 notificationToggle("iCloud-Synchronisierungsfehler", value: \.syncErrorNotificationsEnabled, profile: profile)
                 notificationToggle("Sparziel erreicht", value: \.savingsGoalCompletionNotificationsEnabled, profile: profile)
